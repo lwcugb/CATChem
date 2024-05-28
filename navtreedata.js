@@ -25,6 +25,7 @@
 var NAVTREE =
 [
   [ "CATChem", "index.html", [
+    [ "The Configurable ATmospheric Chemisty (CATChem) Module", "index.html", null ],
     [ "Modules", "modules.html", "modules" ],
     [ "Data Types List", "annotated.html", [
       [ "Data Types List", "annotated.html", "annotated_dup" ],
@@ -43,7 +44,7 @@ var NAVTREE =
 var NAVTREEINDEX =
 [
 "annotated.html",
-"structmetstate__mod_1_1metstatetype.html#a1c4f9cceb4385cc4950bb02258913e11"
+"structmetstate__mod_1_1metstatetype.html#a1ad9fbd1a5cf81c80ddb2d86780b80b1"
 ];
 
 var SYNCONMSG = 'click to disable panel synchronisation';
