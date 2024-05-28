@@ -1,0 +1,8 @@
+var structgridstate__mod_1_1gridstatetype =
+[
+    [ "area", "structgridstate__mod_1_1gridstatetype.html#a735a1b9e1c9a86982960c8e5b50267bd", null ],
+    [ "number_of_levels", "structgridstate__mod_1_1gridstatetype.html#a1bc55801c3b98ac0959752a665b18c3e", null ],
+    [ "nx", "structgridstate__mod_1_1gridstatetype.html#a27fb30ff55d1a9124df78467a6caa9bc", null ],
+    [ "ny", "structgridstate__mod_1_1gridstatetype.html#af6f6c7ffa460605bc8a130859586a908", null ],
+    [ "state", "structgridstate__mod_1_1gridstatetype.html#a0eccc2982ddc4d0205789d0a40e263b0", null ]
+];
