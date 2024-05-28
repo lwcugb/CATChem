@@ -5,8 +5,7 @@ var indexSectionsWithContent =
   2: "cgimpqs",
   3: "cgiqrstuw",
   4: "abcdghilmprsuvx",
-  5: "c",
-  6: "c"
+  5: "c"
 };
 
 var indexSectionNames =
@@ -16,8 +15,7 @@ var indexSectionNames =
   2: "files",
   3: "functions",
   4: "variables",
-  5: "groups",
-  6: "pages"
+  5: "groups"
 };
 
 var indexSectionLabels =
@@ -27,7 +25,6 @@ var indexSectionLabels =
   2: "Files",
   3: "Functions",
   4: "Variables",
-  5: "Modules",
-  6: "Pages"
+  5: "Modules"
 };
 
