@@ -26,6 +26,13 @@ var NAVTREE =
 [
   [ "CATChem", "index.html", [
     [ "Modules", "modules.html", "modules" ],
+    [ "Modules", "namespaces.html", [
+      [ "Modules List", "namespaces.html", "namespaces_dup" ],
+      [ "Module Members", "namespacemembers.html", [
+        [ "All", "namespacemembers.html", null ],
+        [ "Functions/Subroutines", "namespacemembers_func.html", null ]
+      ] ]
+    ] ],
     [ "Data Types List", "annotated.html", [
       [ "Data Types List", "annotated.html", "annotated_dup" ],
       [ "Data Types", "classes.html", null ],
@@ -42,8 +49,9 @@ var NAVTREE =
 
 var NAVTREEINDEX =
 [
-"annotated.html",
-"structmetstate__mod_1_1metstatetype.html#a1b8ff26014b8c0f1a9d211bed3cd03cd"
+"CCPr__Dust__Mod_8F90.html#a2d69d5cd207918989db1f94c6c62db68",
+"qfyaml__mod_8F90.html#a2e819e5bd99caa2f4a58f8468ec6402e",
+"structmetstate__mod_1_1metstatetype.html#a60eb6078a6ccd35af8e919a6500c7559"
 ];
 
 var SYNCONMSG = 'click to disable panel synchronisation';

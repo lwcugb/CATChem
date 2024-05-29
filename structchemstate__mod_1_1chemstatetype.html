@@ -130,9 +130,9 @@ integer, dimension(:), allocatable&#160;</td><td class="memItemRight" valign="bo
 <tr class="memitem:ab18e842883467663e0affcb032f3c777"><td class="memItemLeft" align="right" valign="top"><a id="ab18e842883467663e0affcb032f3c777"></a>
 integer, dimension(:), allocatable&#160;</td><td class="memItemRight" valign="bottom"><b>seasaltindex</b></td></tr>
 <tr class="separator:ab18e842883467663e0affcb032f3c777"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a71e3f9825bad228054c6ac153f9cf0d9"><td class="memItemLeft" align="right" valign="top"><a id="a71e3f9825bad228054c6ac153f9cf0d9"></a>
-real(fp), dimension(:,:,:,:), pointer&#160;</td><td class="memItemRight" valign="bottom"><b>chemspecies</b></td></tr>
-<tr class="separator:a71e3f9825bad228054c6ac153f9cf0d9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa3e9520bc18059b1540bad69ceb79142"><td class="memItemLeft" align="right" valign="top"><a id="aa3e9520bc18059b1540bad69ceb79142"></a>
+real(fp), dimension(:,:), pointer&#160;</td><td class="memItemRight" valign="bottom"><b>chemspecies</b></td></tr>
+<tr class="separator:aa3e9520bc18059b1540bad69ceb79142"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Data type for managing the state of the chemical model. </p>
@@ -148,7 +148,7 @@ real(fp), dimension(:,:,:,:), pointer&#160;</td><td class="memItemRight" valign=
 <li>GasIndex: An array containing the gas species index.</li>
 <li>DustIndex: An array containing the dust species index.</li>
 <li>SeaSaltIndex: An array containing the sea salt species index.</li>
-<li>chemSpecies: A 3D array containing the concentration of each species. </li>
+<li>chemSpecies: A 2-D array containing the concentration of each species. </li>
 </ul>
 </div><hr/>The documentation for this type was generated from the following file:<ul>
 <li>/home/runner/work/CATChem/CATChem/src/core/<a class="el" href="chemstate__mod_8F90.html">chemstate_mod.F90</a></li>

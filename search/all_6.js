@@ -1,14 +1,9 @@
 var searchData=
 [
-  ['init_5fdiag_41',['init_diag',['../init__mod_8F90.html#a839c419513ec9ccba367d47da68e2e9e',1,'init_mod']]],
-  ['init_5fmet_42',['init_met',['../init__mod_8F90.html#a09b0f35a4e262c49d378b175a0310074',1,'init_mod']]],
-  ['init_5fmod_2ef90_43',['init_mod.F90',['../init__mod_8F90.html',1,'']]],
-  ['is_5fadvected_44',['is_advected',['../structspecies__mod_1_1speciestype.html#a72c40d0d2c88b0428beb1fdeeb1abb67',1,'species_mod::speciestype']]],
-  ['is_5faero_45',['is_aero',['../structspecies__mod_1_1speciestype.html#a6ae63965d1dc219d444180d8c1c28159',1,'species_mod::speciestype']]],
-  ['is_5fdrydep_46',['is_drydep',['../structspecies__mod_1_1speciestype.html#a6ff2c00d11dd1460cd8ebab2e32b4dd2',1,'species_mod::speciestype']]],
-  ['is_5fgas_47',['is_gas',['../structspecies__mod_1_1speciestype.html#a728138de4da1fb293961e310685693fd',1,'species_mod::speciestype']]],
-  ['is_5fgocart_5faero_48',['is_gocart_aero',['../structspecies__mod_1_1speciestype.html#a636a8576a7dde76ea25036b02462ce86',1,'species_mod::speciestype']]],
-  ['is_5fphotolysis_49',['is_photolysis',['../structspecies__mod_1_1speciestype.html#ae28816681721c043e7f270fed18f0a6a',1,'species_mod::speciestype']]],
-  ['is_5ftracer_50',['is_tracer',['../structspecies__mod_1_1speciestype.html#a8c264cce53699ffcb46853be0a694c80',1,'species_mod::speciestype']]],
-  ['isdigit_51',['isdigit',['../charpak__mod_8F90.html#a6027107643b128d6ac9f1aa0377d3062',1,'charpak_mod']]]
+  ['g0_40',['g0',['../constants_8F90.html#a901afa1de385b24b68e71c0936cdc119',1,'constants']]],
+  ['g0_5f100_41',['g0_100',['../constants_8F90.html#a5ce7c05dc271849ce555016a85fa45ae',1,'constants']]],
+  ['gocart_5faero_5findex_42',['gocart_aero_index',['../structspecies__mod_1_1speciestype.html#ac9649a3440d9eacc57a45a592d749670',1,'species_mod::speciestype']]],
+  ['grid_5finit_5fstate_43',['grid_init_state',['../gridstate__mod_8F90.html#a7ee561932721473222bc41a3f3501b9a',1,'gridstate_mod']]],
+  ['gridstate_5fmod_2ef90_44',['gridstate_mod.F90',['../gridstate__mod_8F90.html',1,'']]],
+  ['gridstatetype_45',['gridstatetype',['../structgridstate__mod_1_1gridstatetype.html',1,'gridstate_mod']]]
 ];

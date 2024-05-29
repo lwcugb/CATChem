@@ -1,7 +1,5 @@
 var searchData=
 [
-  ['photolysis_5findex_182',['photolysis_index',['../structspecies__mod_1_1speciestype.html#a6e93043ffd787faeeb908828e47844aa',1,'species_mod::speciestype']]],
-  ['pi_183',['pi',['../constants_8F90.html#a4ed23f9535e4aa93db29157702c4dabd',1,'constants']]],
-  ['pi_5f180_184',['pi_180',['../constants_8F90.html#a5b9cadb978e5422fabe522b89211819d',1,'constants']]],
-  ['planck_185',['planck',['../constants_8F90.html#a324baabc32944d733eaeecddad744a49',1,'constants']]]
+  ['mw_5fg_206',['mw_g',['../structspecies__mod_1_1speciestype.html#ac0f058f655b338a8b70dbecd32aadb7f',1,'species_mod::speciestype']]],
+  ['mwcarb_207',['mwcarb',['../constants_8F90.html#acee1dcead1e273a604e01eb07e5d4a66',1,'constants']]]
 ];

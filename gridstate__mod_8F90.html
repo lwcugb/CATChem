@@ -105,15 +105,6 @@ Functions/Subroutines</h2></td></tr>
 <tr class="memitem:a7ee561932721473222bc41a3f3501b9a"><td class="memItemLeft" align="right" valign="top">subroutine, public&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="gridstate__mod_8F90.html#a7ee561932721473222bc41a3f3501b9a">gridstate_mod::grid_init_state</a> (Config, GridState, RC)</td></tr>
 <tr class="memdesc:a7ee561932721473222bc41a3f3501b9a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initialize a GridState object.  <a href="gridstate__mod_8F90.html#a7ee561932721473222bc41a3f3501b9a">More...</a><br /></td></tr>
 <tr class="separator:a7ee561932721473222bc41a3f3501b9a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:accc9ebd9efcf43ea384747c2de8b8c1f"><td class="memItemLeft" align="right" valign="top">subroutine&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="gridstate__mod_8F90.html#accc9ebd9efcf43ea384747c2de8b8c1f">gridstate_mod::grid_init</a> (Config, GridState, RC)</td></tr>
-<tr class="memdesc:accc9ebd9efcf43ea384747c2de8b8c1f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initialize a GridState.  <a href="gridstate__mod_8F90.html#accc9ebd9efcf43ea384747c2de8b8c1f">More...</a><br /></td></tr>
-<tr class="separator:accc9ebd9efcf43ea384747c2de8b8c1f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6aa8ed12ad2a0fc309b9e16939e59cf4"><td class="memItemLeft" align="right" valign="top">subroutine, public&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="gridstate__mod_8F90.html#a6aa8ed12ad2a0fc309b9e16939e59cf4">gridstate_mod::grid_state_allocate</a> (GridState, RC)</td></tr>
-<tr class="memdesc:a6aa8ed12ad2a0fc309b9e16939e59cf4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Allocate a GridState object.  <a href="gridstate__mod_8F90.html#a6aa8ed12ad2a0fc309b9e16939e59cf4">More...</a><br /></td></tr>
-<tr class="separator:a6aa8ed12ad2a0fc309b9e16939e59cf4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a43b0139ed25a131f1f0117c46dab956c"><td class="memItemLeft" align="right" valign="top">subroutine, public&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="gridstate__mod_8F90.html#a43b0139ed25a131f1f0117c46dab956c">gridstate_mod::grid_cleanup</a> (GridState, RC)</td></tr>
-<tr class="memdesc:a43b0139ed25a131f1f0117c46dab956c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Deallocate a GridState object.  <a href="gridstate__mod_8F90.html#a43b0139ed25a131f1f0117c46dab956c">More...</a><br /></td></tr>
-<tr class="separator:a43b0139ed25a131f1f0117c46dab956c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Module for grid state variables. </p>
@@ -122,95 +113,6 @@ Functions/Subroutines</h2></td></tr>
 <p></p>
 </blockquote>
 </div><h2 class="groupheader">Function/Subroutine Documentation</h2>
-<a id="a43b0139ed25a131f1f0117c46dab956c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a43b0139ed25a131f1f0117c46dab956c">&#9670;&nbsp;</a></span>grid_cleanup()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">subroutine, public gridstate_mod::grid_cleanup </td>
-          <td>(</td>
-          <td class="paramtype">type(<a class="el" href="structgridstate__mod_1_1gridstatetype.html">gridstatetype</a>), intent(inout)&#160;</td>
-          <td class="paramname"><em>GridState</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">integer, intent(out)&#160;</td>
-          <td class="paramname"><em>RC</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Deallocate a GridState object. </p>
-<p>This subroutine deallocates memory for GridState.</p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramdir">[in,out]</td><td class="paramname">GridState</td><td>The GridState instance to be deallocated. </td></tr>
-    <tr><td class="paramdir">[out]</td><td class="paramname">RC</td><td>The return code.</td></tr>
-  </table>
-  </dd>
-</dl>
-<blockquote class="doxtable">
-<p></p>
-</blockquote>
-
-</div>
-</div>
-<a id="accc9ebd9efcf43ea384747c2de8b8c1f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#accc9ebd9efcf43ea384747c2de8b8c1f">&#9670;&nbsp;</a></span>grid_init()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">subroutine gridstate_mod::grid_init </td>
-          <td>(</td>
-          <td class="paramtype">type(<a class="el" href="structconfig__opt__mod_1_1configtype.html">configtype</a>), intent(in)&#160;</td>
-          <td class="paramname"><em>Config</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">type(<a class="el" href="structgridstate__mod_1_1gridstatetype.html">gridstatetype</a>), intent(inout)&#160;</td>
-          <td class="paramname"><em>GridState</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">integer, intent(out)&#160;</td>
-          <td class="paramname"><em>RC</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Initialize a GridState. </p>
-<p>This subroutine initializes a GridState object.</p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">Config</td><td>The input config object. </td></tr>
-    <tr><td class="paramname">GridState</td><td>The GridState object to be initialized. </td></tr>
-    <tr><td class="paramname">RC</td><td>The return code.</td></tr>
-  </table>
-  </dd>
-</dl>
-<blockquote class="doxtable">
-<p></p>
-</blockquote>
-
-</div>
-</div>
 <a id="a7ee561932721473222bc41a3f3501b9a"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a7ee561932721473222bc41a3f3501b9a">&#9670;&nbsp;</a></span>grid_init_state()</h2>
 
@@ -247,56 +149,18 @@ Functions/Subroutines</h2></td></tr>
 <p>This subroutine initializes a GridState object.</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">Config</td><td>The input config object. </td></tr>
-    <tr><td class="paramname">GridState</td><td>The GridState object to be initialized. </td></tr>
-    <tr><td class="paramname">RC</td><td>The return code</td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">Config</td><td>The input config object. </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">GridState</td><td>The GridState object to be initialized. </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">RC</td><td>The return code. <blockquote class="doxtable">
+<p></p>
+</blockquote>
+</td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">config</td><td>Input Options object </td></tr>
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">gridstate</td><td>Grid State object </td></tr>
+    <tr><td class="paramdir">[out]</td><td class="paramname">rc</td><td>Success or failure </td></tr>
   </table>
   </dd>
 </dl>
-<blockquote class="doxtable">
-<p></p>
-</blockquote>
-
-</div>
-</div>
-<a id="a6aa8ed12ad2a0fc309b9e16939e59cf4"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6aa8ed12ad2a0fc309b9e16939e59cf4">&#9670;&nbsp;</a></span>grid_state_allocate()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">subroutine, public gridstate_mod::grid_state_allocate </td>
-          <td>(</td>
-          <td class="paramtype">type(<a class="el" href="structgridstate__mod_1_1gridstatetype.html">gridstatetype</a>), intent(inout)&#160;</td>
-          <td class="paramname"><em>GridState</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">integer, intent(out)&#160;</td>
-          <td class="paramname"><em>RC</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Allocate a GridState object. </p>
-<p>This subroutine allocates memory for GridState.</p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramdir">[in,out]</td><td class="paramname">GridState</td><td>The GridState instance to be allocated. </td></tr>
-    <tr><td class="paramdir">[out]</td><td class="paramname">RC</td><td>The return code.</td></tr>
-  </table>
-  </dd>
-</dl>
-<blockquote class="doxtable">
-<p></p>
-</blockquote>
 
 </div>
 </div>

@@ -1,5 +1,5 @@
 var searchData=
 [
-  ['mw_5fg_180',['mw_g',['../structspecies__mod_1_1speciestype.html#ac0f058f655b338a8b70dbecd32aadb7f',1,'species_mod::speciestype']]],
-  ['mwcarb_181',['mwcarb',['../constants_8F90.html#acee1dcead1e273a604e01eb07e5d4a66',1,'constants']]]
+  ['long_5fname_204',['long_name',['../structspecies__mod_1_1speciestype.html#a55584edc5847084b80f577b04f597800',1,'species_mod::speciestype']]],
+  ['lower_5fradius_205',['lower_radius',['../structspecies__mod_1_1speciestype.html#ad049a911faa34fac7e0345bc1b70c1a5',1,'species_mod::speciestype']]]
 ];
