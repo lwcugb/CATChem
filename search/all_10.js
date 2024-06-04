@@ -1,18 +1,13 @@
 var searchData=
 [
-  ['scale_5fheight_92',['scale_height',['../constants_8F90.html#a5672da9425e7a8277d7ff6b8f4ccc468',1,'constants']]],
-  ['sea_5fsalt_5ftotal_5fflux_93',['sea_salt_total_flux',['../structdiagstate__mod_1_1diagstatetype.html#a19d0e9033855d31d9f2fb598aea3c5f2',1,'diagstate_mod::diagstatetype']]],
-  ['set_5fconfig_94',['set_config',['../config__opt__mod_8F90.html#affc308211ba3c8ceacc4cd6cef8c6528',1,'config_opt_mod']]],
-  ['shao_5fsoilmoisture_95',['shao_soilmoisture',['../ccpr__dust__common__mod_8F90.html#a98e5900d9bfa60f94bbb661f30f7567b',1,'ccpr_dust_common_mod']]],
-  ['short_5fname_96',['short_name',['../structspecies__mod_1_1speciestype.html#a8c03e81003e08595119e64a907dbc641',1,'species_mod::speciestype']]],
-  ['soil_5ferosion_5fpotential_97',['soil_erosion_potential',['../ccpr__dust__common__mod_8F90.html#a86799789075704c8682e43e376519182',1,'ccpr_dust_common_mod']]],
-  ['species_5findex_98',['species_index',['../structspecies__mod_1_1speciestype.html#a9133ba1e9bc04616dff46121b41d4221',1,'species_mod::speciestype']]],
-  ['species_5fmod_2ef90_99',['species_mod.F90',['../species__mod_8F90.html',1,'']]],
-  ['speciestype_100',['speciestype',['../structspecies__mod_1_1speciestype.html',1,'species_mod']]],
-  ['state_101',['state',['../structgridstate__mod_1_1gridstatetype.html#a0eccc2982ddc4d0205789d0a40e263b0',1,'gridstate_mod::gridstatetype']]],
-  ['state_5fmod_2ef90_102',['state_mod.F90',['../state__mod_8F90.html',1,'']]],
-  ['str2chararr_103',['str2chararr',['../charpak__mod_8F90.html#a4ccc30f9cc3562cc9a7511f37a17af60',1,'charpak_mod']]],
-  ['strrepl_104',['strrepl',['../charpak__mod_8F90.html#ab6edafbfa660c83eade74902f54259fa',1,'charpak_mod']]],
-  ['strsplit_105',['strsplit',['../charpak__mod_8F90.html#a0ee5218b21cf850e303a4380e9ce220b',1,'charpak_mod']]],
-  ['strsqueeze_106',['strsqueeze',['../charpak__mod_8F90.html#a3471258b163494d335f7c37fd4769f75',1,'charpak_mod']]]
+  ['radius_155',['radius',['../structspecies__mod_1_1speciestype.html#a1230d2227c51b2b14b8908abbb4aec62',1,'species_mod::speciestype']]],
+  ['rd_156',['rd',['../constants_8F90.html#a02ca3f6ba2dfbd41bff049a37e819aa5',1,'constants']]],
+  ['rdg0_157',['rdg0',['../constants_8F90.html#a4ff66b1c437cc050ed18d18e4c2f3815',1,'constants']]],
+  ['re_158',['re',['../constants_8F90.html#a0a1275e99a1d3da86cab394b202a04fd',1,'constants']]],
+  ['read_5finput_5ffile_159',['read_input_file',['../config__mod_8F90.html#a8a24a263deec20d11af227b81ce3cc8a',1,'config_mod']]],
+  ['readoneline_160',['readoneline',['../charpak__mod_8F90.html#a462d06181fbdfd321dbfc787889e3ee7',1,'charpak_mod']]],
+  ['rgaslatm_161',['rgaslatm',['../constants_8F90.html#a52c491701fce439e6169b24898287fe2',1,'constants']]],
+  ['rh_162',['rh',['../structmetstate__mod_1_1metstatetype.html#a7f130d851c6aad700551e1ce21a7634b',1,'metstate_mod::metstatetype']]],
+  ['rstarg_163',['rstarg',['../constants_8F90.html#a9f348b48df4d0d152cda610ece324892',1,'constants']]],
+  ['rv_164',['rv',['../constants_8F90.html#ac1e0c52a4351dfc83a10824d78062c94',1,'constants']]]
 ];

@@ -189,6 +189,16 @@ Functions/Subroutines</h2></td></tr>
 <blockquote class="doxtable">
 <p></p>
 </blockquote>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">ustar</td><td>Friction Velocity (m/s) </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">ustar_threshold</td><td>Dry Threshold Friction Velocity (m/s) </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">r</td><td>Drag Partition (-) </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">h</td><td>Soil Moisture Correction (-) </td></tr>
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">horizflux</td><td>Horiztonal Mass Flux </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>
@@ -244,6 +254,15 @@ Functions/Subroutines</h2></td></tr>
 <blockquote class="doxtable">
 <p></p>
 </blockquote>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">clay</td><td>Fractional Clay Content </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">sand</td><td>Fractional Sand Content </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">volumetric_soil_moisture</td><td>Volumetric soil moisture [m3 m-3] </td></tr>
+    <tr><td class="paramdir">[out]</td><td class="paramname">h</td><td>Soil Moisture attenuation factor for dust emission [1] </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>
@@ -307,6 +326,16 @@ Functions/Subroutines</h2></td></tr>
 <blockquote class="doxtable">
 <p></p>
 </blockquote>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">ustar</td><td>Friction Velocity (m/s) </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">ustar_threshold</td><td>Dry Threshold Friction Velocity (m/s) </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">r</td><td>Drag Partition (-) </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">h</td><td>Soil Moisture Correction (-) </td></tr>
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">horizflux</td><td>Horiztonal Mass Flux </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>
@@ -397,11 +426,13 @@ Functions/Subroutines</h2></td></tr>
 </ol>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">z0</td><td>roughness length </td></tr>
-    <tr><td class="paramname">R</td><td>Drag partition <blockquote class="doxtable">
+    <tr><td class="paramdir"></td><td class="paramname">z0</td><td>roughness length </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">R</td><td>Drag partition <blockquote class="doxtable">
 <p></p>
 </blockquote>
 </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">z0</td><td>Aerodynamic Roughness Length (m) </td></tr>
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">r</td><td>Drag Paritition </td></tr>
   </table>
   </dd>
 </dl>
@@ -452,13 +483,17 @@ Functions/Subroutines</h2></td></tr>
 </ol>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">soil_density</td><td>soil density </td></tr>
-    <tr><td class="paramname">air_density</td><td>air density </td></tr>
-    <tr><td class="paramname">radius</td><td>particle radius </td></tr>
-    <tr><td class="paramname">ustar_threshold</td><td>threshold friction velocity <blockquote class="doxtable">
+    <tr><td class="paramdir"></td><td class="paramname">soil_density</td><td>soil density </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">air_density</td><td>air density </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">radius</td><td>particle radius </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">ustar_threshold</td><td>threshold friction velocity <blockquote class="doxtable">
 <p></p>
 </blockquote>
 </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">radius</td><td>Pariticle Effective Radius (m) </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">soil_density</td><td>Soil Density (kg/m3) </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">air_density</td><td>Air Density (kg/m3) </td></tr>
+    <tr><td class="paramdir">[out]</td><td class="paramname">ustar_threshold</td><td>Threshold Friction Velocity (m/s) </td></tr>
   </table>
   </dd>
 </dl>
@@ -503,6 +538,13 @@ Functions/Subroutines</h2></td></tr>
 <blockquote class="doxtable">
 <p></p>
 </blockquote>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">volumetric_soil_moisture</td><td>Volumetric soil moisture [m3 m-3] </td></tr>
+    <tr><td class="paramdir">[out]</td><td class="paramname">h</td><td>Soil Moisture attenuation factor for dust emission [1] </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>
@@ -542,9 +584,12 @@ Functions/Subroutines</h2></td></tr>
 <p>TODO: Find reference for this</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">clayfrac</td><td>clay fraction </td></tr>
-    <tr><td class="paramname">sandfrac</td><td>sand fraction </td></tr>
-    <tr><td class="paramname">SEP</td><td>soil erosion potential </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">clayfrac</td><td>clay fraction </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">sandfrac</td><td>sand fraction </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">SEP</td><td>soil erosion potential </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">clayfrac</td><td>Fractional Clay Content </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">sandfrac</td><td>Fractional Sand Content </td></tr>
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">sep</td><td>Soil Erosion Potential </td></tr>
   </table>
   </dd>
 </dl>

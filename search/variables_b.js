@@ -1,7 +1,9 @@
 var searchData=
 [
-  ['photolysis_5findex_212',['photolysis_index',['../structspecies__mod_1_1speciestype.html#a6e93043ffd787faeeb908828e47844aa',1,'species_mod::speciestype']]],
-  ['pi_213',['pi',['../constants_8F90.html#a4ed23f9535e4aa93db29157702c4dabd',1,'constants']]],
-  ['pi_5f180_214',['pi_180',['../constants_8F90.html#a5b9cadb978e5422fabe522b89211819d',1,'constants']]],
-  ['planck_215',['planck',['../constants_8F90.html#a324baabc32944d733eaeecddad744a49',1,'constants']]]
+  ['nspecies_357',['nspecies',['../structchemstate__mod_1_1chemstatetype.html#aa687797b2400250287b29e4a0e427ab1',1,'chemstate_mod::chemstatetype']]],
+  ['nspeciesaero_358',['nspeciesaero',['../structchemstate__mod_1_1chemstatetype.html#a829f30ed5fc6e3d40fe78102bdb3f082',1,'chemstate_mod::chemstatetype']]],
+  ['nspeciesdust_359',['nspeciesdust',['../structchemstate__mod_1_1chemstatetype.html#a3e41fcac80b385e47aff59bb3a1e2885',1,'chemstate_mod::chemstatetype']]],
+  ['nspeciesgas_360',['nspeciesgas',['../structchemstate__mod_1_1chemstatetype.html#a19924bca13f08297d80cd53016dfa72b',1,'chemstate_mod::chemstatetype']]],
+  ['nspeciesseasalt_361',['nspeciesseasalt',['../structchemstate__mod_1_1chemstatetype.html#af5cd1f06d26d429e72975d65fa842ead',1,'chemstate_mod::chemstatetype']]],
+  ['number_5fof_5flevels_362',['number_of_levels',['../structgridstate__mod_1_1gridstatetype.html#a1bc55801c3b98ac0959752a665b18c3e',1,'gridstate_mod::gridstatetype']]]
 ];

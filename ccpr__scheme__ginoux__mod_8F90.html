@@ -150,14 +150,17 @@ Functions/Subroutines</h2></td></tr>
 <p>Run the Ginoux windblown dust emission scheme. </p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">[IN]</td><td>MetState The MetState object </td></tr>
-    <tr><td class="paramname">[INOUT]</td><td>DiagState The DiagState object </td></tr>
-    <tr><td class="paramname">[INOUT]</td><td>ChemState The ChemState object </td></tr>
-    <tr><td class="paramname">[INOUT]</td><td>DustState The DustState object </td></tr>
-    <tr><td class="paramname">[OUT]</td><td>RC Return code <blockquote class="doxtable">
+    <tr><td class="paramdir"></td><td class="paramname">[IN]</td><td>MetState The MetState object </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">[INOUT]</td><td>DiagState The DiagState object </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">[INOUT]</td><td>ChemState The ChemState object </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">[INOUT]</td><td>DustState The DustState object </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">[OUT]</td><td>RC Return code <blockquote class="doxtable">
 <p></p>
 </blockquote>
 </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">metstate</td><td>Meteorological Variables </td></tr>
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">diagstate</td><td>Diagnostic Variables </td></tr>
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">duststate</td><td>Dust Variables </td></tr>
   </table>
   </dd>
 </dl>

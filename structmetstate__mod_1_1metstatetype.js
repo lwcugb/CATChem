@@ -106,6 +106,7 @@ var structmetstate__mod_1_1metstatetype =
     [ "sphu2", "structmetstate__mod_1_1metstatetype.html#ac5c9737a0671b5e4615716dfcd6d32dd", null ],
     [ "sphu_prev", "structmetstate__mod_1_1metstatetype.html#a90b4bc1cabf9e7de72325ef6cc69a536", null ],
     [ "ssm", "structmetstate__mod_1_1metstatetype.html#a5f29dfcde2d782fee9e06a92ffcefec7", null ],
+    [ "sst", "structmetstate__mod_1_1metstatetype.html#a5fe25cd75af1682aead455f17d9b5253", null ],
     [ "state", "structmetstate__mod_1_1metstatetype.html#a5b26f17322671997a34e05a7bd36cf0f", null ],
     [ "suncos", "structmetstate__mod_1_1metstatetype.html#a6b40de46d6cfa6761d2eb3abfc027464", null ],
     [ "suncosmid", "structmetstate__mod_1_1metstatetype.html#a54fbd451d4bb5639e89ca57f967f8438", null ],

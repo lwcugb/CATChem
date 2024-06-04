@@ -25,6 +25,7 @@
 var NAVTREE =
 [
   [ "CATChem", "index.html", [
+    [ "how_to_add_process", "md_how_to_add_process.html", null ],
     [ "Modules", "modules.html", "modules" ],
     [ "Data Types List", "annotated.html", [
       [ "Data Types List", "annotated.html", "annotated_dup" ],
@@ -43,7 +44,7 @@ var NAVTREE =
 var NAVTREEINDEX =
 [
 "annotated.html",
-"structgridstate__mod_1_1gridstatetype.html#af6f6c7ffa460605bc8a130859586a908"
+"structconfig__opt__mod_1_1configtype.html#a015083dab8433d477c7374f8285f88b9"
 ];
 
 var SYNCONMSG = 'click to disable panel synchronisation';

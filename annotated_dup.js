@@ -1,5 +1,8 @@
 var annotated_dup =
 [
+    [ "ccpr_seasalt_common_mod", null, [
+      [ "seasaltstatetype", "structccpr__seasalt__common__mod_1_1seasaltstatetype.html", "structccpr__seasalt__common__mod_1_1seasaltstatetype" ]
+    ] ],
     [ "chemstate_mod", null, [
       [ "chemstatetype", "structchemstate__mod_1_1chemstatetype.html", "structchemstate__mod_1_1chemstatetype" ]
     ] ],
