@@ -1,5 +1,5 @@
 var searchData=
 [
-  ['mb95_5fdragparitition_272',['mb95_dragparitition',['../ccpr__dust__common__mod_8F90.html#a993410c2b17dcfef4dde642102a60120',1,'ccpr_dust_common_mod']]],
-  ['mb97_5fthreshold_5fvelocity_273',['mb97_threshold_velocity',['../ccpr__dust__common__mod_8F90.html#a4500164b113bfafb04f34b3dbdbd5acb',1,'ccpr_dust_common_mod']]]
+  ['kawamura_5fhorizflux_365',['kawamura_horizflux',['../group__CATChem__Dust__Processes.html#ga852341e0d9876a7c2a3a653e5036ea46',1,'ccpr_dust_common_mod']]],
+  ['kokdistribution_366',['kokdistribution',['../group__CATChem__Dust__Processes.html#gac1050e21be1dd102128fd53670dff630',1,'ccpr_dust_common_mod']]]
 ];

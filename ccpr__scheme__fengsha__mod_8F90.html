@@ -18,6 +18,7 @@
 <script type="text/javascript" src="search/search.js"></script>
 <link href="doxygen.css" rel="stylesheet" type="text/css" />
 <link href="doxygen-awesome.css" rel="stylesheet" type="text/css"/>
+<link href="doxygen-awesome-sidebar-only.css" rel="stylesheet" type="text/css"/>
 </head>
 <body>
 <div id="top"><!-- do not remove this div, it is closed by doxygen! -->
@@ -87,7 +88,7 @@ $(document).ready(function(){initNavTree('ccpr__scheme__fengsha__mod_8F90.html',
   <div class="summary">
 <a href="#func-members">Functions/Subroutines</a>  </div>
   <div class="headertitle">
-<div class="title">ccpr_scheme_fengsha_mod.F90 File Reference</div>  </div>
+<div class="title">ccpr_scheme_fengsha_mod.F90 File Reference<div class="ingroups"><a class="el" href="group__CATChem__Dust__Processes.html">CATChem Dust Processes</a></div></div>  </div>
 </div><!--header-->
 <div class="contents">
 
@@ -96,80 +97,19 @@ $(document).ready(function(){initNavTree('ccpr__scheme__fengsha__mod_8F90.html',
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions/Subroutines</h2></td></tr>
-<tr class="memitem:a2ecd8e7b62f710daffc274402498489b"><td class="memItemLeft" align="right" valign="top">subroutine, public&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="ccpr__scheme__fengsha__mod_8F90.html#a2ecd8e7b62f710daffc274402498489b">ccpr_scheme_fengsha_mod::ccpr_scheme_fengsha</a> (MetState, DiagState, DustState, RC)</td></tr>
-<tr class="memdesc:a2ecd8e7b62f710daffc274402498489b"><td class="mdescLeft">&#160;</td><td class="mdescRight">This is the FENGSHA dust emission scheme developed at NOAA Air Resources Laboratory.  <a href="ccpr__scheme__fengsha__mod_8F90.html#a2ecd8e7b62f710daffc274402498489b">More...</a><br /></td></tr>
-<tr class="separator:a2ecd8e7b62f710daffc274402498489b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga2ecd8e7b62f710daffc274402498489b"><td class="memItemLeft" align="right" valign="top">subroutine, public&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__CATChem__Dust__Processes.html#ga2ecd8e7b62f710daffc274402498489b">ccpr_scheme_fengsha_mod::ccpr_scheme_fengsha</a> (MetState, DiagState, DustState, RC)</td></tr>
+<tr class="memdesc:ga2ecd8e7b62f710daffc274402498489b"><td class="mdescLeft">&#160;</td><td class="mdescRight">This is the FENGSHA dust emission scheme developed at NOAA Air Resources Laboratory.  <a href="group__CATChem__Dust__Processes.html#ga2ecd8e7b62f710daffc274402498489b">More...</a><br /></td></tr>
+<tr class="separator:ga2ecd8e7b62f710daffc274402498489b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Contains the FENGSHA windblown dust emission scheme. </p>
 <p>Zhang, L., Montuoro, R., McKeen, S. A., Baker, B., Bhattacharjee, P. S., Grell, G. A., Henderson, J., Pan, L., Frost, G. J., McQueen, J., Saylor, R., Li, H., Ahmadov, R., Wang, J., Stajner, I., Kondragunta, S., Zhang, X., and Li, F.: Development and evaluation of the Aerosol Forecast Member in the National Center for Environment Prediction (NCEP)'s Global Ensemble Forecast System (GEFS-Aerosols v1), Geosci. Model Dev., 15, 5337–5369, <a href="https://doi.org/10.5194/gmd-15-5337-2022">https://doi.org/10.5194/gmd-15-5337-2022</a>, 2022.</p>
 <dl class="section author"><dt>Author</dt><dd>Barry baker </dd></dl>
-<dl class="section date"><dt>Date</dt><dd>05/2024 <blockquote class="doxtable">
+<dl class="section date"><dt>Date</dt><dd>05/2024</dd></dl>
+<blockquote class="doxtable">
 <p></p>
 </blockquote>
-</dd></dl>
-</div><h2 class="groupheader">Function/Subroutine Documentation</h2>
-<a id="a2ecd8e7b62f710daffc274402498489b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2ecd8e7b62f710daffc274402498489b">&#9670;&nbsp;</a></span>ccpr_scheme_fengsha()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">subroutine, public ccpr_scheme_fengsha_mod::ccpr_scheme_fengsha </td>
-          <td>(</td>
-          <td class="paramtype">type(<a class="el" href="structmetstate__mod_1_1metstatetype.html">metstatetype</a>), intent(in)&#160;</td>
-          <td class="paramname"><em>MetState</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">type(<a class="el" href="structdiagstate__mod_1_1diagstatetype.html">diagstatetype</a>), intent(inout)&#160;</td>
-          <td class="paramname"><em>DiagState</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">type(duststatetype), intent(inout)&#160;</td>
-          <td class="paramname"><em>DustState</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">integer, intent(out)&#160;</td>
-          <td class="paramname"><em>RC</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>This is the FENGSHA dust emission scheme developed at NOAA Air Resources Laboratory. </p>
-<p>This is the FENGSHA dust emission scheme developed at NOAA Air Resources Laboratory. Originally developed by Daniel Tong and revised by Barry Baker. FENGSHA is implemented operationally at the NOAA National Weather Service in the Global Ensamble Forecast System (GEFS) version 12 and has been implemented in some fashion in the National Air Quality Forecast System Capability (NAQFC) since 2012.</p>
-<p>outputs emission flux in [ug m-2 s-1]</p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramdir"></td><td class="paramname">MetState</td><td>Meteorological Variables </td></tr>
-    <tr><td class="paramdir"></td><td class="paramname">DiagState</td><td>Diagnostic Variables </td></tr>
-    <tr><td class="paramdir"></td><td class="paramname">DustState</td><td>Dust Variables </td></tr>
-    <tr><td class="paramdir"></td><td class="paramname">RC</td><td>Success or Failure <blockquote class="doxtable">
-<p></p>
-</blockquote>
-</td></tr>
-    <tr><td class="paramdir">[in]</td><td class="paramname">metstate</td><td>Meteorological Variables </td></tr>
-    <tr><td class="paramdir">[in,out]</td><td class="paramname">diagstate</td><td>Diagnostic Variables </td></tr>
-    <tr><td class="paramdir">[in,out]</td><td class="paramname">duststate</td><td>Dust Variables </td></tr>
-    <tr><td class="paramdir">[out]</td><td class="paramname">rc</td><td>Success or Failure </td></tr>
-  </table>
-  </dd>
-</dl>
-
-</div>
-</div>
-</div><!-- contents -->
+</div></div><!-- contents -->
 </div><!-- doc-content -->
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->

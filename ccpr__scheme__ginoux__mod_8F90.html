@@ -18,6 +18,7 @@
 <script type="text/javascript" src="search/search.js"></script>
 <link href="doxygen.css" rel="stylesheet" type="text/css" />
 <link href="doxygen-awesome.css" rel="stylesheet" type="text/css"/>
+<link href="doxygen-awesome-sidebar-only.css" rel="stylesheet" type="text/css"/>
 </head>
 <body>
 <div id="top"><!-- do not remove this div, it is closed by doxygen! -->
@@ -87,7 +88,7 @@ $(document).ready(function(){initNavTree('ccpr__scheme__ginoux__mod_8F90.html','
   <div class="summary">
 <a href="#func-members">Functions/Subroutines</a>  </div>
   <div class="headertitle">
-<div class="title">ccpr_scheme_ginoux_mod.F90 File Reference</div>  </div>
+<div class="title">ccpr_scheme_ginoux_mod.F90 File Reference<div class="ingroups"><a class="el" href="group__CATChem__Dust__Processes.html">CATChem Dust Processes</a></div></div>  </div>
 </div><!--header-->
 <div class="contents">
 
@@ -96,78 +97,19 @@ $(document).ready(function(){initNavTree('ccpr__scheme__ginoux__mod_8F90.html','
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions/Subroutines</h2></td></tr>
-<tr class="memitem:a249debe2e73064b36291474cc9827af0"><td class="memItemLeft" align="right" valign="top">subroutine, public&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="ccpr__scheme__ginoux__mod_8F90.html#a249debe2e73064b36291474cc9827af0">ccpr_scheme_ginoux_mod::ccpr_scheme_ginoux</a> (MetState, DiagState, DustState, RC)</td></tr>
-<tr class="memdesc:a249debe2e73064b36291474cc9827af0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Run the Ginoux windblown dust emission scheme.  <a href="ccpr__scheme__ginoux__mod_8F90.html#a249debe2e73064b36291474cc9827af0">More...</a><br /></td></tr>
-<tr class="separator:a249debe2e73064b36291474cc9827af0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga249debe2e73064b36291474cc9827af0"><td class="memItemLeft" align="right" valign="top">subroutine, public&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__CATChem__Dust__Processes.html#ga249debe2e73064b36291474cc9827af0">ccpr_scheme_ginoux_mod::ccpr_scheme_ginoux</a> (MetState, DiagState, DustState, RC)</td></tr>
+<tr class="memdesc:ga249debe2e73064b36291474cc9827af0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Calculates the dust emission flux in ug m-2 s-1.  <a href="group__CATChem__Dust__Processes.html#ga249debe2e73064b36291474cc9827af0">More...</a><br /></td></tr>
+<tr class="separator:ga249debe2e73064b36291474cc9827af0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Contains the Ginoux windblown dust emission scheme. </p>
 <p>Ginoux, P., “Sources and distributions of dust aerosols simulated with the GOCART model”, &lt;Journal of Geophysical Research, vol. 106, no. D17, pp. 20, 255–20, 273, 2001. doi:10.1029/2000JD000053.</p>
 <dl class="section author"><dt>Author</dt><dd>Barry baker </dd></dl>
-<dl class="section date"><dt>Date</dt><dd>05/2024 <blockquote class="doxtable">
+<dl class="section date"><dt>Date</dt><dd>05/2024</dd></dl>
+<blockquote class="doxtable">
 <p></p>
 </blockquote>
-</dd></dl>
-</div><h2 class="groupheader">Function/Subroutine Documentation</h2>
-<a id="a249debe2e73064b36291474cc9827af0"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a249debe2e73064b36291474cc9827af0">&#9670;&nbsp;</a></span>ccpr_scheme_ginoux()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">subroutine, public ccpr_scheme_ginoux_mod::ccpr_scheme_ginoux </td>
-          <td>(</td>
-          <td class="paramtype">type(<a class="el" href="structmetstate__mod_1_1metstatetype.html">metstatetype</a>), intent(in)&#160;</td>
-          <td class="paramname"><em>MetState</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">type(<a class="el" href="structdiagstate__mod_1_1diagstatetype.html">diagstatetype</a>), intent(inout)&#160;</td>
-          <td class="paramname"><em>DiagState</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">type(duststatetype), intent(inout)&#160;</td>
-          <td class="paramname"><em>DustState</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">integer, intent(out)&#160;</td>
-          <td class="paramname"><em>RC</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Run the Ginoux windblown dust emission scheme. </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramdir"></td><td class="paramname">[IN]</td><td>MetState The MetState object </td></tr>
-    <tr><td class="paramdir"></td><td class="paramname">[INOUT]</td><td>DiagState The DiagState object </td></tr>
-    <tr><td class="paramdir"></td><td class="paramname">[INOUT]</td><td>ChemState The ChemState object </td></tr>
-    <tr><td class="paramdir"></td><td class="paramname">[INOUT]</td><td>DustState The DustState object </td></tr>
-    <tr><td class="paramdir"></td><td class="paramname">[OUT]</td><td>RC Return code <blockquote class="doxtable">
-<p></p>
-</blockquote>
-</td></tr>
-    <tr><td class="paramdir">[in]</td><td class="paramname">metstate</td><td>Meteorological Variables </td></tr>
-    <tr><td class="paramdir">[in,out]</td><td class="paramname">diagstate</td><td>Diagnostic Variables </td></tr>
-    <tr><td class="paramdir">[in,out]</td><td class="paramname">duststate</td><td>Dust Variables </td></tr>
-  </table>
-  </dd>
-</dl>
-
-</div>
-</div>
-</div><!-- contents -->
+</div></div><!-- contents -->
 </div><!-- doc-content -->
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->

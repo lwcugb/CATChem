@@ -25,6 +25,17 @@
 var NAVTREE =
 [
   [ "CATChem", "index.html", [
+    [ "Description", "index.html#autotoc_md1", null ],
+    [ "Warning", "index.html#autotoc_md2", null ],
+    [ "Developer's Guide", "index.html#autotoc_md3", [
+      [ "Description of Branches", "index.html#autotoc_md4", [
+        [ "main", "index.html#autotoc_md5", null ],
+        [ "release-vX.Y.Z", "index.html#autotoc_md6", null ]
+      ] ],
+      [ "How to incorporate updates to CATChem", "index.html#autotoc_md7", null ]
+    ] ],
+    [ "Development Team", "index.html#autotoc_md8", null ],
+    [ "How to Add a New Process", "index.html#autotoc_md9", null ],
     [ "Modules", "modules.html", "modules" ],
     [ "Data Types List", "annotated.html", [
       [ "Data Types List", "annotated.html", "annotated_dup" ],
@@ -43,7 +54,7 @@ var NAVTREE =
 var NAVTREEINDEX =
 [
 "annotated.html",
-"structconfig__opt__mod_1_1configtype.html#a03c71a7d8fca6d7c6ff40d61e6841572"
+"qfyaml__mod_8F90.html#gac082e3dbd50e6e54cfc5ad284f809c6c"
 ];
 
 var SYNCONMSG = 'click to disable panel synchronisation';

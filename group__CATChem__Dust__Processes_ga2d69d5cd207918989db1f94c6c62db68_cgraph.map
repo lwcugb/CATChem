@@ -1,0 +1,7 @@
+<map id="ccpr_dust_mod::ccpr_dust_init" name="ccpr_dust_mod::ccpr_dust_init">
+<area shape="rect" id="node1" title="Initialize the CATCHem Dust Process." alt="" coords="5,78,160,119"/>
+<area shape="rect" id="node2" href="$group__Core__Modules.html#ga9d9a1354b84c23bc24cd4db6a547d348" title="CC_CheckVar." alt="" coords="225,5,402,32"/>
+<area shape="rect" id="node3" href="$group__Core__Modules.html#ga51caf927c8403a431dd55956762ad350" title="CC_Error." alt="" coords="467,85,616,112"/>
+<area shape="rect" id="node4" href="$group__CATChem__Dust__Processes.html#ga2ecd8e7b62f710daffc274402498489b" title="This is the FENGSHA dust emission scheme developed at NOAA Air Resources Laboratory." alt="" coords="208,107,419,149"/>
+<area shape="rect" id="node5" href="$group__CATChem__Dust__Processes.html#ga249debe2e73064b36291474cc9827af0" title="Calculates the dust emission flux in ug m&#45;2 s&#45;1." alt="" coords="212,173,415,214"/>
+</map>

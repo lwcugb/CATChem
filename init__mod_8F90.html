@@ -18,6 +18,7 @@
 <script type="text/javascript" src="search/search.js"></script>
 <link href="doxygen.css" rel="stylesheet" type="text/css" />
 <link href="doxygen-awesome.css" rel="stylesheet" type="text/css"/>
+<link href="doxygen-awesome-sidebar-only.css" rel="stylesheet" type="text/css"/>
 </head>
 <body>
 <div id="top"><!-- do not remove this div, it is closed by doxygen! -->
@@ -87,7 +88,7 @@ $(document).ready(function(){initNavTree('init__mod_8F90.html',''); initResizabl
   <div class="summary">
 <a href="#func-members">Functions/Subroutines</a>  </div>
   <div class="headertitle">
-<div class="title">init_mod.F90 File Reference</div>  </div>
+<div class="title">init_mod.F90 File Reference<div class="ingroups"><a class="el" href="group__Core__Modules.html">Core Modules</a> &#124; <a class="el" href="group__Core__Modules.html">Core Modules</a></div></div>  </div>
 </div><!--header-->
 <div class="contents">
 
@@ -96,12 +97,12 @@ $(document).ready(function(){initNavTree('init__mod_8F90.html',''); initResizabl
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions/Subroutines</h2></td></tr>
-<tr class="memitem:a09b0f35a4e262c49d378b175a0310074"><td class="memItemLeft" align="right" valign="top">subroutine, public&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="init__mod_8F90.html#a09b0f35a4e262c49d378b175a0310074">init_mod::init_met</a> (GridState, MetState, RC)</td></tr>
-<tr class="memdesc:a09b0f35a4e262c49d378b175a0310074"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initialize the met state.  <a href="init__mod_8F90.html#a09b0f35a4e262c49d378b175a0310074">More...</a><br /></td></tr>
-<tr class="separator:a09b0f35a4e262c49d378b175a0310074"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a839c419513ec9ccba367d47da68e2e9e"><td class="memItemLeft" align="right" valign="top">subroutine, public&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="init__mod_8F90.html#a839c419513ec9ccba367d47da68e2e9e">init_mod::init_diag</a> (Config, GridState, DiagState, RC)</td></tr>
-<tr class="memdesc:a839c419513ec9ccba367d47da68e2e9e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initialize the diag state.  <a href="init__mod_8F90.html#a839c419513ec9ccba367d47da68e2e9e">More...</a><br /></td></tr>
-<tr class="separator:a839c419513ec9ccba367d47da68e2e9e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga09b0f35a4e262c49d378b175a0310074"><td class="memItemLeft" align="right" valign="top">subroutine, public&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__Core__Modules.html#ga09b0f35a4e262c49d378b175a0310074">init_mod::init_met</a> (GridState, MetState, RC)</td></tr>
+<tr class="memdesc:ga09b0f35a4e262c49d378b175a0310074"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initialize the met state.  <a href="group__Core__Modules.html#ga09b0f35a4e262c49d378b175a0310074">More...</a><br /></td></tr>
+<tr class="separator:ga09b0f35a4e262c49d378b175a0310074"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga839c419513ec9ccba367d47da68e2e9e"><td class="memItemLeft" align="right" valign="top">subroutine, public&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__Core__Modules.html#ga839c419513ec9ccba367d47da68e2e9e">init_mod::init_diag</a> (Config, GridState, DiagState, RC)</td></tr>
+<tr class="memdesc:ga839c419513ec9ccba367d47da68e2e9e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initialize the diag state.  <a href="group__Core__Modules.html#ga839c419513ec9ccba367d47da68e2e9e">More...</a><br /></td></tr>
+<tr class="separator:ga839c419513ec9ccba367d47da68e2e9e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Contains the DiagStateType and Diag_Allocate subroutine. </p>
@@ -113,111 +114,7 @@ Functions/Subroutines</h2></td></tr>
 <blockquote class="doxtable">
 <p></p>
 </blockquote>
-</div><h2 class="groupheader">Function/Subroutine Documentation</h2>
-<a id="a839c419513ec9ccba367d47da68e2e9e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a839c419513ec9ccba367d47da68e2e9e">&#9670;&nbsp;</a></span>init_diag()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">subroutine, public init_mod::init_diag </td>
-          <td>(</td>
-          <td class="paramtype">type(<a class="el" href="structconfig__opt__mod_1_1configtype.html">configtype</a>), intent(in)&#160;</td>
-          <td class="paramname"><em>Config</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">type(<a class="el" href="structgridstate__mod_1_1gridstatetype.html">gridstatetype</a>), intent(in)&#160;</td>
-          <td class="paramname"><em>GridState</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">type(<a class="el" href="structdiagstate__mod_1_1diagstatetype.html">diagstatetype</a>), intent(inout)&#160;</td>
-          <td class="paramname"><em>DiagState</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">integer, intent(out)&#160;</td>
-          <td class="paramname"><em>RC</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Initialize the diag state. </p>
-<p>This subroutine allocates the diag state.</p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">Config_Opt</td><td>The config. </td></tr>
-    <tr><td class="paramname">GridState</td><td>The grid state containing information about the grid. </td></tr>
-    <tr><td class="paramname">DiagState</td><td>The diag state to be initialized. </td></tr>
-    <tr><td class="paramname">RC</td><td>The return code.</td></tr>
-  </table>
-  </dd>
-</dl>
-<blockquote class="doxtable">
-<p></p>
-</blockquote>
-
-</div>
-</div>
-<a id="a09b0f35a4e262c49d378b175a0310074"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a09b0f35a4e262c49d378b175a0310074">&#9670;&nbsp;</a></span>init_met()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">subroutine, public init_mod::init_met </td>
-          <td>(</td>
-          <td class="paramtype">type(<a class="el" href="structgridstate__mod_1_1gridstatetype.html">gridstatetype</a>), intent(in)&#160;</td>
-          <td class="paramname"><em>GridState</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">type(<a class="el" href="structmetstate__mod_1_1metstatetype.html">metstatetype</a>), intent(inout)&#160;</td>
-          <td class="paramname"><em>MetState</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">integer, intent(out)&#160;</td>
-          <td class="paramname"><em>RC</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Initialize the met state. </p>
-<p>This subroutine allocates the met state.</p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">GridState</td><td>The grid state containing information about the grid. </td></tr>
-    <tr><td class="paramname">MetState</td><td>The met state to be initialized. </td></tr>
-    <tr><td class="paramname">RC</td><td>The return code. <blockquote class="doxtable">
-<p></p>
-</blockquote>
-</td></tr>
-  </table>
-  </dd>
-</dl>
-
-</div>
-</div>
-</div><!-- contents -->
+</div></div><!-- contents -->
 </div><!-- doc-content -->
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->

@@ -1,5 +1,6 @@
 var modules =
 [
-    [ "Warning", "index.html#autotoc_md1", null ],
-    [ "Chem State Module", "group__ChemState__Mod.html", null ]
+    [ "Core Modules", "group__Core__Modules.html", "group__Core__Modules" ],
+    [ "CATChem Dust Processes", "group__CATChem__Dust__Processes.html", "group__CATChem__Dust__Processes" ],
+    [ "CATChem SeaSalt Processes", "group__CATChem__SeaSalt__Processes.html", "group__CATChem__SeaSalt__Processes" ]
 ];

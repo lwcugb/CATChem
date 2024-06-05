@@ -18,6 +18,7 @@
 <script type="text/javascript" src="search/search.js"></script>
 <link href="doxygen.css" rel="stylesheet" type="text/css" />
 <link href="doxygen-awesome.css" rel="stylesheet" type="text/css"/>
+<link href="doxygen-awesome-sidebar-only.css" rel="stylesheet" type="text/css"/>
 </head>
 <body>
 <div id="top"><!-- do not remove this div, it is closed by doxygen! -->
@@ -88,10 +89,123 @@ $(document).ready(function(){initNavTree('index.html',''); initResizable(); });
 <div class="title">CATChem </div>  </div>
 </div><!--header-->
 <div class="contents">
-<div class="textblock"><p><a class="anchor" id="md_start"></a> The Configurable ATmospheric Chemisty (CATChem) component that includes all chemical and aerosol processes needed to perform atmospheric chemistry and composition simulations within a model through a flexible, easy to modify, and well-documented infrastructure. CATChem will include the following processes: chemical kinetics, aerosols, photolysis, wet deposition, dry deposition, connections to emissions, and connection to physics schemes. The first use of CATChem will be connecting it to NOAA's Unified Forecasting System (<a href="https://ufscommunity.org/">https://ufscommunity.org/</a>) to create UFS-Chem. CATChem and UFS-Chem are currently under development and more information will be provided soon.</p>
-<h2><a class="anchor" id="autotoc_md1"></a>
-Warning</h2>
-<p>CATChem is currently under development. The code is public to encourage collaboration amongst the community. Do not publish results using CATChem without consulting the development team. </p>
+<div class="textblock"><p><a class="anchor" id="md_start"></a> </p>
+<h1><a class="anchor" id="autotoc_md1"></a>
+Description</h1>
+<p>The Configurable ATmospheric Chemisty (CATChem) component that includes all chemical and aerosol processes needed to perform atmospheric chemistry and composition simulations within a model through a flexible, easy to modify, and well-documented infrastructure. CATChem will include the following processes: chemical kinetics, aerosols, photolysis, wet deposition, dry deposition, connections to emissions, and connection to physics schemes. The first use of CATChem will be connecting it to NOAA's Unified Forecasting System (<a href="https://ufscommunity.org/">https://ufscommunity.org/</a>) to create UFS-Chem. CATChem and UFS-Chem are currently under development and more information will be provided soon.</p>
+<h1><a class="anchor" id="autotoc_md2"></a>
+Warning</h1>
+<p>CATChem is currently under development. The code is public to encourage collaboration amongst the community. Do not publish results using CATChem without consulting the development team.</p>
+<h1><a class="anchor" id="autotoc_md3"></a>
+Developer's Guide</h1>
+<h2><a class="anchor" id="autotoc_md4"></a>
+Description of Branches</h2>
+<h3><a class="anchor" id="autotoc_md5"></a>
+main</h3>
+<p>This is the parent branch which consolidates the current development in the repository.</p>
+<h3><a class="anchor" id="autotoc_md6"></a>
+release-vX.Y.Z</h3>
+<p>These represent stable release branches. Users should always check out the most recent stable release branch when cloning the repository.</p>
+<h2><a class="anchor" id="autotoc_md7"></a>
+How to incorporate updates to CATChem</h2>
+<p>In order to contribute code to CATChem, you will need to fork the repository, make changes on your fork, and submit a pull request with your changes. </p><div class="fragment"><div class="line">a. Fork the GitHub repository to your own GitHub account</div>
+<div class="line">    using the &quot;Fork&quot; button near the top right:</div>
+<div class="line"> </div>
+<div class="line">    [https://github.com/ufs-community/CATChem](https://github.com/ufs-community/CATChem)</div>
+<div class="line"> </div>
+<div class="line">    **_NOTE__**</div>
+<div class="line">       You can pull updates from the main repository</div>
+<div class="line">       by using the &quot;Fetch Upstream&quot; button on your fork.</div>
+<div class="line">       Alternatively: [#clone]_ ::</div>
+<div class="line"> </div>
+<div class="line">          $ git remote add upstream git@github.com:ufs-community/CATChem.git</div>
+<div class="line">          $ git pull upstream main</div>
+<div class="line">          $ git push origin main</div>
+<div class="line"> </div>
+<div class="line">(b) Navigate on your working machine</div>
+<div class="line">    to where you would like to keep the CATChem code</div>
+<div class="line">    (e.g. in your work location) and clone [#clone]_ your fork::</div>
+<div class="line"> </div>
+<div class="line">       $ git clone git@github.com:$GitHubUsername/$ForkName.git</div>
+<div class="line"> </div>
+<div class="line">(c) Checkout the develop branch --- you need to do this with the remote branch</div>
+<div class="line">    as well as create a local tracking branch::</div>
+<div class="line"> </div>
+<div class="line">       $ git checkout origin/develop</div>
+<div class="line">       $ git checkout develop</div>
+<div class="line"> </div>
+<div class="line">(d) Make changes to your fork.</div>
+<div class="line"> </div>
+<div class="line">(e) Submit a pull request back to the main CATChem repository with your</div>
+<div class="line">    changes.</div>
+<div class="line"> </div>
+<div class="line">(f) Select two code reviewers (see list under development team section).</div>
+<div class="line"> </div>
+<div class="line">(g) Once those two reviewers approve the code, it can be merged into the develop branch.</div>
+<div class="line"> </div>
+<div class="line">.. _clone-notes:</div>
+<div class="line">.. [#clone] Note that in order to do an SSH clone,</div>
+<div class="line">   e.g. ::</div>
+<div class="line"> </div>
+<div class="line">      $ git clone git@github.com:ufs-community/CATChem.git</div>
+<div class="line"> </div>
+<div class="line">   you must have already</div>
+<div class="line">   `added an SSH key &lt;https://docs.github.com/en/authentication/connecting-to-github-with-ssh/adding-a-new-ssh-key-to-your-github-account&gt;`__</div>
+<div class="line">   to your GitHub account for your current machine.</div>
+<div class="line">   If you are new to GitHub, check out</div>
+<div class="line">   `this GitHub tutorial &lt;https://jlord.us/git-it/&gt;`__.</div>
+<div class="line">   We recommend the SSH method, but if you don&#39;t add an SSH key</div>
+<div class="line">   you can still clone the repositories via HTTPS, e.g. ::</div>
+<div class="line"> </div>
+<div class="line">       $ git clone https://github.com/ufs-community/CATChem.git</div>
+</div><!-- fragment --><h1><a class="anchor" id="autotoc_md8"></a>
+Development Team</h1>
+<table class="markdownTable">
+<tr class="markdownTableHead">
+<th class="markdownTableHeadNone">Organization   </th><th class="markdownTableHeadNone">Reviewers (github username)    </th></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone">NOAA ARL   </td><td class="markdownTableBodyNone">Zach Moon (<code>zmoon</code>)    </td></tr>
+<tr class="markdownTableRowEven">
+<td class="markdownTableBodyNone"></td><td class="markdownTableBodyNone">Barry Baker (<code>bbakernoaa</code>)    </td></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone"></td><td class="markdownTableBodyNone">Patrick Campbell (<code>drnimbusrain</code>)    </td></tr>
+<tr class="markdownTableRowEven">
+<td class="markdownTableBodyNone"></td><td class="markdownTableBodyNone">Lacey Holland (<code>lholland-noaa</code>)    </td></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone">NOAA CSL   </td><td class="markdownTableBodyNone">Colin Harkins (<code>colin-harkins</code>)    </td></tr>
+<tr class="markdownTableRowEven">
+<td class="markdownTableBodyNone"></td><td class="markdownTableBodyNone">Jian He (<code>jianheACM</code>)    </td></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone"></td><td class="markdownTableBodyNone">Quazi Rasool (<code>quaz115</code>)    </td></tr>
+<tr class="markdownTableRowEven">
+<td class="markdownTableBodyNone"></td><td class="markdownTableBodyNone">Becky Schwantes (<code>rschwant</code>)    </td></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone">NOAA GSL   </td><td class="markdownTableBodyNone">Jordan Schnell (<code>jordanschnell</code>)    </td></tr>
+<tr class="markdownTableRowEven">
+<td class="markdownTableBodyNone"></td><td class="markdownTableBodyNone">Kate Zhang (<code>zhanglikate</code>)    </td></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone">NOAA GML   </td><td class="markdownTableBodyNone">TBD    </td></tr>
+<tr class="markdownTableRowEven">
+<td class="markdownTableBodyNone">NOAA EMC   </td><td class="markdownTableBodyNone">TBD   </td></tr>
+</table>
+<h1><a class="anchor" id="autotoc_md9"></a>
+How to Add a New Process</h1>
+<p>CATChem is developed to be able to be easily extinsible with new processes. There are just a few steps that are required to be able to include a new process</p>
+<ul>
+<li>First create a new directory under src/process for your new process</li>
+</ul>
+<p><code>cd src/process</code> <code>mkdir src/process/(NEW_PROCESS)</code></p>
+<ul>
+<li>Each process should include a process driver named <code>CCPr_(NEW_PROCESS)_Mod.F90</code>. You can find a template under <code>src/process/Process_driver_template.F90</code>. In it each process driver contains three phases<ul>
+<li>Init: Processes the config and initializes process defaults if activated</li>
+<li>Run: Runs the process and adds to DiagState and ChemState for any process</li>
+<li>Finalize: Deallocate any arrays that were allocated.</li>
+</ul>
+</li>
+<li>Each process should include a common module for any functions that may be used by schemes (sub parameterizations or common calculations between different schemes in that process family). It also houses a the process type and data information.</li>
+<li>Each Process then can have one or more schemes within them. An example can be seen undeer <code>src/process/dust</code> and a template <br  />
+ </li>
+</ul>
 </div></div><!-- PageDoc -->
 </div><!-- contents -->
 </div><!-- doc-content -->
