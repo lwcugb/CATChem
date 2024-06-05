@@ -37,7 +37,7 @@
 <!-- Node3 -->
 <g id="node3" class="node">
 <title>Node3</title>
-<g id="a_node3"><a xlink:href="group__CATChem__SeaSalt__Processes.html#gaefa204b1f5f6e2740e0149484a2a2854" target="_top" xlink:title="Run the Ginoux windblown dust emission scheme.">
+<g id="a_node3"><a xlink:href="group__CATChem__SeaSalt__Processes.html#gaefa204b1f5f6e2740e0149484a2a2854" target="_top" xlink:title="Scheme GEOS2012 Sea Salt Emission scheme.">
 <polygon fill="white" stroke="black" points="167.5,-98.5 167.5,-128.5 321.5,-128.5 321.5,-98.5 167.5,-98.5"/>
 <text text-anchor="start" x="175.5" y="-116.5" font-family="Helvetica,sans-Serif" font-size="10.00">ccpr_scheme_geos12</text>
 <text text-anchor="middle" x="244.5" y="-105.5" font-family="Helvetica,sans-Serif" font-size="10.00">_mod::ccpr_scheme_geos12</text>

@@ -1,7 +1,7 @@
 <map id="ccpr_seasalt_mod::ccpr_seasalt_run" name="ccpr_seasalt_mod::ccpr_seasalt_run">
 <area shape="rect" id="node1" title="Run the seasalt scheme." alt="" coords="5,68,180,109"/>
 <area shape="rect" id="node2" href="$group__Core__Modules.html#ga51caf927c8403a431dd55956762ad350" title="CC_Error." alt="" coords="483,75,632,102"/>
-<area shape="rect" id="node3" href="$group__CATChem__SeaSalt__Processes.html#gaefa204b1f5f6e2740e0149484a2a2854" title="Run the Ginoux windblown dust emission scheme." alt="" coords="229,35,434,76"/>
+<area shape="rect" id="node3" href="$group__CATChem__SeaSalt__Processes.html#gaefa204b1f5f6e2740e0149484a2a2854" title="Scheme GEOS2012 Sea Salt Emission scheme." alt="" coords="229,35,434,76"/>
 <area shape="rect" id="node4" href="$group__CATChem__SeaSalt__Processes.html#ga88b0fdefeef9a317dbfa3b9ceeb5d2e9" title="Run the Ginoux windblown dust emission scheme." alt="" coords="228,100,435,141"/>
 <area shape="rect" id="node5" href="$group__CATChem__SeaSalt__Processes.html#ga76f44c0afb22ac85478b10cadad934d7" title="Run the Ginoux windblown dust emission scheme." alt="" coords="228,165,435,207"/>
 </map>
