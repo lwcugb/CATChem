@@ -89,7 +89,7 @@ $(document).ready(function(){initNavTree('config__opt__mod_8F90.html',''); initR
 <a href="#nested-classes">Data Types</a> &#124;
 <a href="#func-members">Functions/Subroutines</a>  </div>
   <div class="headertitle">
-<div class="title">config_opt_mod.F90 File Reference<div class="ingroups"><a class="el" href="group__Core__Modules.html">Core Modules</a></div></div>  </div>
+<div class="title">config_opt_mod.F90 File Reference<div class="ingroups"><a class="el" href="group__core__modules.html">Core_modules</a></div></div>  </div>
 </div><!--header-->
 <div class="contents">
 
@@ -104,12 +104,12 @@ Data Types</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions/Subroutines</h2></td></tr>
-<tr class="memitem:affc308211ba3c8ceacc4cd6cef8c6528"><td class="memItemLeft" align="right" valign="top">subroutine, public&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="config__opt__mod_8F90.html#affc308211ba3c8ceacc4cd6cef8c6528">config_opt_mod::set_config</a> (am_I_Root, Config, RC)</td></tr>
-<tr class="memdesc:affc308211ba3c8ceacc4cd6cef8c6528"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initialize the Config options.  <a href="config__opt__mod_8F90.html#affc308211ba3c8ceacc4cd6cef8c6528">More...</a><br /></td></tr>
-<tr class="separator:affc308211ba3c8ceacc4cd6cef8c6528"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a226cd8b790f08d4006313ba93c7e6f9b"><td class="memItemLeft" align="right" valign="top">subroutine, public&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="config__opt__mod_8F90.html#a226cd8b790f08d4006313ba93c7e6f9b">config_opt_mod::cleanup_config</a> (Config, RC)</td></tr>
-<tr class="memdesc:a226cd8b790f08d4006313ba93c7e6f9b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Cleanup the Config options.  <a href="config__opt__mod_8F90.html#a226cd8b790f08d4006313ba93c7e6f9b">More...</a><br /></td></tr>
-<tr class="separator:a226cd8b790f08d4006313ba93c7e6f9b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaffc308211ba3c8ceacc4cd6cef8c6528"><td class="memItemLeft" align="right" valign="top">subroutine, public&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__modules.html#gaffc308211ba3c8ceacc4cd6cef8c6528">config_opt_mod::set_config</a> (am_I_Root, Config, RC)</td></tr>
+<tr class="memdesc:gaffc308211ba3c8ceacc4cd6cef8c6528"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initialize the Config options.  <a href="group__core__modules.html#gaffc308211ba3c8ceacc4cd6cef8c6528">More...</a><br /></td></tr>
+<tr class="separator:gaffc308211ba3c8ceacc4cd6cef8c6528"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga226cd8b790f08d4006313ba93c7e6f9b"><td class="memItemLeft" align="right" valign="top">subroutine, public&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__modules.html#ga226cd8b790f08d4006313ba93c7e6f9b">config_opt_mod::cleanup_config</a> (Config, RC)</td></tr>
+<tr class="memdesc:ga226cd8b790f08d4006313ba93c7e6f9b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Cleanup the Config options.  <a href="group__core__modules.html#ga226cd8b790f08d4006313ba93c7e6f9b">More...</a><br /></td></tr>
+<tr class="separator:ga226cd8b790f08d4006313ba93c7e6f9b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>This file contains the module for catchem configuration options. </p>
@@ -117,97 +117,7 @@ Functions/Subroutines</h2></td></tr>
 <blockquote class="doxtable">
 <p></p>
 </blockquote>
-</div><h2 class="groupheader">Function/Subroutine Documentation</h2>
-<a id="a226cd8b790f08d4006313ba93c7e6f9b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a226cd8b790f08d4006313ba93c7e6f9b">&#9670;&nbsp;</a></span>cleanup_config()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">subroutine, public config_opt_mod::cleanup_config </td>
-          <td>(</td>
-          <td class="paramtype">type(<a class="el" href="structconfig__opt__mod_1_1configtype.html">configtype</a>), intent(inout)&#160;</td>
-          <td class="paramname"><em>Config</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">integer, intent(out)&#160;</td>
-          <td class="paramname"><em>RC</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Cleanup the Config options. </p>
-<p>This subroutine cleans up the Config options</p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">Config</td><td>The Config object </td></tr>
-    <tr><td class="paramname">RC</td><td>The return code <blockquote class="doxtable">
-<p></p>
-</blockquote>
-</td></tr>
-  </table>
-  </dd>
-</dl>
-
-</div>
-</div>
-<a id="affc308211ba3c8ceacc4cd6cef8c6528"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#affc308211ba3c8ceacc4cd6cef8c6528">&#9670;&nbsp;</a></span>set_config()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">subroutine, public config_opt_mod::set_config </td>
-          <td>(</td>
-          <td class="paramtype">logical, intent(in)&#160;</td>
-          <td class="paramname"><em>am_I_Root</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">type(<a class="el" href="structconfig__opt__mod_1_1configtype.html">configtype</a>), intent(inout)&#160;</td>
-          <td class="paramname"><em>Config</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">integer, intent(out)&#160;</td>
-          <td class="paramname"><em>RC</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Initialize the Config options. </p>
-<p>This subroutine initializes the Config options</p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">am_I_Root</td><td>Are we on the root CPU? </td></tr>
-    <tr><td class="paramname">Config</td><td>The Config object </td></tr>
-    <tr><td class="paramname">RC</td><td>The return code <blockquote class="doxtable">
-<p></p>
-</blockquote>
-</td></tr>
-  </table>
-  </dd>
-</dl>
-
-</div>
-</div>
-</div><!-- contents -->
+</div></div><!-- contents -->
 </div><!-- doc-content -->
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->

@@ -1,0 +1,8 @@
+<map id="ccpr_dust_mod::ccpr_dust_run" name="ccpr_dust_mod::ccpr_dust_run">
+<area shape="rect" id="node1" title="Run the dust scheme." alt="" coords="5,27,160,69"/>
+<area shape="rect" id="node2" href="$group__core__modules.html#ga51caf927c8403a431dd55956762ad350" title="CC_Error." alt="" coords="467,35,616,61"/>
+<area shape="rect" id="node5" href="$group__catchem__dust__process.html#ga2ecd8e7b62f710daffc274402498489b" title="This is the FENGSHA dust emission scheme developed at NOAA Air Resources Laboratory." alt="" coords="208,27,419,69"/>
+<area shape="rect" id="node6" href="$group__catchem__dust__process.html#ga249debe2e73064b36291474cc9827af0" title="Calculates the dust emission flux in ug m&#45;2 s&#45;1." alt="" coords="212,93,415,134"/>
+<area shape="rect" id="node3" href="$group__core__modules.html#ga3890886a8d25cb4253fe2706c44e6e78" title="Print a string in multiple lines." alt="" coords="664,35,876,61"/>
+<area shape="rect" id="node4" href="$group__core__modules.html#ga36b722fb300c543f0eb910116bb28973" title="Count the number of times a character appears in a string." alt="" coords="924,35,1088,61"/>
+</map>

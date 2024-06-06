@@ -1,6 +1,6 @@
 var modules =
 [
-    [ "Core Modules", "group__Core__Modules.html", "group__Core__Modules" ],
-    [ "CATChem Dust Processes", "group__CATChem__Dust__Processes.html", "group__CATChem__Dust__Processes" ],
-    [ "CATChem SeaSalt Processes", "group__CATChem__SeaSalt__Processes.html", "group__CATChem__SeaSalt__Processes" ]
+    [ "Core_modules", "group__core__modules.html", "group__core__modules" ],
+    [ "Catchem_dust_process", "group__catchem__dust__process.html", "group__catchem__dust__process" ],
+    [ "Catchem_seasalt_process", "group__catchem__seasalt__process.html", "group__catchem__seasalt__process" ]
 ];
