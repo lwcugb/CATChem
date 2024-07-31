@@ -82,7 +82,7 @@ CONTAINS
 
          ! Set CO2 concentration (ppm)
          !----------------------------
-         if (Config%CO2_conc < 0) then ! not listed in config
+         if (Config%CO2_conc < 0) then !TODO: DO we give it a negative value if it is missing in config
             MeganState%CO2conc = 390.0_fp
          else
             MeganState%CO2conc = Config%CO2_conc_ppm
@@ -188,10 +188,14 @@ CONTAINS
                MSG = 'call on CALC_NORM_FAC failed!'
                call CC_Error( MSG, RC , thisLoc)
             endif
+            FIRST = .FALSE.
          endif
-         FIRST = .FALSE.
-
+         
          ! Run the megan Scheme
+         ! TODO: 1, if keep current structure, need to create a bool array based on EmisState
+         !          to decide which species to calculated and then map back to EmisState%Cat%species%flux
+         !       2, Or we can put 'CCPr_Scheme_Megan' in a loop based on EmisSate%cat%nSpecies and calculate
+         !          the flux we need directly and do not need to map the flux back
          !-------------------------
          call CCPr_Scheme_Megan( MeganState%nMeganSpecies, &
                MeganState%MeganSpeciesName,  &   
