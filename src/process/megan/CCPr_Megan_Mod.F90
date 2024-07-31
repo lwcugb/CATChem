@@ -150,7 +150,7 @@ CONTAINS
    !! \param [INOUT] ChemState The ChemState object
    !! \param [OUT] RC Return code
    !!!>
-   SUBROUTINE CCPr_Megan_Run( MetState, DiagState, MeganState, ChemState, RC )
+   SUBROUTINE CCPr_Megan_Run( MetState, EmisState, DiagState, MeganState, ChemState, RC )
 
       ! USE
       USE CCPr_Scheme_Megan_Mod, ONLY: CCPr_Scheme_Megan  ! Megan scheme
@@ -160,15 +160,17 @@ CONTAINS
       TYPE(MetState_type),  INTENT(IN) :: MetState       ! MetState Instance
 
       ! INPUT/OUTPUT PARAMETERS
+      TYPE(EmisStateType), INTENT(INOUT)  :: EmisState   ! Emission Instance
       TYPE(DiagState_type), INTENT(INOUT) :: DiagState   ! DiagState Instance
       TYPE(MeganStateType), INTENT(INOUT) :: MeganState  ! Megan State Instance
       TYPE(ChemState_type), INTENT(INOUT) :: ChemState   ! ChemState Instance
 
       ! OUTPUT PARAMETERS
-      INTEGER, INTENT(OUT) :: RC                                  ! Return Code
+      INTEGER, INTENT(OUT) :: RC                         ! Return Code
 
       ! LOCAL VARIABLES
       CHARACTER(LEN=255) :: ErrMsg, thisLoc
+      integer            :: c, s, cat_megan_idx
       logical, save      :: FIRST = .TRUE.
 
       ! Initialize
@@ -192,48 +194,64 @@ CONTAINS
          endif
          
          ! Run the megan Scheme
-         ! TODO: 1, if keep current structure, need to create a bool array based on EmisState
+         ! TODO: 1, if keep current structure (CCpr_Schem_Megan once), need to create a bool array based on EmisState
          !          to decide which species to calculated and then map back to EmisState%Cat%species%flux
          !       2, Or we can put 'CCPr_Scheme_Megan' in a loop based on EmisSate%cat%nSpecies and calculate
-         !          the flux we need directly and do not need to map the flux back
+         !          the flux we need directly and do not need to map the flux back to EmisState (use this for now)
          !-------------------------
-         call CCPr_Scheme_Megan( MeganState%nMeganSpecies, &
-               MeganState%MeganSpeciesName,  &   
-               MeganState%EmissionPerSpecies,&
-               MeganState%TotalEmission,     &   
-               MetState%LAI,                 &
-               MetState%PFT_16,              &
-               MetState%PMISOLAI,            &   
-               MetState%Q_DIR_2,             &
-               MetState%Q_DIFF_2,            &   
-               MetState%PARDR_LASTXDAYS,     &
-               MetState%PARDF_LASTXDAYS,     &   
-               MetState%TS,                  &
-               MetState%T_LASTXDAYS,         &
-               MetState%T_LAST24H,           &   
-               MetState%GWETROOT,            &
-               MetState%CO2Inhib,            &
-               MetState%CO2conc,             &   
-               MetState%SUNCOS,              &
-               MetState%LAT,                 &
-               MetState%DOY,                 &
-               MetState%LocalHour,           &
-               MetState%D_BTW_M,             &   
-               MetState%AEF_ISOP,            &
-               MetState%AEF_MBOX,            &
-               MetState%AEF_BPIN,            &
-               MetState%AEF_CARE,            &
-               MetState%AEF_LIMO,            &
-               MetState%AEF_OCIM,            &
-               MetState%AEF_SABI             &   
-               MetState%D2RAD,               &
-               MetState%RAD2D,               &   
-               RC)
-         if (RC /= CC_SUCCESS) then
-            errMsg = 'Error in CCPr_Scheme_Megan'
-            CALL CC_Error( errMsg, RC, thisLoc )
-         endif
+         !find megan caterory index
+         !TODO: maybe this can be added to MeganState in case of future usage
+         do c = 1, EmisState%nCats
+            if (EmisState%Cats(c)%name == 'megan') then
+               cat_megan_idx = c
+               exit
+            endif          
+         end do
 
+         do s = 1, EmisState$Cats(cat_megan_idx)%nSpecies
+
+            call CCPr_Scheme_Megan(             &
+                  !MeganState%nMeganSpecies,     &
+                  !MeganState%MeganSpeciesName,  &   
+                  !MeganState%EmissionPerSpecies,&
+                  !MeganState%TotalEmission,     &
+                  EmisState%Cats(cat_megan_idx)%Species(s)%name, &
+                  !TODO: give Flux(1) directly since megan is only at thhe surface
+                  !      TotalEmission is not used since it can be calculated through EmisState later
+                  EmisState%Cats(cat_megan_idx)%Species(s)%Flux(1), &   
+                  MetState%LAI,                 &
+                  MetState%PFT_16,              &
+                  MetState%PMISOLAI,            &   
+                  MetState%Q_DIR_2,             &
+                  MetState%Q_DIFF_2,            &   
+                  MetState%PARDR_LASTXDAYS,     &
+                  MetState%PARDF_LASTXDAYS,     &   
+                  MetState%TS,                  &
+                  MetState%T_LASTXDAYS,         &
+                  MetState%T_LAST24H,           &   
+                  MetState%GWETROOT,            &
+                  MetState%CO2Inhib,            &
+                  MetState%CO2conc,             &   
+                  MetState%SUNCOS,              &
+                  MetState%LAT,                 &
+                  MetState%DOY,                 &
+                  MetState%LocalHour,           &
+                  MetState%D_BTW_M,             &   
+                  MetState%AEF_ISOP,            &
+                  MetState%AEF_MBOX,            &
+                  MetState%AEF_BPIN,            &
+                  MetState%AEF_CARE,            &
+                  MetState%AEF_LIMO,            &
+                  MetState%AEF_OCIM,            &
+                  MetState%AEF_SABI             &   
+                  MetState%D2RAD,               &
+                  MetState%RAD2D,               &   
+                  RC)
+            if (RC /= CC_SUCCESS) then
+               errMsg = 'Error in CCPr_Scheme_Megan'
+               CALL CC_Error( errMsg, RC, thisLoc )
+            endif
+         end do ! for each species requested in EmisState
       endif
 
    end subroutine CCPr_Megan_Run

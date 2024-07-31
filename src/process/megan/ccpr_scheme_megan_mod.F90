@@ -60,10 +60,9 @@ contains
    !!
    !! Note that other state types may be required, e.g. one specific to the process group.
    !!!>
-   subroutine CCPr_Scheme_Megan( nMeganSpec,  &
+   subroutine CCPr_Scheme_Megan( &
       MeganSpecName,       &   
-      EmisPerSpec,         &
-      TotalEmis,           &   
+      EmisPerSpec,         &   
       LAI,                 &
       PFT_16,              &
       PMISOLAI,            &   
@@ -101,8 +100,9 @@ contains
       IMPLICIT NONE
 
       ! Arguments
-      integer,           intent(in)     :: nMeganSpec            !< Number of Megan Species
-      character(len=31), intent(in)     :: MeganSpecName(:)      !< name of megan species
+      !integer,           intent(in)     :: nMeganSpec            !< Number of Megan Species
+      !character(len=31), intent(in)     :: MeganSpecName(:)      !< name of megan species
+      character(len=31), intent(in)     :: MeganSpecName      !< name of megan species
       real(fp),          intent(in)     :: LAI                   !< leaf area index
       real(fp),          intent(in)     :: PMISOLAI              !< LAI of previous month
       real(fp),          intent(in)     :: PFT_16(:)             !< plant functional type fraction
@@ -130,8 +130,9 @@ contains
       real(fp),          intent(in)     :: AEF_SABI              !< Emission factor of SABI read from file
       real(fp),          intent(in)     :: D2RAD                 !< Degrees to radians (TODO: put in constants module)
       real(fp),          intent(in)     :: RAD2D                 !< Radians to degrees (TODO: put in constants module)
-      real(fp),          intent(inout)  :: EmisPerSpec(:)        !< Emission per Species
-      real(fp),          intent(inout)  :: TotalEmis             !< Total Emission (TODO: not used by now)
+      !real(fp),          intent(inout)  :: EmisPerSpec(:)        !< Emission per Species
+      real(fp),          intent(inout)  :: EmisPerSpec        !< Emission per Species
+      !real(fp),          intent(inout)  :: TotalEmis             !< Total Emission (TODO: not used by now)
       integer,           intent(out)    :: RC                    ! Success or Failure
 
       ! Local Variables
@@ -272,9 +273,10 @@ contains
 
          !--------------------- %%gamma values related to compound%% ----------------------
 
-         DO S=1, nMeganSpec
+         !DO S=1, nMeganSpec
 
-            CMPD = MeganSpecName(S)
+            !CMPD = MeganSpecName(S)
+            CMPD = MeganSpecName
 
             ! --------------------------------------------
             ! Get MEGAN parameters for this compound
@@ -426,9 +428,10 @@ contains
 
             ENDIF
             
-            EmisPerSpec(S) = MEGAN_EMIS
+            !EmisPerSpec(S) = MEGAN_EMIS
+            EmisPerSpec = MEGAN_EMIS
          
-         ENDDO !each species
+         !ENDDO !each species
 
       endif
 
