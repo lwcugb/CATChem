@@ -14,6 +14,7 @@ MODULE CCPR_Megan_mod
    USE ChemState_Mod, Only : ChemStateType
    USE Config_Mod,    Only : ConfigType
    USE CCPr_Megan_Common_Mod, Only : MeganStateType
+   USE EmisState_Mod, Only : EmisStateType  
 
    IMPLICIT NONE
 
@@ -30,23 +31,25 @@ CONTAINS
    !!
    !! \param Config_Opt       CATCHem configuration options
    !! \param MeganState       CATCHem Megan state
+   !! \param EmisState        CATCHem Emission state
    !! \param ChmState         CATCHem chemical state
    !! \param RC               Error return code
    !!
    !!!>
-   SUBROUTINE CCPR_Megan_Init( Config, ChemState, MeganState, RC )
+   SUBROUTINE CCPR_Megan_Init( Config, ChemState, EmisState, MeganState, RC )
       ! USE
 
       IMPLICIT NONE
       ! INPUT PARAMETERS
       !-----------------
-      TYPE(ConfigOptType), POINTER    :: Config    ! Module options
-      TYPE(ChemStateType), POINTER    :: ChemState ! Chemical state
+      TYPE(ConfigOptType),  intent(in)    :: Config     ! Module options
+      TYPE(ChemStateType),  intent(in)    :: ChemState  ! Chemical state
+      TYPE(EmisStateType),  intent(in)    :: EmisState  ! Emission state
 
       ! INPUT/OUTPUT PARAMETERS
       !------------------------
-      TYPE(MeganStateType), POINTER   :: MeganState ! <PROCESS> state
-      INTEGER,         INTENT(INOUT)  :: RC         ! Success or failure
+      TYPE(MeganStateType), intent(inout) :: MeganState ! Megan state
+      INTEGER,              intent(inout) :: RC         ! Success or failure
 
       ! Error handling
       !---------------
@@ -55,6 +58,7 @@ CONTAINS
 
       ! LOCAL VARIABLES
       !----------------
+      INTEGER,              :: c 
 
       ! Put any local variables here
 
@@ -71,7 +75,7 @@ CONTAINS
          !------------------
          MeganState%Activate = .true.
 
-         ! Set number of species
+         ! Set number of species manually
          !----------------------
          MeganState%nMeganSpecies = 21
 
@@ -81,8 +85,9 @@ CONTAINS
          MeganState%CO2Inhib = Config%CO2_Inhib_Opt
 
          ! Set CO2 concentration (ppm)
+         !!TODO: Do we give it a negative value if it is missing in config
          !----------------------------
-         if (Config%CO2_conc < 0) then !TODO: DO we give it a negative value if it is missing in config
+         if (Config%CO2_conc < 0) then 
             MeganState%CO2conc = 390.0_fp
          else
             MeganState%CO2conc = Config%CO2_conc_ppm
@@ -101,6 +106,16 @@ CONTAINS
             endif
          endif
 
+         !--------------------------------------------
+         !Find megan caterory index in EmisState for future use
+         do c = 1, EmisState%nCats
+            if (EmisState%Cats(c)%name == 'megan') then
+               MeganState%CatIndex = c
+               exit
+            endif          
+         end do
+
+         !------------------------------------
          ! Allocate emission species index
          ALLOCATE( MeganState%MeganSpeciesIndex(MeganState%nMeganSpecies) )
          CALL CC_CheckVar('MeganState%MeganSpeciesIndex', 0, RC)  
@@ -128,6 +143,7 @@ CONTAINS
          !      Some met values (last 15 day T average) may need another function and be saved to restart file.
 
          !TODO: emission species name and ID should read from a namelist. Give them values for now
+         !      They are not really used since EmisState controls the species needed now. Keep it for now. 
          MeganState%MeganSpeciesIndex = (/1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21/)
          MeganState%MeganSpeciesName(/'ISOP','APIN','BPIN','LIMO','SABI','MYRC','CARE',
                                       'OCIM','OMON','ALD2','MOH', 'EOH', 'MBOX','FAXX',
@@ -148,13 +164,13 @@ CONTAINS
    !! \param [INOUT] DiagState The DiagState object
    !! \param [INOUT] MeganState The MeganState object
    !! \param [INOUT] ChemState The ChemState object
+   !! \param [INOUT] EmisState The EmisState object
    !! \param [OUT] RC Return code
    !!!>
    SUBROUTINE CCPr_Megan_Run( MetState, EmisState, DiagState, MeganState, ChemState, RC )
 
       ! USE
       USE CCPr_Scheme_Megan_Mod, ONLY: CCPr_Scheme_Megan  ! Megan scheme
-      USE EmisState_Mod
 
       IMPLICIT NONE
       ! INPUT PARAMETERS
@@ -195,31 +211,14 @@ CONTAINS
          endif
          
          ! Run the megan Scheme
-         ! TODO: 1, if keep current structure (CCpr_Schem_Megan once), need to create a bool array based on EmisState
-         !          to decide which species to calculated and then map back to EmisState%Cat%species%flux
-         !       2, Or we can put 'CCPr_Scheme_Megan' in a loop based on EmisSate%cat%nSpecies and calculate
-         !          the flux we need directly and do not need to map the flux back to EmisState (use this for now)
+         ! Put 'CCPr_Scheme_Megan' in a loop based on EmisSate%cat%nSpecies and calculate
+         ! the flux we need and do not need to map the flux back to EmisState
          !-------------------------
-         !find megan caterory index
-         !TODO: maybe this can be added to MeganState in case of future usage
-         do c = 1, EmisState%nCats
-            if (EmisState%Cats(c)%name == 'megan') then
-               cat_megan_idx = c
-               exit
-            endif          
-         end do
+         do s = 1, EmisState$Cats(MeganState%CatIndex)%nSpecies
 
-         do s = 1, EmisState$Cats(cat_megan_idx)%nSpecies
-
-            call CCPr_Scheme_Megan(             &
-                  !MeganState%nMeganSpecies,     &
-                  !MeganState%MeganSpeciesName,  &   
-                  !MeganState%EmissionPerSpecies,&
-                  !MeganState%TotalEmission,     &
-                  EmisState%Cats(cat_megan_idx)%Species(s)%name, &
-                  !TODO: give Flux(1) directly since megan is only at thhe surface
-                  !      TotalEmission is not used since it can be calculated through EmisState later
-                  EmisState%Cats(cat_megan_idx)%Species(s)%Flux(1), &   
+            call CCPr_Scheme_Megan(                                       &
+                  EmisState%Cats(MeganState%CatIndex)%Species(s)%name,    &
+                  EmisState%Cats(MeganState%CatIndex)%Species(s)%Flux(1), &   
                   MetState%LAI,                 &
                   MetState%PFT_16,              &
                   MetState%PMISOLAI,            &   
@@ -244,9 +243,7 @@ CONTAINS
                   MetState%AEF_CARE,            &
                   MetState%AEF_LIMO,            &
                   MetState%AEF_OCIM,            &
-                  MetState%AEF_SABI             &   
-                  MetState%D2RAD,               &
-                  MetState%RAD2D,               &   
+                  MetState%AEF_SABI             & 
                   RC)
             if (RC /= CC_SUCCESS) then
                errMsg = 'Error in CCPr_Scheme_Megan'

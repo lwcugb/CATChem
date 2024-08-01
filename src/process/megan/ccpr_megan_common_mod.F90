@@ -55,6 +55,7 @@ module CCPr_Megan_Common_Mod
       integer, allocatable            :: MeganSpeciesIndex(:)    !< Index of megan species
       character(len=31), allocatable  :: MeganSpeciesName(:)     !< name of megan species
       integer, allocatable            :: SpcIDs(:)               !< CATChem species IDs
+      integer                         :: CatIndex                !< Index of emission category in EmisState
 
       ! Process Specific Parameters
       real(fp), allocatable           :: TotalEmission           !< Total emission          [kg/m^2/s]

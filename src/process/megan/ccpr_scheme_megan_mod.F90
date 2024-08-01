@@ -25,7 +25,6 @@ contains
 
    !> \brief Brief description of the subroutine
    !!
-   !! \param nMeganSpec        Number of Megan Species
    !! \param MeganSpecName     Name of megan species
    !! \param LAI               leaf area index
    !! \param PMISOLAI          LAI of previous month
@@ -52,10 +51,7 @@ contains
    !! \param AEF_LIMO          Emission factor of LIMO read from file
    !! \param AEF_OCIM          Emission factor of OCIM read from file
    !! \param AEF_SABI          Emission factor of SABI read from file
-   !! \param D2RAD             Degrees to radians
-   !! \param RAD2D             Radians to degrees 
-   !! \param EmisPerSpec(:)    Emission per Species
-   !! \param TotalEmis         Total Emission
+   !! \param EmisPerSpec       Emission per Species
    !! \param RC                Success or Failure
    !!
    !! Note that other state types may be required, e.g. one specific to the process group.
@@ -88,12 +84,10 @@ contains
       AEF_LIMO,            &
       AEF_OCIM,            &
       AEF_SABI,            &   
-      D2RAD,               &
-      RAD2D,               &   
       RC)
 
       ! Uses
-      USE Constants,     Only : g0 ! Example to pull in a constant from the CONSTANTS MODULE < Modify as needed >
+      USE Constants,     Only : g0, PI_180 ! Example to pull in a constant from the CONSTANTS MODULE < Modify as needed >
       use precision_mod, only : fp, ZERO  ! Example to pull in a precision from the PRECISION MODULE < Modify as needed >
       Use Error_Mod,     Only : CC_SUCCESS    ! Error Check Success
       
@@ -128,11 +122,9 @@ contains
       real(fp),          intent(in)     :: AEF_LIMO              !< Emission factor of LIMO read from file
       real(fp),          intent(in)     :: AEF_OCIM              !< Emission factor of OCIM read from file
       real(fp),          intent(in)     :: AEF_SABI              !< Emission factor of SABI read from file
-      real(fp),          intent(in)     :: D2RAD                 !< Degrees to radians (TODO: put in constants module)
-      real(fp),          intent(in)     :: RAD2D                 !< Radians to degrees (TODO: put in constants module)
-      !real(fp),          intent(inout)  :: EmisPerSpec(:)        !< Emission per Species
-      real(fp),          intent(inout)  :: EmisPerSpec        !< Emission per Species
-      !real(fp),          intent(inout)  :: TotalEmis             !< Total Emission (TODO: not used by now)
+      !real(fp),          intent(inout)  :: EmisPerSpec(:)       !< Emission per Species
+      real(fp),          intent(inout)  :: EmisPerSpec           !< Emission per Species
+      !real(fp),          intent(inout)  :: TotalEmis            !< Total Emission (TODO: not used by now)
       integer,           intent(out)    :: RC                    ! Success or Failure
 
       ! Local Variables
@@ -164,6 +156,8 @@ contains
       REAL(fp)            :: MISOLAI
       REAL(fp)            :: PFTSUM
       REAL(fp), parameter :: LAI_MAX = 6.0_fp !Maximum LAI value [cm2/cm2]
+      REAL(fp), parameter :: D2RAD  = PI_180  !Degrees to radians
+      REAL(fp), parameter :: RAD2D  = 1.0_fp / PI_180  !Radians to degrees
       !REAL(fp)            :: LAT, LocalHour !canopy add
       REAL(fp)            :: PSTD
       REAL(fp)            :: Ea1L, Ea2L, SINbeta, SunF !canopy add
