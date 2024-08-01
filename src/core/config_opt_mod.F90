@@ -91,6 +91,9 @@ MODULE Config_Opt_Mod
       INTEGER                     :: seasalt_scheme
       real(fp)                    :: seasalt_scalefactor
 
+      ! Plumerise Process
+      LOGICAL                     :: plumerise_activate
+
 
 
    END TYPE ConfigType

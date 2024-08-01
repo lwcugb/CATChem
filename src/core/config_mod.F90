@@ -552,7 +552,7 @@ CONTAINS
 
       CHARACTER(LEN=255) :: thisLoc ! where am i
       CHARACTER(LEN=512) :: errMsg  ! error message
-      character(len=QFYAML_NamLen), allocatable :: EmisCats(:)
+      character(len=QFYAML_NamLen), allocatable :: Cats(:)
       integer :: n, s, j
       CHARACTER(LEN=QFYAML_NamLen) :: key
       CHARACTER(LEN=QFYAML_NamLen) :: base
@@ -587,18 +587,21 @@ CONTAINS
          RETURN
       ENDIF
 
-      do n = 1, EmisState%nEmisCategories
-         do s = 1, EmisState%EmisCats(n)%nEmisSpecies
-            base = TRIM(EmisState%EmisCats(n)%name) // '%' // TRIM(EmisState%EmisCats(n)%EmisSpecies(s)%name)
+
+      EmisState%nEmisTotal = 0
+      do n = 1, EmisState%nCats
+         EmisState%nEmisTotal = EmisState%nEmisTotal + EmisState%Cats(n)%nSpecies ! find total number of species emitted
+         do s = 1, EmisState%Cats(n)%nSpecies
+            base = TRIM(EmisState%Cats(n)%name) // '%' // TRIM(EmisState%Cats(n)%Species(s)%name)
 
             ! get long_name of emission species in the category
             key =  TRIM(base) // '%long_name'
             v_str = MISSING_STR
             CALL QFYAML_Add_Get( ConfigInput, TRIM( key ), v_str, "", RC )
             IF ( RC /= CC_SUCCESS ) THEN
-               v_str = EmisState%EmisCats(n)%EmisSpecies(s)%name
+               v_str = EmisState%Cats(n)%Species(s)%name
             ENDIF
-            EmisState%EmisCats(n)%EmisSpecies(s)%long_name = TRIM( v_str )
+            EmisState%Cats(n)%Species(s)%long_name = TRIM( v_str )
 
             ! get units of emission species in the category
             key =  TRIM(base) // '%units'
@@ -609,7 +612,7 @@ CONTAINS
             else if (v_str == MISSING_STR) then
                v_str = "kg m-2 s-1"
             endif
-            EmisState%EmisCats(n)%EmisSpecies(s)%units = TRIM( v_str )
+            EmisState%Cats(n)%Species(s)%units = TRIM( v_str )
 
             ! Get the mapping of the emission species to the mechanism species
             key = TRIM(base) // '%map'
@@ -622,9 +625,9 @@ CONTAINS
                call QFYAML_CleanUp(ConfigAnchored)
                RETURN
             endif
-            call QFYAML_String_to_String_Arr(v_str,                 &
-               EmisState%EmisCats(n)%EmisSpecies(s)%EmisMapName,    &
-               EmisState%EmisCats(n)%EmisSpecies(s)%nEmisMap,     &
+            call QFYAML_String_to_String_Arr(v_str,         &
+               EmisState%Cats(n)%Species(s)%EmisMapName,    &
+               EmisState%Cats(n)%Species(s)%nEmisMap,       &
                RC)
             if (RC /= CC_SUCCESS) then
                errMsg = 'Error in QFYAML_String_to_Real_Arr'
@@ -633,7 +636,7 @@ CONTAINS
                call QFYAML_CleanUp(ConfigAnchored)
                RETURN
             endif
-            j = EmisState%EmisCats(n)%EmisSpecies(s)%nEmisMap ! temporary
+            j = EmisState%Cats(n)%Species(s)%nEmisMap ! temporary
 
             ! Get the scaling of the emissions to mapped species
             key = TRIM(base) // '%scale'
@@ -647,19 +650,19 @@ CONTAINS
                RETURN
             endif
             if (v_str == MISSING_STR) then
-               Allocate(EmisState%EmisCats(n)%EmisSpecies(s)%EmisScale(j), STAT=RC)
+               Allocate(EmisState%Cats(n)%Species(s)%Scale(j), STAT=RC)
                if (RC /= CC_SUCCESS) then
-                  errMsg = 'Error allocating EmisState%EmisCats(n)%EmisSpecies(s)%EmisScale'
+                  errMsg = 'Error allocating EmisState%Cats(n)%Species(s)%Scale'
                   call CC_Error(errMsg, RC, thisLoc)
                   call QFYAML_CleanUp(ConfigInput)
                   call QFYAML_CleanUp(ConfigAnchored)
                   RETURN
                endif
-               EmisState%EmisCats(n)%EmisSpecies(s)%EmisScale = 1.0_fp
+               EmisState%Cats(n)%Species(s)%Scale = 1.0_fp
             else
                call QFYAML_String_to_Real_Arr(v_str,                 &
-                  EmisState%EmisCats(n)%EmisSpecies(s)%EmisScale,    &
-                  EmisState%EmisCats(n)%EmisSpecies(s)%nEmisMap,     &
+                  EmisState%Cats(n)%Species(s)%Scale,    &
+                  EmisState%Cats(n)%Species(s)%nEmisMap,     &
                   RC)
                if (RC /= CC_SUCCESS) then
                   errMsg = 'Error in QFYAML_String_to_Real_Arr'
@@ -669,9 +672,9 @@ CONTAINS
                   RETURN
                endif
             endif
-
          enddo
       enddo
+
 
       !========================================================================
       ! Print EmisState
@@ -679,18 +682,18 @@ CONTAINS
       write(*,*) '==================================================='
       write(*,*) 'Emission Settings:'
       write(*,*) '==================================================='
-
-      write(*,*) '| nEmisCategories: ', EmisState%nEmisCategories
-      do n = 1, EmisState%nEmisCategories
-         write(*,*) '| Category: ', TRIM(EmisState%EmisCats(n)%name)
-         do s = 1, EmisState%EmisCats(n)%nEmisSpecies
-            write(*,*) '|   Species:     ' // TRIM(EmisState%EmisCats(n)%EmisSpecies(s)%name)
-            write(*,*) '|     long_name: ' // TRIM(EmisState%EmisCats(n)%EmisSpecies(s)%long_name)
-            write(*,*) '|     units:     ' // TRIM(EmisState%EmisCats(n)%EmisSpecies(s)%units)
-            write(*,*) '|     nEmisMap:  ', EmisState%EmisCats(n)%EmisSpecies(s)%nEmisMap
-            do j = 1, EmisState%EmisCats(n)%EmisSpecies(s)%nEmisMap
-               write(*,*) '|       Emission Mapping:  ' // TRIM(EmisState%EmisCats(n)%EmisSpecies(s)%EmisMapName(j)) &
-                  // ' -> ', EmisState%EmisCats(n)%EmisSpecies(s)%EmisScale(j)
+      write(*,*) '| nEmisTotal:          ', EmisState%nEmisTotal
+      write(*,*) '| nCats:               ', EmisState%nCats
+      do n = 1, EmisState%nCats
+         write(*,*) '| Category: ', TRIM(EmisState%Cats(n)%name)
+         do s = 1, EmisState%Cats(n)%nSpecies
+            write(*,*) '|   Species:     ' // TRIM(EmisState%Cats(n)%Species(s)%name)
+            write(*,*) '|     long_name: ' // TRIM(EmisState%Cats(n)%Species(s)%long_name)
+            write(*,*) '|     units:     ' // TRIM(EmisState%Cats(n)%Species(s)%units)
+            write(*,*) '|     nEmisMap:  ', EmisState%Cats(n)%Species(s)%nEmisMap
+            do j = 1, EmisState%Cats(n)%Species(s)%nEmisMap
+               write(*,*) '|       Emission Mapping:  ' // TRIM(EmisState%Cats(n)%Species(s)%EmisMapName(j)) &
+                  // ' -> ', EmisState%Cats(n)%Species(s)%Scale(j)
             enddo
          enddo
       enddo

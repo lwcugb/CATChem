@@ -1089,16 +1089,16 @@ MODULE QFYAML_Mod
                endif
             enddo
 
-            EmisState%nEmisCategories = i ! number of total emission categories (level 0)
-            ALLOCATE(EmisState%EmisCats(i), STAT=RC)
+            EmisState%nCats = i ! number of total emission categories (level 0)
+            ALLOCATE(EmisState%Cats(i), STAT=RC)
             IF ( RC /= 0 ) THEN
-               errMsg = 'Error allocating "EmisCats"!'
+               errMsg = 'Error allocating "EmisState%Cats"!'
                CALL Handle_Error( errMsg, RC, thisLoc )
                RETURN
             ENDIF
 
             do n = 1, i
-               EmisState%EmisCats(n)%name = TRIM(names(n))
+               EmisState%Cats(n)%name = TRIM(names(n))
             enddo
 
             !-------------------------
@@ -1112,7 +1112,6 @@ MODULE QFYAML_Mod
             i = 1 ! category index
             j = 0 ! species index
             do n = 1, yml%num_vars
-               ! write(*,*) TRIM(yml%vars(n)%category)
                ! First figure out the current emis category
                ix = INDEX(yml%vars(n)%category, QFYAML_category_separator)
                if (n == 1) then ! first time through set the current emis category
@@ -1124,26 +1123,22 @@ MODULE QFYAML_Mod
                   if (cspecies /= TRIM(yml%vars(n)%category(ix+1:))) then
                      cspecies = TRIM(yml%vars(n)%category(ix+1:))
                      tmpString = TRIM(yml%vars(n)%category(ix+1:))
-                     ! write(*,*) '   ' // TRIM(current) // ' ' // TRIM(cspecies)
                      names = [names, tmpString]
                      j = j + 1 ! increment species index
                   endif
                else if (TRIM(yml%vars(n)%category(1:ix-1)) /= TRIM(current)) then
 
                   ! Set species names in the emission state
-                  EmisState%EmisCats(i)%nEmisSpecies = j ! number of species in this category
-                  ! write(*,*) '   Number of species in category ' // TRIM(current) // ': ', EmisState%EmisCats(i)%nEmisSpecies
-                  ALLOCATE(EmisState%EmisCats(i)%EmisSpecies(j), STAT=RC) ! Allocate the number of species in each category
+                  EmisState%Cats(i)%nSpecies = j ! number of species in this category
+                  ALLOCATE(EmisState%Cats(i)%Species(j), STAT=RC) ! Allocate the number of species in each category
                   IF ( RC /= 0 ) THEN
-                     errMsg = 'Error allocating "EmisSpecies"!'
+                     errMsg = 'Error allocating "Species"!'
                      CALL Handle_Error( errMsg, RC, thisLoc )
                      RETURN
                   ENDIF
 
-                  do s = 1, EmisState%EmisCats(i)%nEmisSpecies
-                     EmisState%EmisCats(i)%EmisSpecies(s)%name = TRIM(names(s))
-                     ! write(*,*) '      Category: ' // TRIM(EmisState%EmisCats(i)%name) // ' Species: ' //  &
-                     !             TRIM(EmisState%EmisCats(i)%EmisSpecies(s)%name)
+                  do s = 1, EmisState%Cats(i)%nSpecies
+                     EmisState%Cats(i)%Species(s)%name = TRIM(names(s))
                   enddo
 
                   ! Reset the current emis category Species names
@@ -1152,8 +1147,7 @@ MODULE QFYAML_Mod
                   DEALLOCATE(names, STAT=RC) ! nullify
                   ALLOCATE(names(0), STAT=RC) ! reallocate
                   i = i + 1
-                  ! tmpString = TRIM(yml%vars(n)%category(1:ix-1))
-                  ! names = [names, tmpString]
+
                   ! Set the current category name
                   current = TRIM(yml%vars(n)%category(1:ix-1))
                   if (cspecies /= TRIM(yml%vars(n)%category(ix+1:))) then
@@ -1169,20 +1163,18 @@ MODULE QFYAML_Mod
                   names = [names, tmpString]
                   j = j + 1
                endif
-               ! write(*,*) TRIM(current)
             enddo
 
             ! Fill last category species names
-            ! write(*,*) '   Number of species in category ' // TRIM(current) // ': ', j
-            ALLOCATE(EmisState%EmisCats(i)%EmisSpecies(j), STAT=RC) ! Allocate the number of species in each category
+            ALLOCATE(EmisState%Cats(i)%Species(j), STAT=RC) ! Allocate the number of species in each category
             IF ( RC /= 0 ) THEN
-               errMsg = 'Error allocating "EmiState%EmisCats%EmisSpecies"!'
+               errMsg = 'Error allocating "EmiState%Cats%Species"!'
                CALL Handle_Error( errMsg, RC, thisLoc )
                RETURN
             ENDIF
-            EmisState%EmisCats(i)%nEmisSpecies = j ! number of species in this category
-            do s = 1, EmisState%EmisCats(i)%nEmisSpecies
-               EmisState%EmisCats(i)%EmisSpecies(s)%name = TRIM(names(s))
+            EmisState%Cats(i)%nSpecies = j ! number of species in this category
+            do s = 1, EmisState%Cats(i)%nSpecies
+               EmisState%Cats(i)%Species(s)%name = TRIM(names(s))
             enddo
 
      END SUBROUTINE QFYAML_Read_Emis_File

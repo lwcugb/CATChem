@@ -13,6 +13,17 @@ module species_mod
    use precision_mod
    implicit none
 
+   !> \brief Module for catchem species
+   !!
+   !! This module contains subroutines and functions related to the catchem species
+   !!
+   !! \ingroup core_modules
+   !!
+   !! \param Config The input config object.
+   !! \param Species The Species object to be initialized.
+   !! \param RC The return code.
+   !!
+   !!!>
    type, public :: SpeciesType
 
       ! Names

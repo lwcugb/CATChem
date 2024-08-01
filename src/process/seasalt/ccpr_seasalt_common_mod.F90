@@ -77,7 +77,7 @@ contains
    !! \brief Function to compute sea salt emissions following the Gong style parameterization.
    !!
    !! Functional form is from Gong 2003:
-   !!  dN/dr = scalefac * 1.373 * (w^wpow) * (r^-aFac) * (1+0.057*r^rpow) * 10^(exppow*exp(-bFac^2))
+   !!   \f$dN/dr = scalefac * 1.373 * (w^wpow) * (r^-aFac) * (1+0.057*r^rpow) * 10^(exppow*exp(-bFac^2))\f$
    !! where r is the particle radius at 80% RH, dr is the size bin width at 80% RH, and w is the wind speed
    !!
    !! \ingroup catchem_seasalt_process

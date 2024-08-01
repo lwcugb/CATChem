@@ -3,13 +3,17 @@ anthro:
     long_name: "Nitrogen Oxide"
     scale: [1.0]
     map: ["NO"]
+    plumerise_opt: 0
+    emislayer: 3
   CO:
     long_name: "Carbon Monoxide"
     map: ["CO"]
+    plumerise_opt: 3
   ISOP:
     long_name: "Isoprene"
     scale: [1.0, 0.5]
     map: [ISOP, TEST]
+    plumerise_opt: 2
 dust:
   DU25:
     long_name: "Dust Species Fine Mode"

@@ -1,11 +1,12 @@
-!> \file
+!>
+!! \file chemstate_mod.F90
 !! \brief Contains the `ChemStateType` data type and related subroutines and functions.
 !!
 !!
 !! The `ChemState_Mod` module contains the chemstate_mod::chemstatetype data type
 !! and related subroutines and functions for managing the state of the chemical model.
 !!
-!! \ingroup Core_Modules
+!! \ingroup core_modules
 !!!>
 module ChemState_Mod
    !
@@ -34,19 +35,22 @@ module ChemState_Mod
 
    !> \brief Data type for managing the state of the chemical model.
    !!
-   !> \details chemStateType contains the following data members:
-   !> - State: A character string containing the name of this state.
-   !> - nSpecies: The total number of species.
-   !> - nSpeciesGas: The number of gas species.
-   !> - nSpeciesAero: The number of aerosol species.
-   !> - nSpeciesDust: The number of dust species.
-   !> - NSpeicesSeaSalt: The number of sea salt species.
-   !> - SpeciesIndex: An array containing the total species index.
-   !> - AeroIndex: An array containing the aerosol species index.
-   !> - GasIndex: An array containing the gas species index.
-   !> - DustIndex: An array containing the dust species index.
-   !> - SeaSaltIndex: An array containing the sea salt species index.
-   !> - chemSpecies: A 2-D array containing the concentration of each species.
+   !! \details chemStateType contains the following data members:
+   !! \param State: A character string containing the name of this state.
+   !! \param nSpecies: The total number of species.
+   !! \param nSpeciesGas: The number of gas species.
+   !! \param nSpeciesAero: The number of aerosol species.
+   !! \param nSpeciesDust: The number of dust species.
+   !! \param nSpeicesSeaSalt: The number of sea salt species.
+   !! \param SpeciesIndex: An array containing the total species index.
+   !! \param AeroIndex: An array containing the aerosol species index.
+   !! \param GasIndex: An array containing the gas species index.
+   !! \param DustIndex: An array containing the dust species index.
+   !! \param SeaSaltIndex: An array containing the sea salt species index.
+   !! \param chemSpecies: A 2-D array containing the concentration of each species.
+   !!
+   !! \ingroup core_modules
+   !!!>
    type, public :: ChemStateType
       !---------------------------------------------------------------------
       ! Name of variables containing chemistry information
@@ -80,23 +84,34 @@ module ChemState_Mod
 CONTAINS
 
 
-
-   subroutine Chem_Allocate(Config, GridState, Species, ChemState, RC)
+   !> \brief Allocate the chem state
+   !!
+   !! \details Allocate the chem state.
+   !!
+   !! \ingroup core_modules
+   !!
+   !! \param GridState Grid State
+   !! \param ChemState Chem State
+   !! \param RC Return code
+   !!
+   !!!>
+   subroutine Chem_Allocate(GridState, Species, ChemState, RC)
 
       ! USES
-      USE Config_Opt_Mod, ONLY : ConfigType
       USE GridState_Mod,  ONLY : GridStateType
       USE Species_Mod,    Only : SpeciesType
 
       IMPLICIT NONE
 
       ! INOUT Params
-      type(ConfigType),    INTENT(in)    :: Config    ! Input Options object
       type(GridStateType), INTENT(in)    :: GridState ! Grid State object
       type(ChemStateType), INTENT(inout) :: ChemState ! chem State object
       type(SpeciesType),   POINTER       :: Species   !Species object
       ! OUTPUT Params
       INTEGER,             INTENT(OUT)   :: RC            ! Success or failure
+
+      ! Local
+      integer :: i    ! Looping Variable
 
       ! Error handling
       CHARACTER(LEN=255) :: ErrMsg
@@ -107,19 +122,23 @@ CONTAINS
       ErrMsg = ''
       thisLoc = ' -> at chem_Allocate (in core/chemstate_mod.F90)'
 
-      ! Nullify all fields for safety's sake before allocating them
-      ! This can prevent compilation errors caused by uninitialized values
-      ! Nullify all fields for safety's sake before allocating them
-      ! This can prevent compilation errors caused by uninitialized values
-      ! ChemState%chemSpecies => NULL()
-
       ! Allocate
-      ! ALLOCATE( ChemState%chemSpecies( GridState%number_of_levels, ChemState%nSpecies ), STAT=RC )
-      ! CALL CC_CheckVar( 'ChemState%chemSpecies', 0, RC )
-      ! IF ( RC /= CC_SUCCESS ) RETURN
-      ! ChemState%chemSpecies = TINY
+      ALLOCATE( ChemState%ChemSpecies( ChemState%nSpecies ), STAT=RC )
+      IF ( RC /= CC_SUCCESS ) THEN
+         ErrMsg = 'Could not allocate ChemState%chemSpecies'
+         CALL CC_Error( ErrMsg, RC, thisLoc )
+      ENDIF
+      CALL CC_CheckVar( 'ChemState%chemSpecies', 0, RC )
+      IF ( RC /= CC_SUCCESS ) RETURN
 
-      ! do other checks etc
+      do i=0, ChemState%nSpecies
+         ALLOCATE(ChemState%ChemSpecies(i)%conc(GridState%number_of_levels), STAT=RC)
+         IF ( RC /= CC_SUCCESS ) THEN
+            ErrMsg = 'Could not Allocate ChemState%ChemSpecies(i)%conc'
+            CALL CC_Error( ErrMsg, RC, thisLoc )
+         ENDIF
+         ChemState%ChemSpecies(i)%conc = TINY
+      end do
 
    end subroutine Chem_Allocate
 
