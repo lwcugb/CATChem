@@ -154,6 +154,7 @@ CONTAINS
 
       ! USE
       USE CCPr_Scheme_Megan_Mod, ONLY: CCPr_Scheme_Megan  ! Megan scheme
+      USE EmisState_Mod
 
       IMPLICIT NONE
       ! INPUT PARAMETERS
