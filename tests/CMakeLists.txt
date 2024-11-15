@@ -43,3 +43,15 @@ add_test(
   NAME test_ccpr_seasalt
   COMMAND test_seasalt
   WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+
+add_executable(test_megan test_megan.F90)
+target_link_libraries(test_megan PRIVATE CATChem_core)
+target_link_libraries(test_megan PRIVATE CATChem)
+target_link_libraries(test_megan PRIVATE CATChem_process_megan)
+target_link_libraries(test_megan PRIVATE testing)
+set_target_properties(test_megan PROPERTIES Fortran_MODULE_DIRECTORY ${CMAKE_BINARY_DIR}/include)
+
+add_test(
+  NAME test_ccpr_megan
+  COMMAND test_megan
+  WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})

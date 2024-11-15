@@ -2,7 +2,7 @@
 !! \file
 !! \brief Contains MEGAN2.1 biogenic VOC emission Scheme based on HEMCO and Sam Silva's canopy edits
 !!
-!! Reference: 
+!! Reference:
 !! (1) Guenther et al, (GMD 2012) and associated MEGANv2.1 source code
 !!     https://doi.org/10.5194/gmd-5-1471-2012
 !! (2) Sam Silva's simplified canopy edits (GMD 2020)
@@ -38,7 +38,7 @@ contains
    !! \param T_LAST24H         Avg. temperature of last 24 hours
    !! \param GWETROOT          Root zone soil moisture
    !! \param CO2Inhib          Turn on CO2 inhibition?
-   !! \param CO2conc           CO2 concentrations 
+   !! \param CO2conc           CO2 concentrations
    !! \param SUNCOS            Cosine of solar zenith angle
    !! \param LAT               Latitude
    !! \param DOY               Day of year
@@ -57,46 +57,47 @@ contains
    !! Note that other state types may be required, e.g. one specific to the process group.
    !!!>
    subroutine CCPr_Scheme_Megan( &
-      MeganSpecName,       &   
-      EmisPerSpec,         &   
+      MeganSpecName,       &
+      EmisPerSpec,         &
       LAI,                 &
       PFT_16,              &
-      PMISOLAI,            &   
+      PMISOLAI,            &
       Q_DIR_2,             &
-      Q_DIFF_2,            &   
+      Q_DIFF_2,            &
       PARDR_LASTXDAYS,     &
-      PARDF_LASTXDAYS,     &   
+      PARDF_LASTXDAYS,     &
       TS,                  &
       T_LASTXDAYS,         &
-      T_LAST24H,           &   
+      T_LAST24H,           &
       GWETROOT,            &
       CO2Inhib,            &
-      CO2conc,             &   
+      CO2conc,             &
       SUNCOS,              &
       LAT,                 &
       DOY,                 &
       LocalHour,           &
-      D_BTW_M,             &   
+      D_BTW_M,             &
       AEF_ISOP,            &
       AEF_MBOX,            &
       AEF_BPIN,            &
       AEF_CARE,            &
       AEF_LIMO,            &
       AEF_OCIM,            &
-      AEF_SABI,            &   
+      AEF_SABI,            &
       RC)
 
       ! Uses
       USE Constants,     Only : g0, PI_180 ! Example to pull in a constant from the CONSTANTS MODULE < Modify as needed >
       use precision_mod, only : fp, ZERO  ! Example to pull in a precision from the PRECISION MODULE < Modify as needed >
       Use Error_Mod,     Only : CC_SUCCESS    ! Error Check Success
-      
+      USE CCPr_Megan_Common_Mod
+
       IMPLICIT NONE
 
       ! Arguments
       !integer,           intent(in)     :: nMeganSpec            !< Number of Megan Species
-      !character(len=31), intent(in)     :: MeganSpecName(:)      !< name of megan species
-      character(len=31), intent(in)     :: MeganSpecName      !< name of megan species
+      !character(len=10), intent(in)     :: MeganSpecName(:)      !< name of megan species
+      character(len=10), intent(in)     :: MeganSpecName      !< name of megan species
       real(fp),          intent(in)     :: LAI                   !< leaf area index
       real(fp),          intent(in)     :: PMISOLAI              !< LAI of previous month
       real(fp),          intent(in)     :: PFT_16(:)             !< plant functional type fraction
@@ -109,10 +110,10 @@ contains
       real(fp),          intent(in)     :: T_LAST24H             !< Avg. temperature of last 24 hours
       real(fp),          intent(in)     :: GWETROOT              !< Root zone soil moisture
       logical,           intent(in)     :: CO2Inhib              !< turn on CO2 inhibition?
-      real(fp),          intent(in)     :: CO2conc               !< CO2 concentrations 
+      real(fp),          intent(in)     :: CO2conc               !< CO2 concentrations
       real(fp),          intent(in)     :: SUNCOS                !< Cosine of solar zenith angle
       real(fp),          intent(in)     :: LAT                   !< Latitude
-      real(fp),          intent(in)     :: DOY                   !< Day of year
+      integer,           intent(in)     :: DOY                   !< Day of year
       real(fp),          intent(in)     :: LocalHour             !< Local hour
       real(fp),          intent(in)     :: D_BTW_M               !< Days between mid-months
       real(fp),          intent(in)     :: AEF_ISOP              !< Emission factor of ISOP read from file
@@ -132,7 +133,7 @@ contains
       character(len=256) :: thisLoc
 
       real(fp)            :: MEGAN_EMIS ! emission for each species [kg/m2/s]
-      character(len=256)  :: CMPD      ! Compound name 
+      character(len=256)  :: CMPD      ! Compound name
       REAL(fp)            :: GAMMA_LAI
       REAL(fp)            :: GAMMA_AGE
       REAL(fp)            :: GAMMA_TP  !canopy add
@@ -146,14 +147,14 @@ contains
       REAL(fp)            :: GAMMA_T_LD
       REAL(fp)            :: GAMMA_T_LI
       REAL(fp)            :: GAMMA_SM
-      REAL(fp)            :: GAMMA_CO2  
+      REAL(fp)            :: GAMMA_CO2
       REAL(fp)            :: AEF
       !REAL(fp)            :: D_BTW_M
       !REAL(fp)            :: TS, SUNCOS
       !REAL(fp)            :: Q_DIR_2, Q_DIFF_2
       REAL(fp)            :: BETA, LDF, CT1, CEO
       REAL(fp)            :: ANEW, AGRO, AMAT, AOLD
-      REAL(fp)            :: MISOLAI
+      REAL(fp)            :: MISOLAI, PMISOLAI_NORM
       REAL(fp)            :: PFTSUM
       REAL(fp), parameter :: LAI_MAX = 6.0_fp !Maximum LAI value [cm2/cm2]
       REAL(fp), parameter :: D2RAD  = PI_180  !Degrees to radians
@@ -216,7 +217,7 @@ contains
          !-----------------normalize LAI by total PFT fractions
          PFTSUM = SUM( PFT_16(2:16) )
          MISOLAI  = min(LAI/PFTSUM, LAI_MAX)
-         PMISOLAI = min(PMISOLAI/PFTSUM, LAI_MAX)
+         PMISOLAI_NORM= min(PMISOLAI/PFTSUM, LAI_MAX)
 
          !----------------- %%gamma values not related to compound%% ------------------
 
@@ -228,13 +229,13 @@ contains
          IF ( SUNCOS > 0.0_fp ) THEN
 
             call GET_GAMMA_PAR_PCEEA( Q_DIR_2,             &
-                                    Q_DIFF_2,              &
-                                    PARDR_LASTXDAYS,       &
-                                    PARDF_LASTXDAYS,       &
-                                    LAT, DOY,              &
-                                    LocalHour,             &
-                                    D2RAD, RAD2D,          &
-                                    GAMMA_PAR)
+               Q_DIFF_2,              &
+               PARDR_LASTXDAYS,       &
+               PARDF_LASTXDAYS,       &
+               LAT, DOY,              &
+               LocalHour,             &
+               D2RAD, RAD2D,          &
+               GAMMA_PAR)
          ELSE
 
             ! If night
@@ -260,8 +261,8 @@ contains
          P_Leaf_LAI_Sun = (/0.0018_fp, -0.1281_fp, -0.2977_fp, -0.4448_fp, -0.5352_fp/)
          P_Leaf_LAI_Shade = (/0.0148_fp, -0.1414_fp, -0.3681_fp,-0.5918_fp, -0.7425_fp/)
          VPGWT = (/0.1184635, 0.2393144, 0.284444444, 0.2393144, 0.1184635/)
-         Distgauss = (/0.0469101, 0.2307534, 0.5, 0.7692465, 0.9530899/)      
-         
+         Distgauss = (/0.0469101, 0.2307534, 0.5, 0.7692465, 0.9530899/)
+
          call  SOLAR_ANGLE(DOY, LocalHour, LAT, D2RAD, SINbeta)
          call GET_CDEA(MISOLAI, CDEA  )
 
@@ -269,162 +270,172 @@ contains
 
          !DO S=1, nMeganSpec
 
-            !CMPD = MeganSpecName(S)
-            CMPD = MeganSpecName
+         !CMPD = MeganSpecName(S)
+         CMPD = MeganSpecName
 
-            ! --------------------------------------------
-            ! Get MEGAN parameters for this compound
-            ! --------------------------------------------
-            CALL GET_MEGAN_PARAMS ( CMPD, BETA, LDF,  CT1,  CEO,      &
-                                    ANEW, AGRO, AMAT, AOLD, BIDIR, RC )
+         ! --------------------------------------------
+         ! Get MEGAN parameters for this compound
+         ! --------------------------------------------
+         CALL GET_MEGAN_PARAMS ( CMPD, BETA, LDF,  CT1,  CEO,      &
+            ANEW, AGRO, AMAT, AOLD, BIDIR, RC )
 
-            ! --------------------------------------------------
-            ! GAMMA_LAI (leaf area index activity factor)
-            ! --------------------------------------------------
-            call GET_GAMMA_LAI( MISOLAI, BIDIR, GAMMA_LAI )
+         ! --------------------------------------------------
+         ! GAMMA_LAI (leaf area index activity factor)
+         ! --------------------------------------------------
+         call GET_GAMMA_LAI( MISOLAI, BIDIR, GAMMA_LAI )
 
-            ! --------------------------------------------------
-            ! GAMMA_AGE (leaf age activity factor)
-            ! --------------------------------------------------
-            call GET_GAMMA_AGE(  MISOLAI,           &
-                                 PMISOLAI,          &
-                                 D_BTW_M,           &
-                                 T_LASTXDAYS,       &
-                                 ANEW, AGRO, AMAT, AOLD,     &
-                                 GAMMA_AGE)
-            
-            ! --------------------------------------------------
-            ! GAMMA_T_LI (temperature activity factor for
-            ! light-independent fraction)
-            ! --------------------------------------------------
-            !GAMMA_T_LI = GET_GAMMA_T_LI( TS, BETA ) 
+         ! --------------------------------------------------
+         ! GAMMA_AGE (leaf age activity factor)
+         ! --------------------------------------------------
+         call GET_GAMMA_AGE(  MISOLAI,           &
+            PMISOLAI_NORM,          &
+            D_BTW_M,           &
+            T_LASTXDAYS,       &
+            ANEW, AGRO, AMAT, AOLD,     &
+            GAMMA_AGE)
 
-            ! --------------------------------------------------
-            ! GAMMA_T_LD (temperature activity factor for
-            ! light-dependent fraction)
-            ! --------------------------------------------------
-            !GAMMA_T_LD = GET_GAMMA_T_LD( TS, Inst%T_LASTXDAYS(I,J), &
-            !                             Inst%T_LAST24H(I,J), CT1, CEO )
-            
-            ! --------------------------------------------------
-            ! Sam Silva's edits to replace GAMMA_T_LD 
-            !  and GAMMA_T_LI above
-            ! --------------------------------------------------
-            GAMMA_TP = 0.0_fp
+         ! --------------------------------------------------
+         ! GAMMA_T_LI (temperature activity factor for
+         ! light-independent fraction)
+         ! --------------------------------------------------
+         !GAMMA_T_LI = GET_GAMMA_T_LI( TS, BETA )
 
-            DO K = 1, 5
+         ! --------------------------------------------------
+         ! GAMMA_T_LD (temperature activity factor for
+         ! light-dependent fraction)
+         ! --------------------------------------------------
+         !GAMMA_T_LD = GET_GAMMA_T_LD( TS, Inst%T_LASTXDAYS(I,J), &
+         !                             Inst%T_LAST24H(I,J), CT1, CEO )
 
-               call Calc_Sun_Frac(MISOLAI,SINbeta,Distgauss(K), SunF)
-   
-               PSTD = 200_fp
-               call GET_GAMMA_PAR_C(Q_DIR_2,             &
-                                    Q_DIFF_2,            &
-                                    PARDR_LASTXDAYS,     &
-                                    PARDF_LASTXDAYS,     &
-                                    P_Leaf_LAI_Sun(K),   &
-                                    P_Leaf_Int_Sun(K),   &
-                                    MISOLAI, PSTD,       &
-                                    GAMMA_PAR_Sun)
-   
-               PSTD = 50_fp
-               call GET_GAMMA_PAR_C(Q_DIR_2,             &
-                                    Q_DIFF_2,            &
-                                    PARDR_LASTXDAYS,     &
-                                    PARDF_LASTXDAYS,     &
-                                    P_Leaf_LAI_Shade(K), &
-                                    P_Leaf_Int_Shade(K), &
-                                    MISOLAI, PSTD,       &
-                                    GAMMA_PAR_Shade)
-   
-               call GET_GAMMA_T_LD_C( TS,                &
-                                    T_LASTXDAYS,         &
-                                    T_LAST24H,           &
-                                    CT1, CEO,            &
-                                    T_Leaf_Int_Sun(K),   &
-                                    T_Leaf_Temp_Sun(K),  &
-                                    GAMMA_T_LD_Sun )
-   
-               call GET_GAMMA_T_LD_C(TS,                 &
-                                    T_LASTXDAYS,         &
-                                    T_LAST24H,           &
-                                    CT1, CEO,            &
-                                    T_Leaf_Int_Shade(K), &
-                                    T_Leaf_Temp_Shade(K),&
-                                    GAMMA_T_LD_Shade )
-   
-               call GET_GAMMA_T_LI( TS, BETA,            &
-                                    T_Leaf_Int_Sun(K),   &
-                                    T_Leaf_Temp_Sun(K),  &
-                                    GAMMA_T_LI_Sun )
-   
-               call GET_GAMMA_T_LI( TS, BETA,            &
-                                    T_Leaf_Int_Shade(K), &
-                                    T_Leaf_Temp_Shade(K),&
-                                    GAMMA_T_LI_Shade )   
-   
-               Ea1L  =  CDEA(K) * GAMMA_PAR_Sun * GAMMA_T_LD_Sun * SunF +   &
-                           GAMMA_PAR_Shade * GAMMA_T_LD_Shade * (1-SunF)
-   
-               Ea2L =  GAMMA_T_LI_Sun * SunF +                              &
-                           GAMMA_T_LI_Shade * (1-SunF)
-   
-               GAMMA_TP  = GAMMA_TP +                                       &
-                           (Ea1L*LDF + Ea2L*(1-LDF))* VPGWT(K)
-         
-            ENDDO
-   
-            ! --------------------------------------------------
-            ! GAMMA_SM (soil moisture activity factor)
-            ! --------------------------------------------------
-            call GET_GAMMA_SM( GWETROOT, CMPD, GAMMA_SM )
+         ! --------------------------------------------------
+         ! Sam Silva's edits to replace GAMMA_T_LD
+         !  and GAMMA_T_LI above
+         ! --------------------------------------------------
+         GAMMA_TP = 0.0_fp
 
-            ! --------------------------------------------------
-            ! emission factor (TODO: AE of these seven species are from file reading)
-            ! --------------------------------------------------
-            select case ( TRIM(CMPD) )
-               case ('ISOP')
-                  AEF = AEF_ISOP
-               case ('MBOX')
-                  AEF = AEF_MBOX
-               case ('BPIN')
-                  AEF = AEF_BPIN
-               case ('CARE')
-                  AEF = AEF_CARE
-               case ('LIMO')
-                  AEF = AEF_LIMO
-               case ('OCIM')
-                  AEF = AEF_OCIM
-               case ('SABI')
-                  AEF = AEF_SABI
-               case default !others are calcualted inline
-                  call CALC_AEF(PFT_16, CMPD, AEF, RC)
-            end select
-            
-            ! --------------------------------------------------
-            ! calculate emission
-            ! --------------------------------------------------
-            ! Emission is the product of all of these in kg/m2/s.
-            ! Normalization factor ensures product of GAMMA values is 1.0 under
-            !  standard conditions. Norm_FAC = 0.21. canopy add
-            IF ( TRIM(CMPD) == 'ISOP' ) THEN
+         DO K = 1, 5
+
+            call Calc_Sun_Frac(MISOLAI,SINbeta,Distgauss(K), SunF)
+
+            PSTD = 200_fp
+            call GET_GAMMA_PAR_C(Q_DIR_2,             &
+               Q_DIFF_2,            &
+               PARDR_LASTXDAYS,     &
+               PARDF_LASTXDAYS,     &
+               P_Leaf_LAI_Sun(K),   &
+               P_Leaf_Int_Sun(K),   &
+               MISOLAI, PSTD,       &
+               GAMMA_PAR_Sun)
+
+            PSTD = 50_fp
+            call GET_GAMMA_PAR_C(Q_DIR_2,             &
+               Q_DIFF_2,            &
+               PARDR_LASTXDAYS,     &
+               PARDF_LASTXDAYS,     &
+               P_Leaf_LAI_Shade(K), &
+               P_Leaf_Int_Shade(K), &
+               MISOLAI, PSTD,       &
+               GAMMA_PAR_Shade)
+
+            call GET_GAMMA_T_LD_C( TS,                &
+               T_LASTXDAYS,         &
+               T_LAST24H,           &
+               CT1, CEO,            &
+               T_Leaf_Int_Sun(K),   &
+               T_Leaf_Temp_Sun(K),  &
+               GAMMA_T_LD_Sun )
+
+            call GET_GAMMA_T_LD_C(TS,                 &
+               T_LASTXDAYS,         &
+               T_LAST24H,           &
+               CT1, CEO,            &
+               T_Leaf_Int_Shade(K), &
+               T_Leaf_Temp_Shade(K),&
+               GAMMA_T_LD_Shade )
+
+            call GET_GAMMA_T_LI( TS, BETA,            &
+               T_Leaf_Int_Sun(K),   &
+               T_Leaf_Temp_Sun(K),  &
+               GAMMA_T_LI_Sun )
+
+            call GET_GAMMA_T_LI( TS, BETA,            &
+               T_Leaf_Int_Shade(K), &
+               T_Leaf_Temp_Shade(K),&
+               GAMMA_T_LI_Shade )
+
+            Ea1L  =  CDEA(K) * GAMMA_PAR_Sun * GAMMA_T_LD_Sun * SunF +   &
+               GAMMA_PAR_Shade * GAMMA_T_LD_Shade * (1-SunF)
+
+            Ea2L =  GAMMA_T_LI_Sun * SunF +                              &
+               GAMMA_T_LI_Shade * (1-SunF)
+
+            GAMMA_TP  = GAMMA_TP +                                       &
+               (Ea1L*LDF + Ea2L*(1-LDF))* VPGWT(K)
+
+            !!For test only
+            !if ( K==1 ) then
+            !write(*,*)'My test1',CMPD, CDEA(1), VPGWT(1),Distgauss(1),GAMMA_PAR_Sun,GAMMA_PAR_Shade,&
+            !            GAMMA_T_LD_Shade,GAMMA_T_LD_Sun,GAMMA_T_LI_Shade,GAMMA_T_LI_Sun
+            !endif
+
+         ENDDO
+
+
+         ! --------------------------------------------------
+         ! GAMMA_SM (soil moisture activity factor)
+         ! --------------------------------------------------
+         call GET_GAMMA_SM( GWETROOT, CMPD, GAMMA_SM )
+
+         ! --------------------------------------------------
+         ! emission factor (TODO: AE of these seven species are from file reading)
+         ! --------------------------------------------------
+         select case ( TRIM(CMPD) )
+          case ('ISOP')
+            AEF = AEF_ISOP
+          case ('MBOX')
+            AEF = AEF_MBOX
+          case ('BPIN')
+            AEF = AEF_BPIN
+          case ('CARE')
+            AEF = AEF_CARE
+          case ('LIMO')
+            AEF = AEF_LIMO
+          case ('OCIM')
+            AEF = AEF_OCIM
+          case ('SABI')
+            AEF = AEF_SABI
+          case default !others are calculated inline
+            call CALC_AEF(PFT_16, CMPD, AEF, RC)
+         end select
+
+         ! --------------------------------------------------
+         ! calculate emission
+         ! --------------------------------------------------
+         ! Emission is the product of all of these in kg/m2/s.
+         ! Normalization factor ensures product of GAMMA values is 1.0 under
+         !  standard conditions. Norm_FAC = 0.21. canopy add
+         IF ( TRIM(CMPD) == 'ISOP' ) THEN
             ! Only apply CO2 inhibition to isoprene
             ! MEGAN_EMIS = Inst%NORM_FAC(1) * AEF * GAMMA_AGE * GAMMA_SM * &
             !              GAMMA_LAI * ((1.0_fp - LDF) * GAMMA_T_LI +      &
             !              (LDF * GAMMA_PAR * GAMMA_T_LD)) * GAMMA_CO2
-               MEGAN_EMIS = MISOLAI * AEF * GAMMA_AGE * GAMMA_SM *  &
-                              GAMMA_TP*GAMMA_CO2*GAMMA_LAI*0.21_fp
-            ELSE
+            MEGAN_EMIS = MISOLAI * AEF * GAMMA_AGE * GAMMA_SM *  &
+               GAMMA_TP*GAMMA_CO2*GAMMA_LAI*0.21_fp
+         ELSE
             ! MEGAN_EMIS = Inst%NORM_FAC(1) * AEF * GAMMA_AGE * GAMMA_SM * &
             !              GAMMA_LAI * ((1.0_fp - LDF) * GAMMA_T_LI +      &
             !              (LDF * GAMMA_PAR * GAMMA_T_LD))
-               MEGAN_EMIS = MISOLAI * AEF * GAMMA_AGE * GAMMA_SM *  &
-                           GAMMA_TP * GAMMA_LAI * 0.21_fp
+            MEGAN_EMIS = MISOLAI * AEF * GAMMA_AGE * GAMMA_SM *  &
+               GAMMA_TP * GAMMA_LAI * 0.21_fp
 
-            ENDIF
-            
-            !EmisPerSpec(S) = MEGAN_EMIS
-            EmisPerSpec = MEGAN_EMIS
-         
+         ENDIF
+
+         !!!For test only
+         !write(*,*) 'my test2: ', CMPD, MISOLAI, AEF, GAMMA_AGE, GAMMA_SM, GAMMA_TP, GAMMA_CO2, GAMMA_LAI
+
+         !EmisPerSpec(S) = MEGAN_EMIS
+         EmisPerSpec = MEGAN_EMIS
+
          !ENDDO !each species
 
       endif

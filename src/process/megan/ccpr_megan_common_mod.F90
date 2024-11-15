@@ -10,19 +10,25 @@
 module CCPr_Megan_Common_Mod
    use precision_mod, only: fp, ZERO
    use Error_Mod
+   use constants
    implicit none
    private
 
-   private :: GET_MEGAN_PARAMS
-   private :: GET_GAMMA_PAR_PCEEA
-   private :: GET_GAMMA_T_LI
-   private :: GET_GAMMA_T_LD
-   private :: GET_GAMMA_LAI
-   private :: GET_GAMMA_AGE
-   private :: GET_GAMMA_SM
-   private :: CALC_NORM_FAC
-   private :: SOLAR_ANGLE
-   private :: GET_GAMMA_CO2
+   public  :: GET_MEGAN_PARAMS
+   public  :: GET_GAMMA_PAR_PCEEA
+   public  :: GET_GAMMA_PAR_C
+   public  :: GET_GAMMA_T_LI
+   public  :: GET_GAMMA_T_LD
+   public  :: GET_GAMMA_T_LD_C
+   public  :: GET_GAMMA_LAI
+   public  :: GET_GAMMA_AGE
+   public  :: GET_GAMMA_SM
+   public  :: CALC_NORM_FAC
+   public  :: Calc_Sun_Frac
+   public  :: SOLAR_ANGLE
+   public  :: GET_GAMMA_CO2
+   public  :: CALC_AEF
+   public  :: GET_CDEA
    public  :: MeganStateType
 
    !> \brief Type for CATCHem Megan Process
@@ -37,12 +43,12 @@ module CCPr_Megan_Common_Mod
    !! - CO2Inhib      : CO2 inhibition for isoprene Option [true/false]
    !! - CO2conc       : CO2 concentration [ppmv]
    !! - ISOPscale     : factors to scale isoprene emissions
-   !! - ISOPtoSOAP    : isoprene convertion factor to SOAP
-   !! - ISOPtoSOAS    : isoprene convertion factor to SOAS
-   !! - MONOtoSOAP    : monoterpene convertion factor to SOAP
-   !! - MONOtoSOAS    : monoterpene convertion factor to SOAS
-   !! - TERPtoSOAP    : other terpene convertion factor to SOAP
-   !! - TERPtoSOAS    : other terpene convertion factor to SOAS
+   !! - ISOPtoSOAP    : isoprene conversion factor to SOAP
+   !! - ISOPtoSOAS    : isoprene conversion factor to SOAS
+   !! - MONOtoSOAP    : monoterpene conversion factor to SOAP
+   !! - MONOtoSOAS    : monoterpene conversion factor to SOAS
+   !! - TERPtoSOAP    : other terpene conversion factor to SOAP
+   !! - TERPtoSOAS    : other terpene conversion factor to SOAS
    !! - TotalEmission : Total Emission          [kg/m^2/s]
    !! - EmissionPerSpecies : Emission Rate per Megan species  [kg/m^2/s]
    !!
@@ -52,26 +58,26 @@ module CCPr_Megan_Common_Mod
       ! Generic Variables for Every Process
       Logical                         :: Activate                !< Activate Process (True/False)
       integer                         :: nMeganSpecies           !< Number of megan processes
-      integer, allocatable            :: MeganSpeciesIndex(:)    !< Index of megan species
-      character(len=31), allocatable  :: MeganSpeciesName(:)     !< name of megan species
-      integer, allocatable            :: SpcIDs(:)               !< CATChem species IDs
+      integer, pointer                :: MeganSpeciesIndex(:)    !< Index of megan species
+      character(len=31), pointer      :: MeganSpeciesName(:)     !< name of megan species
+      integer, pointer                :: SpcIDs(:)               !< CATChem species IDs
       integer                         :: CatIndex                !< Index of emission category in EmisState
 
       ! Process Specific Parameters
-      real(fp), allocatable           :: TotalEmission           !< Total emission          [kg/m^2/s]
-      real(fp), allocatable           :: EmissionPerSpecies(:)   !< Emission per species    [kg/m^2/s]
-      real(fp), allocatable           :: EmisNormFactor(:)       !< Emission normalized factor (onle one used for all now)
+      real(fp)                        :: TotalEmission           !< Total emission          [kg/m^2/s]
+      real(fp), pointer               :: EmissionPerSpecies(:)   !< Emission per species    [kg/m^2/s]
+      real(fp), pointer               :: EmisNormFactor(:)       !< Emission normalized factor (onle one used for all now)
 
       ! Scheme Options (ISOP scaling is turned off at the moment)
       Logical                         :: CO2Inhib                !< CO2 inhibition for isoprene Option [True/False]
       real(fp)                        :: CO2conc                 !< CO2 concentration [ppmv]
-      !real(fp)                        :: ISOPscale               !< factors to scale isoprene emissions 
-      !real(fp)                        :: ISOPtoSOAP              !< isoprene convertion factor to SOAP
-      !real(fp)                        :: ISOPtoSOAS              !< isoprene convertion factor to SOAS
-      !real(fp)                        :: MONOtoSOAP              !< monoterpene convertion factor to SOAP
-      !real(fp)                        :: MONOtoSOAS              !< monoterpene convertion factor to SOAS 
-      !real(fp)                        :: TERPtoSOAP              !< other terpenes convertion factor to SOAP 
-      !real(fp)                        :: TERPtoSOAS              !< other terpenes convertion factor to SOAS 
+      !real(fp)                        :: ISOPscale               !< factors to scale isoprene emissions
+      !real(fp)                        :: ISOPtoSOAP              !< isoprene conversion factor to SOAP
+      !real(fp)                        :: ISOPtoSOAS              !< isoprene conversion factor to SOAS
+      !real(fp)                        :: MONOtoSOAP              !< monoterpene conversion factor to SOAP
+      !real(fp)                        :: MONOtoSOAS              !< monoterpene conversion factor to SOAS
+      !real(fp)                        :: TERPtoSOAP              !< other terpenes conversion factor to SOAP
+      !real(fp)                        :: TERPtoSOAS              !< other terpenes conversion factor to SOAS
 
 
       !=================================================================
@@ -85,10 +91,10 @@ contains
    !! \brief Computes the light-independent fraction of emissions
    !!
    !! TODO: add reference
-   !! 
+   !!
    !!
    !! \param LAI leaf area index
-   !! \param Sinbeta 
+   !! \param Sinbeta
    !! \param Distgauss   Gauss distance
    !! \param SunFrac  output of light-dependent emission factor
    !!
@@ -99,15 +105,15 @@ contains
       ! Parameters
       !-----------
       real(fp), intent(in)  :: LAI         !< leaf area index
-      real(fp), intent(in)  :: Sinbeta     !< 
-      real(fp), intent(in)  :: Distgauss   !< 
+      real(fp), intent(in)  :: Sinbeta     !<
+      real(fp), intent(in)  :: Distgauss   !<
       real(fp), intent(out) :: SunFrac     !< Activity factor for the light-independent fraction of emissions
 
       ! Local Variables
       !----------------
       real(fp), parameter :: Cluster = 0.9 !< Standard reference temperature [K]
-      real(fp), parameter :: CANTRAN = 0.2 !< 
-      real(fp) :: Kb, LAIadj, LAIdepth     !< 
+      real(fp), parameter :: CANTRAN = 0.2 !<
+      real(fp) :: Kb, LAIadj, LAIdepth     !<
 
       !--------------------------------------------
       ! main function
@@ -117,9 +123,9 @@ contains
       LAIdepth   = LAIadj  * Distgauss
 
       if ((Sinbeta  > 0.002) .AND. (LAIadj  > 0.001)) then
-        SunFrac = EXP(-Kb * LAIdepth)
+         SunFrac = EXP(-Kb * LAIdepth)
       else
-        SunFrac = 0.2
+         SunFrac = 0.2
       endif
       return
 
@@ -130,13 +136,13 @@ contains
    !!
    !! Guenther et al, (GMD 2012) and associated MEGANv2.1 source code
    !!
-   !! \param CPD,   
+   !! \param CPD,
    !! \param BTA,   LIDF,  C_T1,  C_EO, A_NEW, A_GRO, A_MAT, A_OLD, BI_DIR
    !!
    !! \ingroup catchem_megan_process
    !!!>
    subroutine GET_MEGAN_PARAMS( CPD,   BTA,   LIDF,  C_T1,  C_EO, A_NEW, A_GRO, A_MAT, A_OLD, BI_DIR, RC)
-      
+
       ! Uses
       use precision_mod, only : fp, ZERO
       use Error_Mod,     Only : CC_SUCCESS, CC_FAILURE, CC_Error
@@ -145,7 +151,7 @@ contains
       character(LEN=256), intent(in) :: CPD       ! Compound name
       ! input/output Parameters
       real(fp), intent(inout)  :: BTA      !< Beta coefficient for temperature activity factor for light-independent fraction
-                                                          
+
       real(fp), intent(inout)  :: LIDF     !< Light-dependent fraction of emissions
       real(fp), intent(inout)  :: C_T1     !< CT1 parameter for temperature activity factor for light-dependent fraction
       real(fp), intent(inout)  :: C_EO     !< Ceo parameter for temperature activity factor for light-dependent fraction
@@ -153,7 +159,7 @@ contains
       real(fp), intent(inout)  :: A_GRO    !< Relative emission factor (growing leaves)
       real(fp), intent(inout)  :: A_MAT    !< Relative emission factor (mature leaves)
       real(fp), intent(inout)  :: A_OLD    !< Relative emission factor (old leaves)
-      logical,  intent(inout)) :: BI_DIR   !< Logical flag to indicate bidirectional exchange
+      logical,  intent(inout)  :: BI_DIR   !< Logical flag to indicate bidirectional exchange
       integer,  intent(out)    :: RC       !< Success or Failure
 
       !local variables
@@ -178,14 +184,14 @@ contains
       ! Note that not all the above compounds are used in standard chemistry
       ! simulations, but they are provided here for future incorporation or
       ! specialized applications. More compounds can be added as needed
-      ! by adding the corresponding CPD name and the appropriate paramaters.
+      ! by adding the corresponding CPD name and the appropriate parameters.
       !
       ! Values are from Table 4 in Guenther et al., 2012
       ! ----------------------------------------------------------------
 
       ! Isoprene, MBO
       IF ( TRIM(CPD) == 'ISOP' .OR. &
-           TRIM(CPD) == 'MBOX' ) THEN
+         TRIM(CPD) == 'MBOX' ) THEN
          BTA    = 0.13_fp  ! Not actually used for ISOP, MBO
          LIDF   = 1.0_fp
          C_T1   = 95.0_fp
@@ -196,10 +202,10 @@ contains
          A_OLD  = 0.9_fp
          BI_DIR = .FALSE.
 
-      ! Myrcene, sabinene, alpha-pinene
+         ! Myrcene, sabinene, alpha-pinene
       ELSE IF ( TRIM(CPD) == 'MYRC' .OR. &
-                TRIM(CPD) == 'SABI' .OR. &
-                TRIM(CPD) == 'APIN' ) THEN
+         TRIM(CPD) == 'SABI' .OR. &
+         TRIM(CPD) == 'APIN' ) THEN
          BTA    = 0.10_fp
          LIDF   = 0.6_fp
          C_T1   = 80.0_fp
@@ -210,10 +216,10 @@ contains
          A_OLD  = 1.05_fp
          BI_DIR = .FALSE.
 
-      ! Limonene, 3-carene, beta-pinene
+         ! Limonene, 3-carene, beta-pinene
       ELSE IF ( TRIM(CPD) == 'LIMO' .OR. &
-                TRIM(CPD) == 'CARE' .OR. &
-                TRIM(CPD) == 'BPIN' ) THEN
+         TRIM(CPD) == 'CARE' .OR. &
+         TRIM(CPD) == 'BPIN' ) THEN
          BTA    = 0.10_fp
          LIDF   = 0.2_fp
          C_T1   = 80.0_fp
@@ -224,7 +230,7 @@ contains
          A_OLD  = 1.05_fp
          BI_DIR = .FALSE.
 
-      ! t-beta-ocimene
+         ! t-beta-ocimene
       ELSE IF ( TRIM(CPD) == 'OCIM' ) THEN
          BTA    = 0.10_fp
          LIDF   = 0.8_fp
@@ -236,7 +242,7 @@ contains
          A_OLD  = 1.05_fp
          BI_DIR = .FALSE.
 
-      ! Other monoterpenes (lumped)
+         ! Other monoterpenes (lumped)
       ELSE IF ( TRIM(CPD) == 'OMON' ) THEN
          BTA    = 0.10_fp
          LIDF   = 0.4_fp
@@ -248,7 +254,7 @@ contains
          A_OLD  = 1.05_fp
          BI_DIR = .FALSE.
 
-      ! Methanol
+         ! Methanol
       ELSE IF ( TRIM(CPD) == 'MOH' ) THEN
          BTA    = 0.08_fp
          LIDF   = 0.8_fp
@@ -260,7 +266,7 @@ contains
          A_OLD  = 1.2_fp
          BI_DIR = .FALSE.
 
-      ! Acetone
+         ! Acetone
       ELSE IF ( TRIM(CPD) == 'ACET' ) THEN
          BTA    = 0.1_fp
          LIDF   = 0.2_fp
@@ -272,13 +278,13 @@ contains
          A_OLD  = 1.0_fp
          BI_DIR = .FALSE.
 
-      ! Bidirectional VOC: Ethanol, formaldehyde, acetaldehyde, formic acid,
-      ! acetic acid
+         ! Bidirectional VOC: Ethanol, formaldehyde, acetaldehyde, formic acid,
+         ! acetic acid
       ELSE IF ( TRIM(CPD) == 'EOH'  .OR. &
-                TRIM(CPD) == 'CH2O' .OR. &
-                TRIM(CPD) == 'ALD2' .OR. &
-                TRIM(CPD) == 'FAXX' .OR. &
-                TRIM(CPD) == 'AAXX' ) THEN
+         TRIM(CPD) == 'CH2O' .OR. &
+         TRIM(CPD) == 'ALD2' .OR. &
+         TRIM(CPD) == 'FAXX' .OR. &
+         TRIM(CPD) == 'AAXX' ) THEN
          BTA    = 0.13_fp
          LIDF   = 0.8_fp
          C_T1   = 95.0_fp
@@ -289,12 +295,12 @@ contains
          A_OLD  = 1.0_fp
          BI_DIR = .TRUE.
 
-      ! Stress VOCs: ethene, toluene, HCN
-      ! There are others species in this category but none are currently
-      ! used in GEOS-Chem
+         ! Stress VOCs: ethene, toluene, HCN
+         ! There are others species in this category but none are currently
+         ! used in GEOS-Chem
       ELSE IF ( TRIM(CPD) == 'C2H4' .OR. &
-                TRIM(CPD) == 'TOLU' .OR. &
-                TRIM(CPD) == 'HCNX' ) THEN
+         TRIM(CPD) == 'TOLU' .OR. &
+         TRIM(CPD) == 'HCNX' ) THEN
          BTA    = 0.1_fp
          LIDF   = 0.8_fp
          C_T1   = 80.0_fp
@@ -305,9 +311,9 @@ contains
          A_OLD  = 1.0_fp
          BI_DIR = .FALSE.
 
-      ! Other VOCs: >C2 alkenes
-      ! This includes propene, butene and very minor contribution from
-      ! larger alkenes
+         ! Other VOCs: >C2 alkenes
+         ! This includes propene, butene and very minor contribution from
+         ! larger alkenes
       ELSE IF ( TRIM(CPD) == 'PRPE' ) THEN
          BTA    = 0.1_fp
          LIDF   = 0.2_fp
@@ -318,12 +324,12 @@ contains
          A_MAT  = 1.0_fp
          A_OLD  = 1.0_fp
          BI_DIR = .FALSE.
-      
-      ! SOAupdate: Sesquiterpenes hotp 3/2/10
-      ! alpha-Farnesene, beta-Caryophyllene, other sesquiterpenes
+
+         ! SOAupdate: Sesquiterpenes hotp 3/2/10
+         ! alpha-Farnesene, beta-Caryophyllene, other sesquiterpenes
       ELSE IF ( TRIM(CPD) == 'FARN' .OR. &
-                TRIM(CPD) == 'BCAR' .OR. &
-                TRIM(CPD) == 'OSQT' ) THEN
+         TRIM(CPD) == 'BCAR' .OR. &
+         TRIM(CPD) == 'OSQT' ) THEN
          BTA    = 0.17_fp
          LIDF   = 0.5_fp
          C_T1   = 130.0_fp
@@ -334,9 +340,9 @@ contains
          A_OLD  = 0.95_fp
          BI_DIR = .FALSE.
 
-      ! Calls for any other MEGAN compounds (e.g. sesquiterpenes, etc.) can
-      ! be added following the above format based on the parameters in
-      ! Guenther 2012 or the MEGAN source code.
+         ! Calls for any other MEGAN compounds (e.g. sesquiterpenes, etc.) can
+         ! be added following the above format based on the parameters in
+         ! Guenther 2012 or the MEGAN source code.
       ELSE
          RC = CC_FAILURE
          MSG = 'Invalid compound name'
@@ -364,23 +370,23 @@ contains
    !! \ingroup catchem_megan_process
    !!!>
    subroutine GET_GAMMA_PAR_PCEEA(Q_DIR_2, Q_DIFF_2, PARDR_AVG_SIM, PARDF_AVG_SIM,  &
-                                  LAT, DOY, LocalHour, D2RAD, RAD2D, GAMMA_P_PCEEA)
-     
+      LAT, DOY, LocalHour, D2RAD, RAD2D, GAMMA_P_PCEEA)
+
       IMPLICIT NONE
       ! Parameters
       real(fp),  intent(in)  :: Q_DIR_2           !< Direct PAR [umol/m2/s]
       real(fp),  intent(in)  :: Q_DIFF_2          !< Diffuse PAR [umol/m2/s]
       real(fp),  intent(in)  :: PARDR_AVG_SIM     !< Avg direct PAR [W/m2]
       real(fp),  intent(in)  :: PARDF_AVG_SIM     !< Avg diffuse PAR [W/m2]
-      real(fp),  intent(in)  :: LAT               !< Note: this may need a new funtion and put in local varaible
-      integer,   intent(in)  :: DOY               !< Note: this may need a new funtion and put in local varaible
-      real(fp),  intent(in)  :: LocalHour         !< Note: this may need a new funtion and put in local varaible
+      real(fp),  intent(in)  :: LAT               !< Note: this may need a new function and put in local variable
+      integer,   intent(in)  :: DOY               !< Note: this may need a new function and put in local variable
+      real(fp),  intent(in)  :: LocalHour         !< Note: this may need a new function and put in local variable
       real(fp),  intent(in)  :: D2RAD, RAD2D      !< Note: this could be put in constants
       real(fp),  intent(out) :: GAMMA_P_PCEEA     !< GAMMA factor for light
 
       ! Local Variables
-      real(fp) :: mmPARDR_DAILY      !< 
-      real(fp) :: mmPARDF_DAILY      !< 
+      real(fp) :: mmPARDR_DAILY      !<
+      real(fp) :: mmPARDF_DAILY      !<
       real(fp) :: PAC_DAILY, PAC_INSTANT, C_PPFD
       real(fp) :: PTOA, PHI
       real(fp) :: BETA,   SINbeta
@@ -398,7 +404,7 @@ contains
       ! Initialize
       C_PPFD = 0.0_fp
       PTOA   = 0.0_fp
-      
+
       ! Convert past light conditions to micromol/m2/s (!!!Do not use)
       mmPARDR_DAILY = PARDR_AVG_SIM  !* WM2_TO_UMOLM2S
       mmPARDF_DAILY = PARDF_AVG_SIM  !* WM2_TO_UMOLM2S
@@ -416,7 +422,7 @@ contains
       !CALL HcoClock_GetLocal( HcoState, I, J, cH = LocalHour, RC=RC )
 
       ! Get solar elevation angle
-      SINbeta =  SOLAR_ANGLE( DOY, LocalHour, LAT, D2RAD )
+      CALL  SOLAR_ANGLE( DOY, LocalHour, LAT, D2RAD, SINbeta )
       BETA    =  ASIN( SINbeta ) * RAD2D
 
       IF ( SINbeta < 0.0_fp ) THEN
@@ -427,8 +433,8 @@ contains
 
          ! PPFD at top of atmosphere
          PTOA    = 3000.0_fp + 99.0_fp * &
-                  COS( 2._fp * 3.14159265358979323_fp * &
-                  ( DOY - 10.0_fp ) / 365.0_fp )
+            COS( 2._fp * 3.14159265358979323_fp * &
+            ( DOY - 10.0_fp ) / 365.0_fp )
 
          ! Above canopy transmission
          PHI     = PAC_INSTANT / ( SINbeta * PTOA )
@@ -449,7 +455,7 @@ contains
 
       ! Prevent negative values
       GAMMA_P_PCEEA = MAX( GAMMA_P_PCEEA , 0.0_fp )
-      
+
       return
    end subroutine GET_GAMMA_PAR_PCEEA
 
@@ -458,7 +464,7 @@ contains
    !!
    !! References:
    !! (1 ) Guenther et al, 2006
-   !! (2 ) Guenther et al, MEGAN v2.1 user mannual 2007-09
+   !! (2 ) Guenther et al, MEGAN v2.1 user manual 2007-09
    !! This code was taken directly from the MEGAN v2.1 source code
    !!
    !! \param DOY, SHOUR
@@ -471,7 +477,7 @@ contains
 
       IMPLICIT NONE
       ! Parameters
-      integer,  intent(in)    :: DOY      !< Day of year 
+      integer,  intent(in)    :: DOY      !< Day of year
       real(fp), intent(in)    :: SHOUR    !< Local time
       real(fp), intent(in)    :: LAT      !< Latitude
       real(fp), intent(in)    :: D2RAD    !< Degree to radiance
@@ -497,12 +503,12 @@ contains
    !>
    !! \brief Computes the temperature activity factor for the light-independent fraction of emissions
    !!
-   !!References: 
+   !!References:
    !! (1 ) Guenther et al, 2006
-   !! (2 ) Guenther et al, MEGAN user mannual 2007-08
+   !! (2 ) Guenther et al, MEGAN user manual 2007-08
    !!(3 ) Guenther et al., GMD 2012 and MEGANv2.1 source code
    !!
-   !! \param T 
+   !! \param T
    !! \param T_Leaf_Int, T_Leaf_Temp
    !! \param BETA
    !!
@@ -511,15 +517,15 @@ contains
    subroutine GET_GAMMA_T_LI(T, BETA, T_Leaf_Int, T_Leaf_Temp, GAMMA_T_LI)
       IMPLICIT NONE
       ! Parameters
-      real(fp), intent(in)  :: T             !< 
+      real(fp), intent(in)  :: T             !<
       real(fp), intent(in)  :: BETA          !< Temperature factor per species
-      real(fp), intent(in)  :: T_Leaf_Int    !< 
+      real(fp), intent(in)  :: T_Leaf_Int    !<
       real(fp), intent(in)  :: T_Leaf_Temp   !< Soil Moisture Attenuation Factor
       real(fp), intent(out) :: GAMMA_T_LI  !< Factor for the light-independent emissions
 
       ! Local Variables
       !----------------
-      real(fp) :: L_T, L_PT_T    !< 
+      real(fp) :: L_T, L_PT_T    !<
       real(fp), parameter :: T_STANDARD = 303.0_fp
 
       !--------------------------------------------
@@ -537,7 +543,7 @@ contains
    !!  References:
    !!  (1 ) Guenther et al, 1995
    !!  (2 ) Guenther et al, 2006
-   !!  (3 ) Guenther et al, MEGAN v2.1 user mannual 2007-08
+   !!  (3 ) Guenther et al, MEGAN v2.1 user manual 2007-08
    ! ! (4 ) Guenther et al., GMD 2012 and MEGANv2.1 source code.
    !!
    !! \param T
@@ -551,13 +557,13 @@ contains
       ! Parameters
       real(fp), intent(in)  :: T             !< Current leaf temperature [K]
       real(fp), intent(in)  :: PT_15         !< Average leaf temperature over the past 15 days
-      real(fp), intent(in)  :: PT_1          !< Average leaf temperature over the past arbitray day(s). Not used at present
+      real(fp), intent(in)  :: PT_1          !< Average leaf temperature over the past arbitrary day(s). Not used at present
       real(fp), intent(in)  :: CT1, CEO      !< Compound-specific parameters for light-dependent temperature activity
       real(fp), intent(out) :: GAMMA_T_LD  !< Temperature activity factor for the light-dependent emissions
 
       ! Local Variables
-      real(fp) :: C_T, CT2        !< 
-      real(fp) :: E_OPT, T_OPT, X !< 
+      real(fp) :: C_T, CT2        !<
+      real(fp) :: E_OPT, T_OPT, X !<
       ! Ideal gas constant [J/mol/K] (!!!! Note: the constant module is 8.314)
       real(fp), parameter :: R   = 8.3144598e-3_fp
 
@@ -575,7 +581,7 @@ contains
       ! effect of average temperature over previous 15 days, based on
       ! Eq 5a, 5b, 5c from Guenther et al, 1999.
       C_T   = E_OPT * CT2 * EXP( CT1 * X ) / &
-               ( CT2 - CT1 * ( 1.0_fp - EXP( CT2 * X ) ) )
+         ( CT2 - CT1 * ( 1.0_fp - EXP( CT2 * X ) ) )
 
       ! Hourly emission activity = C_T
       ! Prevent negative values
@@ -589,10 +595,10 @@ contains
    !!
    !!  References:
    !!  (1 ) Guenther et al, 2006
-   !!  (2 ) Guenther et al, MEGAN user mannual 2007-08
+   !!  (2 ) Guenther et al, MEGAN user manual 2007-08
    !!  (3 ) Guenther et al., GMD 2012 and MEGANv2.1 source code.
    !!
-   !! \param CMLAI 
+   !! \param CMLAI
    !! \param BIDIREXCH
    !!
    !! \ingroup catchem_megan_process
@@ -601,8 +607,8 @@ contains
       IMPLICIT NONE
       ! Parameters
       real(fp), intent(in)  :: CMLAI       !< Current month's LAI [cm2/cm2]
-      real(fp), intent(in)  :: BIDIREXCH   !< Logical flag for bidirectional exchange
-      real(fp), intent(out) :: GAMMA_LAI   !< LAI factor 
+      logical,  intent(in)  :: BIDIREXCH   !< Logical flag for bidirectional exchange
+      real(fp), intent(out) :: GAMMA_LAI   !< LAI factor
 
       ! Local Variables
       real(fp), parameter :: z0s = 0.0008467 !< ideal roughness length of soil
@@ -621,7 +627,7 @@ contains
             IF ( CMLAI <= 2.0_fp ) THEN
                GAMMA_LAI = 0.5_fp * CMLAI
 
-            ! if between 2 and 6:
+               ! if between 2 and 6:
             ELSE
                GAMMA_LAI = 1.0_fp - 0.0625_fp * ( CMLAI - 2.0_fp )
             END IF
@@ -631,7 +637,7 @@ contains
             GAMMA_LAI = 0.75_fp
          END IF
 
-      ! For all other compounds use the standard gamma_lai formulation
+         ! For all other compounds use the standard gamma_lai formulation
       ELSE
          !GAMMA_LAI = 0.49_fp * CMLAI / SQRT( 1.0_fp + 0.2_fp * CMLAI*CMLAI)
          GAMMA_LAI = 1.0_fp   !canopy add
@@ -642,11 +648,11 @@ contains
    end subroutine GET_GAMMA_LAI
 
    !>
-   !! \brief Computes the temperature sensitivity for the light-dependent 
+   !! \brief Computes the temperature sensitivity for the light-dependent
    !! fraction of emissions using the updated Canopy Model (Sam Silva's paper).
    !!
-   !! References: 
-   !! 
+   !! References:
+   !!
    !!
    !! \param T
    !! \param PT_15, PT_24
@@ -656,14 +662,14 @@ contains
    !! \ingroup catchem_megan_process
    !!!>
    subroutine GET_GAMMA_T_LD_C(T, PT_15, PT_24, CT1, CEO, T_Leaf_Int, T_Leaf_Temp, GAMMA_T_LD_C )
-      
+
       IMPLICIT NONE
 
       ! Input Parameters
       !-----------------
-      real(fp), intent(in) :: T             !< 
-      real(fp), intent(in) :: T_leaf_Int    !< 
-      real(fp), intent(in) :: T_Leaf_Temp   !< 
+      real(fp), intent(in) :: T             !<
+      real(fp), intent(in) :: T_leaf_Int    !<
+      real(fp), intent(in) :: T_Leaf_Temp   !<
       real(fp), intent(in) :: PT_15         !< Average leaf temperature over the past 15 days. Not used at present
       real(fp), intent(in) :: PT_24         !< Average leaf temperature over the past day
       real(fp), intent(in) :: CT1, CEO      !< Compound-specific parameters
@@ -675,9 +681,9 @@ contains
 
       ! Local Variables
       !-----------------
-      real(fp) :: C_T, CT2         !< 
-      real(fp) :: E_OPT, T_OPT, X  !< 
-      real(fp) :: L_T, L_PT_T      !< 
+      real(fp) :: C_T, CT2         !<
+      real(fp) :: E_OPT, T_OPT, X  !<
+      real(fp) :: L_T, L_PT_T      !<
       ! Ideal gas constant [J/mol/K] (!!!! Note: the constant module is 8.314)
       real(fp), parameter :: R   = 8.3144598e-3_fp
 
@@ -699,14 +705,14 @@ contains
       ! effect of average temperature over previous 15 days, based on
       ! Eq 5a, 5b, 5c from Guenther et al, 1999.
       C_T   = E_OPT * CT2 * EXP( CT1 * X ) /       &
-              ( CT2 - CT1 * ( 1.0_fp - EXP( CT2 * X ) ) )
+         ( CT2 - CT1 * ( 1.0_fp - EXP( CT2 * X ) ) )
 
       ! Hourly emission activity = C_T
       ! Prevent negative values
       IF (T < 260) THEN
-        GAMMA_T_LD_C = 0.0_fp
+         GAMMA_T_LD_C = 0.0_fp
       ELSE
-        GAMMA_T_LD_C = MAX( C_T, 0.0_fp )
+         GAMMA_T_LD_C = MAX( C_T, 0.0_fp )
       ENDIF
 
       return
@@ -728,7 +734,7 @@ contains
    !! \ingroup catchem_megan_process
    !!!>
    subroutine GET_GAMMA_PAR_C(Q_DIR_2, Q_DIFF_2, PARDR_AVG_SIM, PARDF_AVG_SIM, &
-                              P_Leaf_LAI, P_Leaf_Int, LAI, PSTD, GAMMA_P_C)
+      P_Leaf_LAI, P_Leaf_Int, LAI, PSTD, GAMMA_P_C)
       IMPLICIT NONE
       ! Parameters
       real(fp), intent(in)  :: Q_DIR_2          !< Direct PAR [umol/m2/s]
@@ -736,22 +742,22 @@ contains
       real(fp), intent(in)  :: PARDR_AVG_SIM    !< Avg direct PAR [W/m2]
       real(fp), intent(in)  :: PARDF_AVG_SIM    !< Avg diffuse PAR [W/m2]
       real(fp), intent(in)  :: P_Leaf_LAI       !<
-      real(fp), intent(in)  :: P_Leaf_Int       !< 
-      real(fp), intent(in)  :: LAI              !< 
-      real(fp), intent(in)  :: PSTD             !< 
+      real(fp), intent(in)  :: P_Leaf_Int       !<
+      real(fp), intent(in)  :: LAI              !<
+      real(fp), intent(in)  :: PSTD             !<
       real(fp), intent(out) :: GAMMA_P_C        !< GAMMA factor for light
 
       ! Local Variables
-      real(fp) :: mmPARDR_DAILY    !< 
-      real(fp) :: mmPARDF_DAILY    !< 
-      real(fp) :: PAC_DAILY        !< 
+      real(fp) :: mmPARDR_DAILY    !<
+      real(fp) :: mmPARDF_DAILY    !<
+      real(fp) :: PAC_DAILY        !<
       real(fp) :: PAC_INSTANT      !<
-      real(fp) :: C_PPFD           !< 
+      real(fp) :: C_PPFD           !<
       real(fp) :: PTOA             !<
-      !real(fp) :: PHI              !< 
-      !real(fp) :: BETA,   SINbeta  !< 
-      real(fp) :: C1               !< 
-      real(fp) :: Alpha            !< 
+      !real(fp) :: PHI              !<
+      !real(fp) :: BETA,   SINbeta  !<
+      real(fp) :: C1               !<
+      real(fp) :: Alpha            !<
 
       !--------------------------------------------
       ! GET_GAMMA_PAR_C begins here!
@@ -776,25 +782,25 @@ contains
          GAMMA_P_C = 0.0_fp
 
       ELSE
-        Alpha  = 0.004
-        Alpha  = 0.004 - 0.0005*LOG(PAC_DAILY)
-        C1 = 1.03
-        C1 = 0.0468 * EXP(0.0005 * (PAC_DAILY - PSTD)) *     &
-                       (PAC_DAILY **  0.6)
-        GAMMA_P_C = (Alpha * C1 * PAC_INSTANT) /             &
-                         ((1 + Alpha**2. * PAC_INSTANT**2.)**0.5)
+         Alpha  = 0.004
+         Alpha  = 0.004 - 0.0005*LOG(PAC_DAILY)
+         C1 = 1.03
+         C1 = 0.0468 * EXP(0.0005 * (PAC_DAILY - PSTD)) *     &
+            (PAC_DAILY **  0.6)
+         GAMMA_P_C = (Alpha * C1 * PAC_INSTANT) /             &
+            ((1 + Alpha**2. * PAC_INSTANT**2.)**0.5)
       ENDIF
       ! Prevent negative values
-      GAMMA_P_C = MAX( GAMMA_P_C , 0.0_fp )      
+      GAMMA_P_C = MAX( GAMMA_P_C , 0.0_fp )
 
       return
    end subroutine GET_GAMMA_PAR_C
 
 
    !>
-   !! \brief Computes the 
+   !! \brief Computes the
    !!
-   !!References: 
+   !!References:
    !! (1 ) Probably from Sam Silva paper !!!Note
    !!
    !! \param CMLAI
@@ -805,14 +811,15 @@ contains
       IMPLICIT NONE
       ! Parameters
       real(fp), intent(in)  :: CMLAI         !< Current month's LAI [cm2/cm2]
-      real(fp), intent(out) :: CDEA(5)       !< 
+      real(fp), intent(out) :: CDEA(5)       !<
 
       ! Local Variables
       !----------------
-      real(fp) :: LAIdepth    !< 
+      real(fp) :: LAIdepth    !<
+      REAL(fp) :: Cdepth(5)
       integer  :: K
       real(fp), parameter :: CCD1 = -0.2_fp
-      real(fp), parameter :: CCD2 = -0.2_fp
+      real(fp), parameter :: CCD2 = 1.3_fp
 
       !--------------------------------------------
       ! GET_CDEA begins here!
@@ -823,11 +830,11 @@ contains
       Cdepth (4)   = 0.7692465
       Cdepth (5)   = 0.9530899
       DO K = 1, 5
-        LAIdepth = CMLAI * Cdepth(K)
-        IF ( LAIdepth .GT. 3 ) THEN
-           LAIdepth = 3.0
-        ENDIF
-        CDEA(K) = CCD1 * LAIdepth + CCD2
+         LAIdepth = CMLAI * Cdepth(K)
+         IF ( LAIdepth .GT. 3 ) THEN
+            LAIdepth = 3.0
+         ENDIF
+         CDEA(K) = CCD1 * LAIdepth + CCD2
       ENDDO
 
       return
@@ -836,12 +843,12 @@ contains
    !>
    !! \brief Computes the gamma exchange activity factor which is sensitive to leaf age
    !!
-   !!References: 
+   !!References:
    !! (1 ) Guenther et al, 2006
-   !! (2 ) Guenther et al, MEGAN user mannual 2007-08
+   !! (2 ) Guenther et al, MEGAN user manual 2007-08
    !! (3 ) Guenther et al., GMD 2012 and MEGANv2.1 source code
    !!
-   !! \param CMLAI, PMLAI 
+   !! \param CMLAI, PMLAI
    !! \param DBTWN, TT
    !! \param AN, AG, AM, AO
    !!
@@ -854,10 +861,10 @@ contains
       real(fp), intent(in)  :: PMLAI      !< Previous months LAI [cm2/cm2]
       real(fp), intent(in)  :: DBTWN      !< Number of days between
       real(fp), intent(in)  :: TT         !< Daily average temperature [K]
-      real(fp), intent(in)  :: AN         !< Relative emiss factor (new leaves)
-      real(fp), intent(in)  :: AG         !< Relative emiss factor (growing leaves)
-      real(fp), intent(in)  :: AM         !< Relative emiss factor (mature leaves)
-      real(fp), intent(in)  :: AO         !< Relative emiss factor (old leaves)
+      real(fp), intent(in)  :: AN         !< Relative emission factor (new leaves)
+      real(fp), intent(in)  :: AG         !< Relative emission factor (growing leaves)
+      real(fp), intent(in)  :: AM         !< Relative emission factor (mature leaves)
+      real(fp), intent(in)  :: AO         !< Relative emission factor (old leaves)
       real(fp), intent(out) :: GAMMA_AGE  !< leaf age activity factor
 
       ! Local Variables
@@ -868,11 +875,11 @@ contains
       real(fp) :: FOLD  !< Fraction of old leaves
       real(fp) :: TI    !< number of days after budbreak required to induce emissions
       real(fp) :: TM    !< number of days after budbreak required to reach peak emissions
-      
+
       !--------------------------------------------
       ! GET_GAMMAT_AGE begins here!
       !--------------------------------------------
-      
+
       !-----------------------
       ! Compute TI and TM
       ! (mpb,2009)
@@ -908,7 +915,7 @@ contains
          ! Calculate FMAT
          IF ( DBTWN > TM ) THEN
             FMAT = ( PMLAI / CMLAI ) + &
-                  (( DBTWN - TM ) / DBTWN )*( 1.0_fp -  PMLAI / CMLAI )
+               (( DBTWN - TM ) / DBTWN )*( 1.0_fp -  PMLAI / CMLAI )
          ELSE
             FMAT = ( PMLAI / CMLAI )
          ENDIF
@@ -939,11 +946,11 @@ contains
    !>
    !! \brief Computes ctivity factor for soil moisture
    !!
-   !!References: 
+   !!References:
    !! (1 ) Guenther et al, 2006
    !! (2 ) Guenther et al., GMD 2012 and MEGANv2.1 source code
    !!
-   !! \param GWETROOT 
+   !! \param GWETROOT
    !! \param CMPD
    !!
    !! \ingroup catchem_megan_process
@@ -951,13 +958,13 @@ contains
    subroutine GET_GAMMA_SM(GWETROOT, CMPD, GAMMA_SM)
       IMPLICIT NONE
       ! Parameters
-      real(fp), intent(in)            :: GWETROOT   !< Relative root zone wetness (unitless)  
+      real(fp), intent(in)            :: GWETROOT   !< Relative root zone wetness (unitless)
       character(len=256), intent(in)  :: CMPD       !< Compound name
       real(fp), intent(out)           :: GAMMA_SM   !< Activity factor
 
       ! Local Variables
       !----------------
-      real(fp) :: GWETROOT2    !< 
+      real(fp) :: GWETROOT2    !<
 
       !--------------------------------------------
       ! GET_GAMMAT_SM begins here!
@@ -968,9 +975,9 @@ contains
       ! Error trap: GWETROOT must be between 0.0 and 1.0 (ckeller, 4/16/15)
       !GWETROOT = MIN(MAX(ExtState%GWETROOT%Arr%Val(I,J),0.0_fp),1.0_fp)
       GWETROOT2 = MIN(MAX(GWETROOT,0.0_fp),1.0_fp)
-  
+
       IF ( TRIM( CMPD ) == 'ALD2' .OR. TRIM ( CMPD ) == 'EOH' ) THEN
-  
+
          ! GWETROOT = degree of saturation or wetness in the root-zone
          ! (top meter of soil). This is defined as the ratio of the volumetric
          ! soil moisture to the porosity. We use a soil moisture activity factor
@@ -979,7 +986,7 @@ contains
          ! Constant value of 1.0 for GWETROOT = 0-0.9, increasing linearly to
          ! 3.0 at GWETROOT =1.
          GAMMA_SM = MAX( 20.0_fp * GWETROOT - 17.0_fp, 1.0_fp)
-  
+
       ENDIF
 
       return
@@ -988,8 +995,8 @@ contains
    !>
    !! \brief Computes the CO2 activity factor associated with CO2 inhibition of isoprene emission.
    !!
-   !!References: 
-   !! (1 ) Heald, C. L., Wilkinson, M. J., Monson, R. K., Alo, C. A.,
+   !!References:
+   !! (1 ) Heald, C. L., Wilkinson, M. J., Monson, R. K., Also, C. A.,
    !!      Wang, G. L., and Guenther, A.: Response of isoprene emission
    !!      to ambient co(2) changes and implications for global budgets,
    !!      Global Change Biology, 15, 1127-1140, 2009.
@@ -1013,20 +1020,20 @@ contains
 
       ! Local Variables
       !----------------
-      real(fp) :: CO2i        !< Intercellular CO2 conc [ppmv]  
-      real(fp) :: ISMAXi      !< Asymptote for intercellular CO2 
-      real(fp) :: HEXPi       !< Exponent for intercellular CO2  
-      real(fp) :: CSTARi      !< Scaling coef for intercellular CO2  
-      real(fp) :: ISMAXa      !< Asymptote for atmospheric CO2  
-      real(fp) :: HEXPa       !< Exponent for atmospheric CO2  
-      real(fp) :: CSTARa      !< Scaling coef for atmospheric CO2  
+      real(fp) :: CO2i        !< Intercellular CO2 conc [ppmv]
+      real(fp) :: ISMAXi      !< Asymptote for intercellular CO2
+      real(fp) :: HEXPi       !< Exponent for intercellular CO2
+      real(fp) :: CSTARi      !< Scaling coef for intercellular CO2
+      real(fp) :: ISMAXa      !< Asymptote for atmospheric CO2
+      real(fp) :: HEXPa       !< Exponent for atmospheric CO2
+      real(fp) :: CSTARa      !< Scaling coef for atmospheric CO2
       logical  :: LPOSSELL    !< Use Possell & Hewitt (2011)?
       logical  :: LWILKINSON  !< Use Wilkinson et al. (2009)?
 
       !--------------------------------------------
       ! GET_GAMMAT_CO2 begins here!
       !--------------------------------------------
-    
+
       !----------------------------------------------------------
       ! Choose between two alternative CO2 inhibition schemes
       !----------------------------------------------------------
@@ -1041,64 +1048,64 @@ contains
       ! fluctuation, which is here set as a constant fraction of
       ! atmospheric CO2:
       LWILKINSON  = .FALSE.   ! Set .TRUE. only if LPOSSELL = .FALSE.
-  
+
       !-----------------------
       ! Compute GAMMA_CO2
       !-----------------------
-  
+
       IF ( LPOSSELL ) THEN
-  
+
          ! Use empirical relationship of Possell & Hewitt (2011):
          GAMMA_CO2 = 8.9406_fp / ( 1.0_fp + 8.9406_fp * 0.0024_fp * CO2a )
-  
+
       ELSEIF ( LWILKINSON ) THEN
-  
+
          ! Use parameterization of Wilkinson et al. (2009):
-  
+
          ! Parameters for intercellular CO2 using linear interpolation:
          IF ( CO2a <= 600.0_fp ) THEN
             ISMAXi = 1.036_fp  - (1.036_fp - 1.072_fp) / &
-                     (600.0_fp - 400.0_fp) * (600.0_fp - CO2a)
+               (600.0_fp - 400.0_fp) * (600.0_fp - CO2a)
             HEXPi  = 2.0125_fp - (2.0125_fp - 1.7000_fp) / &
-                     (600.0_fp - 400.0_fp) * (600.0_fp - CO2a)
+               (600.0_fp - 400.0_fp) * (600.0_fp - CO2a)
             CSTARi = 1150.0_fp - (1150.0_fp - 1218.0_fp) / &
-                     (600.0_fp - 400.0_fp) * (600.0_fp - CO2a)
+               (600.0_fp - 400.0_fp) * (600.0_fp - CO2a)
          ELSEIF ( CO2a > 600.0_fp .AND. CO2a < 800.0_fp ) THEN
             ISMAXi = 1.046_fp  - (1.046_fp - 1.036_fp) / &
-                     (800.0_fp - 600.0_fp) * (800.0_fp - CO2a)
+               (800.0_fp - 600.0_fp) * (800.0_fp - CO2a)
             HEXPi  = 1.5380_fp - (1.5380_fp - 2.0125_fp) / &
-                     (800.0_fp - 600.0_fp) * (800.0_fp - CO2a)
+               (800.0_fp - 600.0_fp) * (800.0_fp - CO2a)
             CSTARi = 2025.0_fp - (2025.0_fp - 1150.0_fp) / &
-                     (800.0_fp - 600.0_fp) * (800.0_fp - CO2a)
+               (800.0_fp - 600.0_fp) * (800.0_fp - CO2a)
          ELSE
             ISMAXi = 1.014_fp - (1.014_fp - 1.046_fp) / &
-                     (1200.0_fp - 800.0_fp) * (1200.0_fp - CO2a)
+               (1200.0_fp - 800.0_fp) * (1200.0_fp - CO2a)
             HEXPi  = 2.8610_fp - (2.8610_fp - 1.5380_fp) / &
-                     (1200.0_fp - 800.0_fp) * (1200.0_fp - CO2a)
+               (1200.0_fp - 800.0_fp) * (1200.0_fp - CO2a)
             CSTARi = 1525.0_fp - (1525.0_fp - 2025.0_fp) / &
-                     (1200.0_fp - 800.0_fp) * (1200.0_fp - CO2a)
+               (1200.0_fp - 800.0_fp) * (1200.0_fp - CO2a)
          ENDIF
-  
+
          ! Parameters for atmospheric CO2:
          ISMAXa    = 1.344_fp
          HEXPa     = 1.4614_fp
          CSTARa    = 585.0_fp
-  
+
          ! For now, set CO2_Ci = 0.7d0 * CO2_Ca as recommended by Heald
          ! et al. (2009):
          CO2i      = 0.7_fp * CO2a
-  
+
          ! Compute GAMMA_CO2:
          GAMMA_CO2 = ( ISMAXi -  ISMAXi * CO2i**HEXPi / &
-                     ( CSTARi**HEXPi + CO2i**HEXPi ) )  &
-                     * ( ISMAXa - ISMAXa * ( 0.7_fp * CO2a )**HEXPa / &
-                     ( CSTARa**HEXPa + ( 0.7_fp * CO2a )**HEXPa ) )
-  
+            ( CSTARi**HEXPi + CO2i**HEXPi ) )  &
+            * ( ISMAXa - ISMAXa * ( 0.7_fp * CO2a )**HEXPa / &
+            ( CSTARa**HEXPa + ( 0.7_fp * CO2a )**HEXPa ) )
+
       ELSE
-  
+
          ! No CO2 inhibition scheme is used; GAMMA_CO2 set to unity:
          GAMMA_CO2 = 1.0_fp
-  
+
       ENDIF
 
       return
@@ -1107,14 +1114,14 @@ contains
    !>
    !! \brief Computes the normalization factor needed to compute emissions
    !!
-   !!References: 
+   !!References:
    !!(1 ) Guenther et al., GMD 2012 and MEGANv2.1 source code
    !!(2 ) Created by dbm 11/2012. We calculate only 1 normalization factor for all
    !!     compounds based on the isoprene gamma values. Formally there should be a
    !!     different normalization factor for each compound, but we are following
    !!     Alex Guenther's approach here and the MEGAN source code.
    !!
-   !! \param D2RAD_FAC 
+   !! \param D2RAD_FAC
    !! \param NORM_FAC
    !! \param RC
    !!
@@ -1124,9 +1131,9 @@ contains
       use Error_Mod,     Only : CC_SUCCESS !, CC_FAILURE, CC_Error
       IMPLICIT NONE
       ! Parameters
-      real(fp), intent(in)    :: D2RAD_FAC   !< 
+      real(fp), intent(in)    :: D2RAD_FAC   !<
       real(fp), intent(out)    :: NORM_FAC    !<
-      integer,  intent(out) :: RC          !< 
+      integer,  intent(out) :: RC          !<
 
       ! Local Variables
       !----------------
@@ -1159,7 +1166,7 @@ contains
       !--------------------------------------------
       ! CALC_NORM_FAC begins here!
       !--------------------------------------------
-      
+
       ! -----------------
       ! GAMMA_P for standard conditions
       ! -----------------
@@ -1180,130 +1187,130 @@ contains
       ! -----------------
       ! gamma_t_li = EXP( Beta * ( T - T_Standard ) )
       ! This is 1.0 for T = T_Standard
-         GAMMA_T_LI_STANDARD = 1.0_fp
+      GAMMA_T_LI_STANDARD = 1.0_fp
 
-         ! -----------------
-         ! GAMMA_SM for standard conditions
-         ! -----------------
-         ! Standard condition is soil moisture = 0.3 m^3/m^3
-         ! GAMMA_SM = 1.0 for all compounds under this condition
-         GAMMA_SM_STANDARD = 1.0_fp
+      ! -----------------
+      ! GAMMA_SM for standard conditions
+      ! -----------------
+      ! Standard condition is soil moisture = 0.3 m^3/m^3
+      ! GAMMA_SM = 1.0 for all compounds under this condition
+      GAMMA_SM_STANDARD = 1.0_fp
       ! -----------------
       ! GAMMA_TP for standard conditions canopy add
       ! -----------------
       ! gamma_t_li = EXP( Beta * ( T - T_Standard ) )
       ! This is 1.0 for T = T_Standard
 
-         CDEA = GET_CDEA( 5.0_fp )
-         Distgauss = (/0.0469101, 0.2307534, 0.5, 0.7692465,               &
-                          0.9530899/)
-         VPGWT = (/0.1184635, 0.2393144, 0.284444444,                      &
-                      0.2393144, 0.1184635/)
-         P_Leaf_Int_Sun  = (/1.0831_fp, 1.0964_fp, 1.1036_fp,              &
-                                   1.0985_fp, 1.0901_fp/)
-         P_Leaf_Int_Shade = (/0.8706_fp, 0.8895_fp, 0.9160_fp,             &
-                                    0.9407_fp, 0.9564_fp/)
-   
-         P_Leaf_LAI_Sun = (/0.0018_fp, -0.1281_fp, -0.2977_fp,             &
-                                 -0.4448_fp, -0.5352_fp/)
-         P_Leaf_LAI_Shade = (/0.0148_fp, -0.1414_fp, -0.3681_fp,           &
-                                   -0.5918_fp, -0.7425_fp/)
-   
-         T_Leaf_Int_Sun  = (/-13.891_fp, -12.322_fp, -1.032_fp,            &
-                                   -5.172_fp, -5.589_fp/)
-         T_Leaf_Int_Shade = (/-12.846_fp, -11.343_fp, -1.068_fp,           &
-                                    -5.551_fp, -5.955_fp/)
-   
-         T_Leaf_Temp_Sun = (/1.064_fp, 1.057_fp, 1.031_fp,                 &
-                                   1.050_fp, 1.051_fp/)
-         T_Leaf_Temp_Shade = (/1.060_fp, 1.053_fp, 1.031_fp,               &
-                                     1.051_fp, 1.052_fp/)
-   
-         GAMMA_TP_STANDARD = 0.0_fp
-         LDF = 1.0_fp
-         LAI = 5.0_fp
-         DO Q = 1, 5
+      CALL GET_CDEA( 5.0_fp, CDEA )
+      Distgauss = (/0.0469101, 0.2307534, 0.5, 0.7692465,               &
+         0.9530899/)
+      VPGWT = (/0.1184635, 0.2393144, 0.284444444,                      &
+         0.2393144, 0.1184635/)
+      P_Leaf_Int_Sun  = (/1.0831_fp, 1.0964_fp, 1.1036_fp,              &
+         1.0985_fp, 1.0901_fp/)
+      P_Leaf_Int_Shade = (/0.8706_fp, 0.8895_fp, 0.9160_fp,             &
+         0.9407_fp, 0.9564_fp/)
 
-            PAC_INSTANT  = 1500.0_fp/4.766_fp
-            PAC_DAILY = 740.0_fp/4.766_fp
-    
-            PAC_INSTANT = PAC_INSTANT * exp(P_Leaf_Int_Sun(Q) +            &
-                                   P_Leaf_LAI_Sun(Q) * LAI)
-            PAC_DAILY = PAC_DAILY * exp(P_Leaf_Int_Sun(Q) +                &
-                                   P_Leaf_LAI_Sun(Q) * LAI)
-            Alpha  = 0.004 - 0.0005*LOG(PAC_DAILY)
-            C1 = 0.0468 * EXP(0.0005 * (PAC_DAILY - 200.0_fp)) *           &
-                           (PAC_DAILY **  0.6)
-            GAMMA_PAR_Sun = (Alpha * C1 * PAC_INSTANT) /                   &
-                           ((1 + Alpha**2. * PAC_INSTANT**2.)**0.5)
-    
-            PAC_INSTANT  = 1500.0_fp/4.766_fp
-            PAC_DAILY = 740.0_fp/4.766_fp
-            PAC_DAILY = PAC_DAILY * exp(P_Leaf_Int_Shade(Q) +              &
-                                   P_Leaf_LAI_Shade(Q) * LAI)
-            PAC_INSTANT = PAC_INSTANT * exp(P_Leaf_Int_Shade(Q) +          &
-                                   P_Leaf_LAI_Shade(Q) * LAI)
-            Alpha  = 0.004 - 0.0005*LOG(PAC_DAILY)
-            C1 = 0.0468 * EXP(0.0005 * (PAC_DAILY - 50.0_fp)) *            &
-                           (PAC_DAILY **  0.6)
-            GAMMA_PAR_Shade = (Alpha * C1 * PAC_INSTANT) /                 &
-                           ((1 + Alpha**2. * PAC_INSTANT**2.)**0.5)
-    
-            PT_15 = 298.5_fp
-            T     = 303.0_fp
-            R     = 8.3144598e-3_fp
-            CEO = 2.0_fp
-            CT1 = 95.0_fp
-            CT2   = 230.0_fp
-    
-            L_T = T * T_Leaf_Temp_Sun(Q) + T_Leaf_Int_Sun(Q)
-            L_PT_T = PT_15 * T_Leaf_Temp_Sun(Q) + T_Leaf_Int_Sun(Q)
-            E_OPT = CEO * EXP( 0.1_fp * ( L_PT_T  - 2.97e2_fp ) )
-            T_OPT = 3.125e2_fp + ( 6.0e-1_fp * ( L_PT_T - 2.97e2_fp ) )
-            X     = ( 1.0_fp/T_OPT - 1.0_fp/L_T ) / R
-            GAMMA_T_LD_Sun   = E_OPT * CT2 * EXP( CT1 * X ) /              &
-                  ( CT2 - CT1 * ( 1.0_fp - EXP( CT2 * X ) ) )
-    
-            L_T = T * T_Leaf_Temp_Shade(Q) + T_Leaf_Int_Shade(Q)
-            L_PT_T = PT_15 * T_Leaf_Temp_Shade(Q) + T_Leaf_Int_Shade(Q)
-            E_OPT = CEO * EXP( 0.08_fp * ( L_PT_T  - 2.97e2_fp ) )
-            T_OPT = 3.125e2_fp + ( 6.0e-1_fp * ( L_PT_T - 2.97e2_fp ) )
-            X     = ( 1.0_fp/T_OPT - 1.0_fp/L_T ) / R
-            GAMMA_T_LD_Shade   = E_OPT * CT2 * EXP( CT1 * X ) /            &
-                  ( CT2 - CT1 * ( 1.0_fp - EXP( CT2 * X ) ) )
-    
-            call Calc_Sun_Frac(5.0_fp,SIN(60.0_fp*D2RAD_FAC),            &
-                                 Distgauss(Q), SunF)
-            Ea1L  =  CDEA(Q) * GAMMA_PAR_Sun * GAMMA_T_LD_Sun * SunF +     &
-                            GAMMA_PAR_Shade * GAMMA_T_LD_Shade * (1-SunF)
-    
-            !   write(*,*) ' '
-            !   write(*,*) '--- GET_MEGAN_NormFrac --- '
-            !   write(*,*) 'GAMMA_TP_STANDARD      : ', GAMMA_TP_STANDARD
-            !   write(*,*) 'Ea1L      : ', Ea1L
-            !   write(*,*) 'SunF      : ', SunF
-            !   write(*,*) 'CDEA      : ', CDEA(Q)
-            !   write(*,*) 'VPGWT      : ', VPGWT(Q)
-            !   write(*,*) 'Q      : ', Q
-            !   write(*,*) 'Q      : ', Q
-            !   write(*,*) 'GAMMA_PAR_Sun      : ', GAMMA_PAR_Sun
-            !   write(*,*) 'GAMMA_PAR_Shade      : ', GAMMA_PAR_Shade
-            !   write(*,*) 'GAMMA_T_LD_Sun      : ', GAMMA_T_LD_Sun
-            !   write(*,*) 'GAMMA_T_LD_Shade      : ', GAMMA_T_LD_Shade
-    
-            GAMMA_TP_STANDARD  = GAMMA_TP_STANDARD +                       &
-                            (Ea1L*LDF)* VPGWT(Q)
-          ENDDO
+      P_Leaf_LAI_Sun = (/0.0018_fp, -0.1281_fp, -0.2977_fp,             &
+         -0.4448_fp, -0.5352_fp/)
+      P_Leaf_LAI_Shade = (/0.0148_fp, -0.1414_fp, -0.3681_fp,           &
+         -0.5918_fp, -0.7425_fp/)
 
-            !  write(*,*) ' '
-            !   write(*,*) '--- GET_MEGAN_NormFrac --- '
-            !   write(*,*) 'GAMMA_TP_STANDARD      : ', GAMMA_TP_STANDARD
-            !   write(*,*) 'Ea1L      : ', Ea1L
-            !   write(*,*) 'SunF      : ', SunF
-            !   write(*,*) 'CDEA      : ', CDEA(Q)
-            !   write(*,*) 'VPGWT      : ', VPGWT(Q)
-            !   write(*,*) 'Q      : ', Q
-      
+      T_Leaf_Int_Sun  = (/-13.891_fp, -12.322_fp, -1.032_fp,            &
+         -5.172_fp, -5.589_fp/)
+      T_Leaf_Int_Shade = (/-12.846_fp, -11.343_fp, -1.068_fp,           &
+         -5.551_fp, -5.955_fp/)
+
+      T_Leaf_Temp_Sun = (/1.064_fp, 1.057_fp, 1.031_fp,                 &
+         1.050_fp, 1.051_fp/)
+      T_Leaf_Temp_Shade = (/1.060_fp, 1.053_fp, 1.031_fp,               &
+         1.051_fp, 1.052_fp/)
+
+      GAMMA_TP_STANDARD = 0.0_fp
+      LDF = 1.0_fp
+      LAI = 5.0_fp
+      DO Q = 1, 5
+
+         PAC_INSTANT  = 1500.0_fp/4.766_fp
+         PAC_DAILY = 740.0_fp/4.766_fp
+
+         PAC_INSTANT = PAC_INSTANT * exp(P_Leaf_Int_Sun(Q) +            &
+            P_Leaf_LAI_Sun(Q) * LAI)
+         PAC_DAILY = PAC_DAILY * exp(P_Leaf_Int_Sun(Q) +                &
+            P_Leaf_LAI_Sun(Q) * LAI)
+         Alpha  = 0.004 - 0.0005*LOG(PAC_DAILY)
+         C1 = 0.0468 * EXP(0.0005 * (PAC_DAILY - 200.0_fp)) *           &
+            (PAC_DAILY **  0.6)
+         GAMMA_PAR_Sun = (Alpha * C1 * PAC_INSTANT) /                   &
+            ((1 + Alpha**2. * PAC_INSTANT**2.)**0.5)
+
+         PAC_INSTANT  = 1500.0_fp/4.766_fp
+         PAC_DAILY = 740.0_fp/4.766_fp
+         PAC_DAILY = PAC_DAILY * exp(P_Leaf_Int_Shade(Q) +              &
+            P_Leaf_LAI_Shade(Q) * LAI)
+         PAC_INSTANT = PAC_INSTANT * exp(P_Leaf_Int_Shade(Q) +          &
+            P_Leaf_LAI_Shade(Q) * LAI)
+         Alpha  = 0.004 - 0.0005*LOG(PAC_DAILY)
+         C1 = 0.0468 * EXP(0.0005 * (PAC_DAILY - 50.0_fp)) *            &
+            (PAC_DAILY **  0.6)
+         GAMMA_PAR_Shade = (Alpha * C1 * PAC_INSTANT) /                 &
+            ((1 + Alpha**2. * PAC_INSTANT**2.)**0.5)
+
+         PT_15 = 298.5_fp
+         T     = 303.0_fp
+         R     = 8.3144598e-3_fp
+         CEO = 2.0_fp
+         CT1 = 95.0_fp
+         CT2   = 230.0_fp
+
+         L_T = T * T_Leaf_Temp_Sun(Q) + T_Leaf_Int_Sun(Q)
+         L_PT_T = PT_15 * T_Leaf_Temp_Sun(Q) + T_Leaf_Int_Sun(Q)
+         E_OPT = CEO * EXP( 0.1_fp * ( L_PT_T  - 2.97e2_fp ) )
+         T_OPT = 3.125e2_fp + ( 6.0e-1_fp * ( L_PT_T - 2.97e2_fp ) )
+         X     = ( 1.0_fp/T_OPT - 1.0_fp/L_T ) / R
+         GAMMA_T_LD_Sun   = E_OPT * CT2 * EXP( CT1 * X ) /              &
+            ( CT2 - CT1 * ( 1.0_fp - EXP( CT2 * X ) ) )
+
+         L_T = T * T_Leaf_Temp_Shade(Q) + T_Leaf_Int_Shade(Q)
+         L_PT_T = PT_15 * T_Leaf_Temp_Shade(Q) + T_Leaf_Int_Shade(Q)
+         E_OPT = CEO * EXP( 0.08_fp * ( L_PT_T  - 2.97e2_fp ) )
+         T_OPT = 3.125e2_fp + ( 6.0e-1_fp * ( L_PT_T - 2.97e2_fp ) )
+         X     = ( 1.0_fp/T_OPT - 1.0_fp/L_T ) / R
+         GAMMA_T_LD_Shade   = E_OPT * CT2 * EXP( CT1 * X ) /            &
+            ( CT2 - CT1 * ( 1.0_fp - EXP( CT2 * X ) ) )
+
+         call Calc_Sun_Frac(5.0_fp,SIN(60.0_fp*D2RAD_FAC),            &
+            Distgauss(Q), SunF)
+         Ea1L  =  CDEA(Q) * GAMMA_PAR_Sun * GAMMA_T_LD_Sun * SunF +     &
+            GAMMA_PAR_Shade * GAMMA_T_LD_Shade * (1-SunF)
+
+         !   write(*,*) ' '
+         !   write(*,*) '--- GET_MEGAN_NormFrac --- '
+         !   write(*,*) 'GAMMA_TP_STANDARD      : ', GAMMA_TP_STANDARD
+         !   write(*,*) 'Ea1L      : ', Ea1L
+         !   write(*,*) 'SunF      : ', SunF
+         !   write(*,*) 'CDEA      : ', CDEA(Q)
+         !   write(*,*) 'VPGWT      : ', VPGWT(Q)
+         !   write(*,*) 'Q      : ', Q
+         !   write(*,*) 'Q      : ', Q
+         !   write(*,*) 'GAMMA_PAR_Sun      : ', GAMMA_PAR_Sun
+         !   write(*,*) 'GAMMA_PAR_Shade      : ', GAMMA_PAR_Shade
+         !   write(*,*) 'GAMMA_T_LD_Sun      : ', GAMMA_T_LD_Sun
+         !   write(*,*) 'GAMMA_T_LD_Shade      : ', GAMMA_T_LD_Shade
+
+         GAMMA_TP_STANDARD  = GAMMA_TP_STANDARD +                       &
+            (Ea1L*LDF)* VPGWT(Q)
+      ENDDO
+
+      !  write(*,*) ' '
+      !   write(*,*) '--- GET_MEGAN_NormFrac --- '
+      !   write(*,*) 'GAMMA_TP_STANDARD      : ', GAMMA_TP_STANDARD
+      !   write(*,*) 'Ea1L      : ', Ea1L
+      !   write(*,*) 'SunF      : ', SunF
+      !   write(*,*) 'CDEA      : ', CDEA(Q)
+      !   write(*,*) 'VPGWT      : ', VPGWT(Q)
+      !   write(*,*) 'Q      : ', Q
+
       ! -----------------
       ! GAMMA_LAI for standard conditions
       ! -----------------
@@ -1354,7 +1361,7 @@ contains
       ! This ends up being 1.0101081.
       !canopy add
       GAMMA_STANDARD = GAMMA_AGE_STANDARD * GAMMA_SM_STANDARD *   &
-            GAMMA_TP_STANDARD * GAMMA_LAI_STANDARD
+         GAMMA_TP_STANDARD * GAMMA_LAI_STANDARD
 
       NORM_FAC = 1.0_fp / GAMMA_STANDARD
 
@@ -1372,9 +1379,9 @@ contains
 
    !>
    !! \brief Computes Emission Factors for all biogenic VOC species
-   !!  Note; I seperate the reading AE into the main GET_MEGAN_EMIS function
-   !!        Here only the species need to be calculaed are included 
-   !!References: 
+   !!  Note; I separate the reading AE into the main GET_MEGAN_EMIS function
+   !!        Here only the species need to be calculaed are included
+   !!References:
    !! (1 ) Guenther et al, 2004
    !!
    !! \param PFT_16
@@ -1460,83 +1467,83 @@ contains
       !               EF1       EF2       EF3       EF4       EF5
       PFT_EF_OMON = (/180.0_fp, 180.0_fp, 170.0_fp, 150.0_fp, 150.0_fp, &
       !               EF6       EF7       EF8       EF9       EF10
-                     150.0_fp, 150.0_fp, 150.0_fp, 110.0_fp, 200.0_fp, &
+         150.0_fp, 150.0_fp, 150.0_fp, 110.0_fp, 200.0_fp, &
       !               EF11      EF12      EF13      EF14      EF15
-                     110.0_fp, 5.0_fp  , 5.0_fp  , 5.0_fp  , 5.0_fp/)
-      
+         110.0_fp, 5.0_fp  , 5.0_fp  , 5.0_fp  , 5.0_fp/)
+
       !               EF1       EF2       EF3       EF4       EF5
       PFT_EF_MOH  = (/900.0_fp, 900.0_fp, 900.0_fp, 500.0_fp, 900.0_fp, &
       !               EF6       EF7       EF8       EF9       EF10
-                     500.0_fp, 900.0_fp, 900.0_fp, 900.0_fp, 900.0_fp, &
+         500.0_fp, 900.0_fp, 900.0_fp, 900.0_fp, 900.0_fp, &
       !               EF11      EF12      EF13      EF14      EF15
-                     900.0_fp, 500.0_fp, 500.0_fp, 500.0_fp, 900.0_fp/)
+         900.0_fp, 500.0_fp, 500.0_fp, 500.0_fp, 900.0_fp/)
 
       !               EF1       EF2       EF3       EF4       EF5
       PFT_EF_ACET = (/240.0_fp, 240.0_fp, 240.0_fp, 240.0_fp, 240.0_fp, &
       !               EF6       EF7       EF8       EF9       EF10
-                     240.0_fp, 240.0_fp, 240.0_fp, 240.0_fp, 240.0_fp, &
+         240.0_fp, 240.0_fp, 240.0_fp, 240.0_fp, 240.0_fp, &
       !               EF11      EF12      EF13      EF14      EF15
-                     240.0_fp, 80.0_fp , 80.0_fp , 80.0_fp , 80.0_fp/)
+         240.0_fp, 80.0_fp , 80.0_fp , 80.0_fp , 80.0_fp/)
 
       !               EF1       EF2       EF3       EF4       EF5
       PFT_EF_BIDR = (/500.0_fp, 500.0_fp, 500.0_fp, 500.0_fp, 500.0_fp, &
       !               EF6       EF7       EF8       EF9       EF10
-                     500.0_fp, 500.0_fp, 500.0_fp, 500.0_fp, 500.0_fp, &
+         500.0_fp, 500.0_fp, 500.0_fp, 500.0_fp, 500.0_fp, &
       !               EF11      EF12      EF13      EF14      EF15
-                     500.0_fp, 80.0_fp , 80.0_fp , 80.0_fp , 80.0_fp/)
+         500.0_fp, 80.0_fp , 80.0_fp , 80.0_fp , 80.0_fp/)
 
       !               EF1       EF2       EF3       EF4       EF5
       PFT_EF_STRS = (/300.0_fp, 300.0_fp, 300.0_fp, 300.0_fp, 300.0_fp, &
       !               EF6       EF7       EF8       EF9       EF10
-                     300.0_fp, 300.0_fp, 300.0_fp, 300.0_fp, 300.0_fp, &
+         300.0_fp, 300.0_fp, 300.0_fp, 300.0_fp, 300.0_fp, &
       !               EF11      EF12      EF13      EF14      EF15
-                     300.0_fp, 300.0_fp, 300.0_fp, 300.0_fp, 300.0_fp/)
+         300.0_fp, 300.0_fp, 300.0_fp, 300.0_fp, 300.0_fp/)
 
       !               EF1       EF2       EF3       EF4       EF5
       PFT_EF_OTHR = (/140.0_fp, 140.0_fp, 140.0_fp, 140.0_fp, 140.0_fp, &
       !               EF6       EF7       EF8       EF9       EF10
-                     140.0_fp, 140.0_fp, 140.0_fp, 140.0_fp, 140.0_fp, &
+         140.0_fp, 140.0_fp, 140.0_fp, 140.0_fp, 140.0_fp, &
       !               EF11      EF12      EF13      EF14      EF15
-                     140.0_fp, 140.0_fp, 140.0_fp, 140.0_fp, 140.0_fp/)
+         140.0_fp, 140.0_fp, 140.0_fp, 140.0_fp, 140.0_fp/)
 
       ! ---> Now compute EFs for a-pinene and myrcene as well (dbm, 12/2012)
       !               EF1       EF2       EF3       EF4       EF5
       PFT_EF_APIN = (/500.0_fp, 500.0_fp, 510.0_fp, 600.0_fp, 400.0_fp, &
       !               EF6       EF7       EF8       EF9       EF10
-                     600.0_fp, 400.0_fp, 400.0_fp, 200.0_fp, 300.0_fp, &
+         600.0_fp, 400.0_fp, 400.0_fp, 200.0_fp, 300.0_fp, &
       !               EF11      EF12      EF13      EF14      EF15
-                     200.0_fp, 2.0_fp,   2.0_fp,   2.0_fp,   2.0_fp/)
+         200.0_fp, 2.0_fp,   2.0_fp,   2.0_fp,   2.0_fp/)
 
       !               EF1       EF2       EF3       EF4       EF5
       PFT_EF_MYRC = (/70.0_fp,  70.0_fp,  60.0_fp,  80.0_fp,  30.0_fp, &
       !               EF6       EF7       EF8       EF9       EF10
-                     80.0_fp,  30.0_fp,  30.0_fp,  30.0_fp,  50.0_fp, &
+         80.0_fp,  30.0_fp,  30.0_fp,  30.0_fp,  50.0_fp, &
       !               EF11      EF12      EF13      EF14      EF15
-                     30.0_fp,  0.3_fp,   0.3_fp,   0.3_fp,   0.3_fp/)
+         30.0_fp,  0.3_fp,   0.3_fp,   0.3_fp,   0.3_fp/)
       ! <---
 
       !               EF1       EF2       EF3       EF4       EF5
       PFT_EF_FARN = (/40.0_fp,  40.0_fp,  40.0_fp,  60.0_fp,  40.0_fp, &
       !               EF6       EF7       EF8       EF9       EF10
-                     60.0_fp,  40.0_fp,  40.0_fp,  40.0_fp,  40.0_fp, &
+         60.0_fp,  40.0_fp,  40.0_fp,  40.0_fp,  40.0_fp, &
       !               EF11      EF12      EF13      EF14      EF15
-                     40.0_fp,  3.0_fp,   3.0_fp,   3.0_fp,   4.0_fp/)
+         40.0_fp,  3.0_fp,   3.0_fp,   3.0_fp,   4.0_fp/)
 
       !               EF1       EF2       EF3       EF4       EF5
       PFT_EF_BCAR = (/80.0_fp,  80.0_fp,  80.0_fp,  60.0_fp,  40.0_fp, &
       !               EF6       EF7       EF8       EF9       EF10
-                     60.0_fp,  40.0_fp,  40.0_fp,  50.0_fp,  50.0_fp, &
+         60.0_fp,  40.0_fp,  40.0_fp,  50.0_fp,  50.0_fp, &
       !               EF11      EF12      EF13      EF14      EF15
-                     50.0_fp,  1.0_fp,   1.0_fp,   1.0_fp,   4.0_fp/)
+         50.0_fp,  1.0_fp,   1.0_fp,   1.0_fp,   4.0_fp/)
 
       !               EF1       EF2       EF3       EF4       EF5
       PFT_EF_OSQT = (/120.0_fp, 120.0_fp, 120.0_fp, 120.0_fp, 100.0_fp, &
       !               EF6       EF7       EF8       EF9       EF10
-                     120.0_fp, 100.0_fp, 100.0_fp, 100.0_fp, 100.0_fp, &
+         120.0_fp, 100.0_fp, 100.0_fp, 100.0_fp, 100.0_fp, &
       !               EF11      EF12      EF13      EF14      EF15
-                     100.0_fp, 2.0_fp,   2.0_fp,   2.0_fp,   2.0_fp/)
-      
-      ! Other monoterpenes, methanol, acetone, MBO are each 100% of thier
+         100.0_fp, 2.0_fp,   2.0_fp,   2.0_fp,   2.0_fp/)
+
+      ! Other monoterpenes, methanol, acetone, MBO are each 100% of their
       ! respective categories. The VOCs within the stress category each
       ! account for a specific fraction of emissions across all PFTs
       ! (ethene 58%, toluene 3%, HCN 1.5%). The VOCs within the
@@ -1551,45 +1558,45 @@ contains
       !                 EF1      EF2       EF3       EF4    EF5
       EM_FRAC_ALD2 = (/0.40_fp, 0.40_fp, 0.40_fp, 0.40_fp, 0.40_fp, &
       !                 EF6      EF7       EF8       EF9    EF10
-                       0.40_fp, 0.40_fp, 0.40_fp, 0.40_fp, 0.40_fp, &
+         0.40_fp, 0.40_fp, 0.40_fp, 0.40_fp, 0.40_fp, &
       !                 EF11     EF12      EF13     EF14    EF15
-                       0.40_fp, 0.25_fp, 0.25_fp, 0.25_fp, 0.25_fp/)
+         0.40_fp, 0.25_fp, 0.25_fp, 0.25_fp, 0.25_fp/)
 
       ! Ethanol: 40% of bidirectional category flux, except 25%
       ! for grasses and crops
       !                 EF1      EF2       EF3       EF4    EF5
       EM_FRAC_EOH  = (/0.40_fp, 0.40_fp, 0.40_fp, 0.40_fp, 0.40_fp, &
       !                 EF6      EF7       EF8       EF9    EF10
-                       0.40_fp, 0.40_fp, 0.40_fp, 0.40_fp, 0.40_fp, &
+         0.40_fp, 0.40_fp, 0.40_fp, 0.40_fp, 0.40_fp, &
       !                 EF11     EF12      EF13     EF14    EF15
-                       0.40_fp, 0.25_fp, 0.25_fp, 0.25_fp, 0.25_fp/)
+         0.40_fp, 0.25_fp, 0.25_fp, 0.25_fp, 0.25_fp/)
 
       ! Formic acid: 6% of bidirectional category flux, except 15%
       ! for grasses and crops
       !                 EF1      EF2       EF3       EF4    EF5
       EM_FRAC_FAXX = (/0.06_fp, 0.06_fp, 0.06_fp, 0.06_fp, 0.06_fp, &
       !                 EF6      EF7       EF8       EF9    EF10
-                       0.06_fp, 0.06_fp, 0.06_fp, 0.06_fp, 0.06_fp, &
+         0.06_fp, 0.06_fp, 0.06_fp, 0.06_fp, 0.06_fp, &
       !                 EF11     EF12      EF13     EF14    EF15
-                       0.06_fp, 0.15_fp, 0.15_fp, 0.15_fp, 0.15_fp/)
+         0.06_fp, 0.15_fp, 0.15_fp, 0.15_fp, 0.15_fp/)
 
       ! Acetic acid: 6% of bidirectional category flux, except 15%
       ! for grasses and crops
       !                 EF1      EF2       EF3       EF4    EF5
       EM_FRAC_AAXX = (/0.06_fp, 0.06_fp, 0.06_fp, 0.06_fp, 0.06_fp, &
       !                 EF6      EF7       EF8       EF9    EF10
-                       0.06_fp, 0.06_fp, 0.06_fp, 0.06_fp, 0.06_fp, &
+         0.06_fp, 0.06_fp, 0.06_fp, 0.06_fp, 0.06_fp, &
       !                 EF11     EF12      EF13     EF14    EF15
-                       0.06_fp, 0.15_fp, 0.15_fp, 0.15_fp, 0.15_fp/)
+         0.06_fp, 0.15_fp, 0.15_fp, 0.15_fp, 0.15_fp/)
 
       ! Formaldehyde: 8% of bidirectional category flux, except 20%
       ! for grasses and crops
       !                 EF1      EF2       EF3       EF4    EF5
       EM_FRAC_CH2O = (/0.08_fp, 0.08_fp, 0.08_fp, 0.08_fp, 0.08_fp, &
       !                 EF6      EF7       EF8       EF9    EF10
-                       0.08_fp, 0.08_fp, 0.08_fp, 0.08_fp, 0.08_fp, &
+         0.08_fp, 0.08_fp, 0.08_fp, 0.08_fp, 0.08_fp, &
       !                 EF11     EF12      EF13     EF14    EF15
-                       0.08_fp, 0.20_fp, 0.20_fp, 0.20_fp, 0.20_fp/)
+         0.08_fp, 0.20_fp, 0.20_fp, 0.20_fp, 0.20_fp/)
 
       !--------------------------------------------
       ! GET_GAMMAT_T_LI begins here!
@@ -1601,67 +1608,67 @@ contains
          ARR_IND = P + 1
          ! Don't need to divide PFT_16 by 100 since it is already fraction
          select case ( TRIM(CMPD) )
-            ! ---> Now compute EFs for a-pinene and myrcene as well 
+            ! ---> Now compute EFs for a-pinene and myrcene as well
             ! a-pinene: 100% of category
-            case ('APIN')
-               AE = AE + PFT_16(ARR_IND) * PFT_EF_APIN(P)
+          case ('APIN')
+            AE = AE + PFT_16(ARR_IND) * PFT_EF_APIN(P)
             ! Myrcene: 100% of category
-            case ('MYRC')
-               AE = AE + PFT_16(ARR_IND) * PFT_EF_MYRC(P)
+          case ('MYRC')
+            AE = AE + PFT_16(ARR_IND) * PFT_EF_MYRC(P)
             ! Other monoterpenes: 100% of category
-            case ('OMON')
-               AE = AE + PFT_16(ARR_IND) * PFT_EF_OMON(P)
+          case ('OMON')
+            AE = AE + PFT_16(ARR_IND) * PFT_EF_OMON(P)
             ! a-Farnesene: 100% of category
-            case ('FARN')
-               AE = AE + PFT_16(ARR_IND) * PFT_EF_FARN(P)
+          case ('FARN')
+            AE = AE + PFT_16(ARR_IND) * PFT_EF_FARN(P)
             ! b-Caryophyllene: 100% of category
-            case ('BCAR')
-               AE = AE + PFT_16(ARR_IND) * PFT_EF_BCAR(P)
+          case ('BCAR')
+            AE = AE + PFT_16(ARR_IND) * PFT_EF_BCAR(P)
             ! Other sesquiterpenes: 100% of category
-            case ('OSQT')
-               AE = AE + PFT_16(ARR_IND) * PFT_EF_OSQT(P)
+          case ('OSQT')
+            AE = AE + PFT_16(ARR_IND) * PFT_EF_OSQT(P)
             ! Methanol: 100% of category
-            case ('MOH')
-               AE = AE + PFT_16(ARR_IND) * PFT_EF_MOH(P)
+          case ('MOH')
+            AE = AE + PFT_16(ARR_IND) * PFT_EF_MOH(P)
             ! Acetone: 100% of category
-            case ('ACET')
-               AE = AE + PFT_16(ARR_IND) * PFT_EF_ACET(P)
+          case ('ACET')
+            AE = AE + PFT_16(ARR_IND) * PFT_EF_ACET(P)
             ! Ethanol: variable fraction of category
-            case ('EOH')
-               AE = AE + PFT_16(ARR_IND) * EM_FRAC_EOH(P) * PFT_EF_BIDR(P)
+          case ('EOH')
+            AE = AE + PFT_16(ARR_IND) * EM_FRAC_EOH(P) * PFT_EF_BIDR(P)
             ! Formaldehyde: variable fraction of category
-            case ('CH2O')
-               AE = AE + PFT_16(ARR_IND) * EM_FRAC_CH2O(P) * PFT_EF_BIDR(P)
+          case ('CH2O')
+            AE = AE + PFT_16(ARR_IND) * EM_FRAC_CH2O(P) * PFT_EF_BIDR(P)
             ! Acetaldehyde: variable fraction of category
-            case ('ALD2')
-               AE = AE + PFT_16(ARR_IND) * EM_FRAC_ALD2(P) * PFT_EF_BIDR(P)
+          case ('ALD2')
+            AE = AE + PFT_16(ARR_IND) * EM_FRAC_ALD2(P) * PFT_EF_BIDR(P)
             ! Formic acid: variable fraction of category
-            case ('FAXX')
-               AE = AE + PFT_16(ARR_IND) * EM_FRAC_FAXX(P) * PFT_EF_BIDR(P)
+          case ('FAXX')
+            AE = AE + PFT_16(ARR_IND) * EM_FRAC_FAXX(P) * PFT_EF_BIDR(P)
             ! Acetic acid: variable fraction of category
-            case ('AAXX')
-               AE = AE + PFT_16(ARR_IND) * EM_FRAC_AAXX(P) * PFT_EF_BIDR(P)
+          case ('AAXX')
+            AE = AE + PFT_16(ARR_IND) * EM_FRAC_AAXX(P) * PFT_EF_BIDR(P)
             ! Ethene: 58% of "stress" category for all PFTs
-            case ('C2H4')
-               AE = AE + PFT_16(ARR_IND) * PFT_EF_STRS(P) * 0.58_fp
+          case ('C2H4')
+            AE = AE + PFT_16(ARR_IND) * PFT_EF_STRS(P) * 0.58_fp
             ! Toluene: 3% of "stress" category for all PFTs
-            case ('TOLU')
-               AE = AE + PFT_16(ARR_IND) * PFT_EF_STRS(P) * 0.03_fp
+          case ('TOLU')
+            AE = AE + PFT_16(ARR_IND) * PFT_EF_STRS(P) * 0.03_fp
             ! HCN: 1.5% of "stress" category for all PFTs
-            case ('HCNX')
-               AE = AE + PFT_16(ARR_IND) * PFT_EF_STRS(P) * 0.015_fp
+          case ('HCNX')
+            AE = AE + PFT_16(ARR_IND) * PFT_EF_STRS(P) * 0.015_fp
             ! Propene: 48% of "other" category for all PFTs
             ! Butene:  24% of "other" category for all PFTs
             ! Larger alkenes: 0.2% of "other" category for all PFTs
             ! Total: 72.2%
-            case ('PRPE')
-               AE = AE + PFT_16(ARR_IND) * PFT_EF_OTHR(P) * 0.722_fp    
-            case default
-               RC = CC_FAILURE
-               MSG = 'Invalid compound name'
-               thisLoc = ' -> at CCPr_Megan_Common (in process/megan/ccpr_megan_common_mod.F90)'
-               call CC_Error( MSG, RC , thisLoc)
-               return
+          case ('PRPE')
+            AE = AE + PFT_16(ARR_IND) * PFT_EF_OTHR(P) * 0.722_fp
+          case default
+            RC = CC_FAILURE
+            MSG = 'Invalid compound name'
+            thisLoc = ' -> at CCPr_Megan_Common (in process/megan/ccpr_megan_common_mod.F90)'
+            call CC_Error( MSG, RC , thisLoc)
+            return
          end select
       enddo
 

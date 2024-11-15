@@ -185,6 +185,28 @@ MODULE MetState_Mod
       REAL(fp), POINTER :: PMID(:)        !< Average wet air pressure [hPa] defined as arithmetic average of edge pressures
       REAL(fp), POINTER :: PMID_DRY(:)    !< Dry air partial pressure [hPa] defined as arithmetic avg of edge pressures
 
+      ! Some met fields need for MEGAN but not included yet. Some variables can be calculated online in the future
+      !---------------------
+      real(fp)          :: PMISOLAI           !< LAI of previous month
+      real(fp), pointer :: PFT_16(:)          !< plant functional type fraction
+      real(fp)          :: Q_DIR_2            !< surface downwelling par diffuse flux
+      real(fp)          :: Q_DIFF_2           !< surface downwelling par beam flux
+      real(fp)          :: PARDR_LASTXDAYS    !< Avg. PARDF of last NUM_DAYS
+      real(fp)          :: PARDF_LASTXDAYS    !< Avg. PARDR of last NUM_DAYS
+      real(fp)          :: T_LASTXDAYS        !< Avg. temperature of last NUM_DAYS
+      real(fp)          :: T_LAST24H          !< Avg. temperature of last 24 hours
+      real(fp)          :: LAT                !< Latitude
+      integer           :: DOY                !< Day of year
+      real(fp)          :: LocalHour          !< Local hour
+      real(fp)          :: D_BTW_M            !< Days between mid-months
+      real(fp)          :: AEF_ISOP           !< Emission factor of ISOP read from file
+      real(fp)          :: AEF_MBOX           !< Emission factor of MBOX read from file
+      real(fp)          :: AEF_BPIN           !< Emission factor of BPIN read from file
+      real(fp)          :: AEF_CARE           !< Emission factor of CARE read from file
+      real(fp)          :: AEF_LIMO           !< Emission factor of LIMO read from file
+      real(fp)          :: AEF_OCIM           !< Emission factor of OCIM read from file
+      real(fp)          :: AEF_SABI           !< Emission factor of SABI read from file
+
    END TYPE MetStateType
 
 CONTAINS

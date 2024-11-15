@@ -42,3 +42,7 @@ process:
     dust_horizflux_opt: 1
     dust_alpha: 1.0
     dust_beta: 1.0
+  megan:
+    activate: true
+    CO2_Inhib_Opt: true
+    CO2_conc_ppm: 390.0

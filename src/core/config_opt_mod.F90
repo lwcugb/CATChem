@@ -42,6 +42,9 @@ MODULE Config_Opt_Mod
    !! - `dust_scheme_opt` : Scheme option for dust process
    !! - `seasalt_activate` : Activate seasalt process
    !! - `seasalt_scheme_opt` : Scheme option for seasalt process
+   !! - `megan_activate` : Activate Megan process
+   !! - `megan_CO2_Inhib_Opt` : use CO2 inhibition for isoprene?
+   !! - `megan_CO2_conc_ppm` : If so, provide CO2 concentrations
    !!
    !! \ingroup core_modules
    !!!>
@@ -90,6 +93,11 @@ MODULE Config_Opt_Mod
       LOGICAL                     :: seasalt_hoppel
       INTEGER                     :: seasalt_scheme
       real(fp)                    :: seasalt_scalefactor
+
+      ! Megan Process
+      LOGICAL                     :: megan_activate
+      LOGICAL                     :: megan_CO2_Inhib_Opt
+      real(fp)                    :: megan_CO2_conc_ppm
 
       ! Plumerise Process
       LOGICAL                     :: plumerise_activate
@@ -167,7 +175,10 @@ CONTAINS
       Config%seasalt_activate = .FALSE.
       Config%seasalt_scheme = 1
 
-
+      !Megan Process
+      Config%megan_activate = .FALSE.
+      Config%megan_CO2_Inhib_Opt = .FALSE.
+      Config%megan_CO2_conc_ppm = -999.0
 
    END SUBROUTINE Set_Config
    !> \brief Cleanup the Config options

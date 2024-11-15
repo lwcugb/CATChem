@@ -22,3 +22,88 @@ dust:
   DU10:
     long_name: "Dust Species Coarse Mode"
     map: ["dust1", "dust2"]
+megan:
+  ISOP:
+    long_name: "Isoprene"
+    scale: [1.0]
+    map: [ISOP]
+  APIN:
+    long_name: "a-Pinene"
+    scale: [1.0]
+    map: [APIN]
+  BPIN:
+    long_name: "b-Pinene"
+    scale: [1.0]
+    map: [BPIN]
+  LIMO:
+    long_name: "Limonene"
+    scale: [1.0]
+    map: [LIMO]
+  SABI:
+    long_name: "Sabinene"
+    scale: [1.0]
+    map: [SABI]
+  MYRC:
+    long_name: "Mycrene"
+    scale: [1.0]
+    map: [MYRC]
+  CARE:
+    long_name: "3-Carene"
+    scale: [1.0]
+    map: [CARE]
+  OCIM:
+    long_name: "Ocimene"
+    scale: [1.0]
+    map: [OCIM]
+  OMON:
+    long_name: "Other Monoterpenes"
+    scale: [1.0]
+    map: [OMON]
+  ALD2:
+    long_name: "Acetaldehyde"
+    scale: [1.0]
+    map: [ALD2]
+  MOH:
+    long_name: "Methanol"
+    scale: [1.0]
+    map: [MOH]
+  EOH:
+    long_name: "Ethanol"
+    scale: [1.0]
+    map: [EOH]
+  MBOX:
+    long_name: "Methyl Butenol"
+    scale: [1.0]
+    map: [MBOX]
+  FAXX:
+    long_name: "Formic Acid"
+    scale: [1.0]
+    map: [FAXX]
+  AAXX:
+    long_name: "Acetic Acid"
+    scale: [1.0]
+    map: [AAXX]
+  ACET:
+    long_name: "Acetone"
+    scale: [1.0]
+    map: [ACET]
+  PRPE:
+    long_name: "C3 alkenes"
+    scale: [1.0]
+    map: [PRPE]
+  C2H4:
+    long_name: "Ethene"
+    scale: [1.0]
+    map: [C2H4]
+  FARN:
+    long_name: "a-Farnesene"
+    scale: [1.0]
+    map: [FARN]
+  BCAR:
+    long_name: "b-Caryophyllene"
+    scale: [1.0]
+    map: [BCAR]
+  OSQT:
+    long_name: "Sesquiterpene"
+    scale: [1.0]
+    map: [OSQT]
