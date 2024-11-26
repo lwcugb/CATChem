@@ -2,13 +2,13 @@ program test_dust
    use CATChem, fp => cc_rk
    use testing_mod, only: assert
    use state_mod
-   use ccpr_megan_common_mod, only : MeganStateType
+   use ccpr_bvoc_common_mod, only : BvocStateType
    !use EmisState_Mod, only: Emis_Allocate
 
    implicit none
 
 
-   type(MeganStateType) :: MeganState
+   type(BvocStateType) :: BvocState
 
    ! Integers
    INTEGER:: rc          ! Success or failure
@@ -23,7 +23,7 @@ program test_dust
    CHARACTER(LEN=255) :: thisLoc
    CHARACTER(LEN=18), PARAMETER :: configFile ='CATChem_config.yml'
 
-   thisLoc = 'test_megan -> at read CATChem_Config.yml'
+   thisLoc = 'test_bvoc -> at read CATChem_Config.yml'
    errMsg = ''
    rc = CC_SUCCESS
 
@@ -46,15 +46,16 @@ program test_dust
       call cc_emit_error(errMsg, rc, thisLoc)
       stop 1
    endif
-   title = 'Megan Test 1 | Read Config'
+   title = 'BVOC Test 1 | Read Config'
    write(*,*) 'title = ', title
-   write(*,*) 'Config%megan_activate = ', Config%megan_activate
+   write(*,*) 'Config%bvoc_activate = ', Config%bvoc_activate
+   write(*,*) 'Config%bvoc_scheme = ', Config%bvoc_scheme
    write(*,*) 'Config%megan_CO2_Inhib_Opt = ', Config%megan_CO2_Inhib_Opt
    write(*,*) 'Config%megan_CO2_conc_ppm = ', Config%megan_CO2_conc_ppm
    write(*,*) 'EmisState%nCats = ', EmisState%nCats
    !write(*,*) 'EmisState%Cats = ', EmisState%Cats  !cannot write allocatable variables here; need to put in the subroutin at the bottom
 
-   !call Emis_Allocate(GridState, EmisState, RC) !Not sure why cannot call it even if I have made it public and used EmisStateMod in this module
+   !call Emis_Allocate(GridState, EmisState, RC) !Not sure why cannot call it even if I made it public and used EmisStateMod in this module
    if (EmisState%nCats > 0) then
       do c = 1, EmisState%nCats
          do s = 1, EmisState%Cats(c)%nSpecies
@@ -101,34 +102,34 @@ program test_dust
    MetState%AEF_OCIM= 3.0705341449874024E-011
    MetState%AEF_SABI= 1.0054971341792413E-011
 
-   title = "Megan Test 2 | Test isoprene first"
-   Config%megan_activate = .TRUE.
+   title = "BVOC Test 2 | Test each species"
+   Config%bvoc_activate = .TRUE.
 
-   call cc_megan_init(Config, ChemState, EmisState, MeganState, RC)
+   call cc_bvoc_init(Config, ChemState, EmisState, BvocState, RC)
    if (rc /= CC_SUCCESS) then
-      errMsg = 'Error in cc_megan_init'
+      errMsg = 'Error in cc_bvoc_init'
       call cc_emit_error(errMsg, rc, thisLoc)
       stop 1
    end if
 
-   call cc_megan_run(MetState, EmisState, DiagState, MeganState, ChemState, RC )
+   call cc_bvoc_run(MetState, EmisState, DiagState, BvocState, ChemState, RC )
    if (rc /= CC_SUCCESS) then
-      errMsg = 'Error in cc_megan_run'
+      errMsg = 'Error in cc_bvoc_run'
       call cc_emit_error(errMsg, rc, thisLoc)
       stop 1
    end if
 
-   call print_info(Config, MeganState, MetState, title)
-   call assert(MeganState%TotalEmission > 0.0_fp, "Test Megan isoprene")
-   MeganState%TotalEmission = 0.0_fp
+   call print_info(Config, BvocState, MetState, title)
+   call assert(BvocState%TotalEmission > 0.0_fp, "Test BVOC species")
+   BvocState%TotalEmission = 0.0_fp
 
 
 contains
 
-   subroutine print_info(Config_, MeganState_, MetState_, title_)
+   subroutine print_info(Config_, BvocState_, MetState_, title_)
       type(ConfigType), intent(in) :: Config_
       type(MetStateType), intent(in) :: MetState_
-      type(MeganStateType), intent(in) :: MeganState_
+      type(BvocStateType), intent(in) :: BvocState_
       character(len=*), intent(in) :: title_
 
       write(*,*) '======================================='
@@ -137,17 +138,17 @@ contains
       write(*,*) '*************'
       write(*,*) 'Configuration '
       write(*,*) '*************'
-      write(*,*) 'Megan%activate = ', MeganState_%activate
-      write(*,*) 'Megan%CatIndex = ', MeganState_%CatIndex
-      write(*,*) 'MeganState%CO2Inhib = ', MeganState_%CO2Inhib
-      write(*,*) 'MeganState%CO2conc  = ', MeganState_%CO2conc
+      write(*,*) 'BvocState%activate = ', BvocState_%activate
+      write(*,*) 'BvocState%CatIndex = ', BvocState_%CatIndex
+      write(*,*) 'BvocState%CO2Inhib = ', BvocState_%CO2Inhib
+      write(*,*) 'BvocState%CO2conc  = ', BvocState_%CO2conc
       write(*,*) 'MetState%LAI =', MetState_%LAI
       write(*,*) 'MetState%DOY =', MetState_%DOY
       write(*,*) 'MetState%AEF_ISOP =', MetState_%AEF_ISOP
       write(*,*) 'MetState%PFT_16 =', MetState_%PFT_16
-      write(*,*) 'MeganState%MeganSpeciesName=', MeganState_%MeganSpeciesName
-      write(*,*) 'MeganState%EmissionPerSpecies=', MeganState_%EmissionPerSpecies
-      write(*,*) 'MeganState%TotalEmission = ', MeganState_%TotalEmission
+      write(*,*) 'BvocState%BvocSpeciesName=', BvocState_%BvocSpeciesName
+      write(*,*) 'BvocState%EmissionPerSpecies=', BvocState_%EmissionPerSpecies
+      write(*,*) 'BvocState%TotalEmission = ', BvocState_%TotalEmission
 
    end subroutine print_info
 

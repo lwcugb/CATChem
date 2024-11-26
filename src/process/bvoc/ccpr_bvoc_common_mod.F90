@@ -1,13 +1,13 @@
 !>
-!! \file ccpr_megan_common_mod.F90
-!! \brief Contains module ccpr_megan_common_mod
+!! \file ccpr_bvoc_common_mod.F90
+!! \brief Contains module ccpr_bvoc_common_mod
 !!
-!! \ingroup catchem_megan_process
+!! \ingroup catchem_bvoc_process
 !!
 !! \author Barry Baker
 !! \date 05/2024
 !!!>
-module CCPr_Megan_Common_Mod
+module CCPr_BVOC_Common_Mod
    use precision_mod, only: fp, ZERO
    use Error_Mod
    use constants
@@ -29,16 +29,16 @@ module CCPr_Megan_Common_Mod
    public  :: GET_GAMMA_CO2
    public  :: CALC_AEF
    public  :: GET_CDEA
-   public  :: MeganStateType
+   public  :: BvocStateType
 
-   !> \brief Type for CATCHem Megan Process
+   !> \brief Type for CATCHem BVOC Process
    !!
-   !! \details Contains all the information needed to run the CATChem Megan Process
+   !! \details Contains all the information needed to run the CATChem BVOC Process
    !!
    !! This type contains the following variables:
    !! - Activate : Activate Process (True/False)
-   !! - nMeganSpecies : Number of megan processes
-   !! - MeganSpeciesIndex : Index of megan species
+   !! - nBvocSpecies : Number of BVOC processes
+   !! - BvocSpeciesIndex : Index of BVOC species
    !! - SpcIDs : CATChem species IDs
    !! - CO2Inhib      : CO2 inhibition for isoprene Option [true/false]
    !! - CO2conc       : CO2 concentration [ppmv]
@@ -50,16 +50,17 @@ module CCPr_Megan_Common_Mod
    !! - TERPtoSOAP    : other terpene conversion factor to SOAP
    !! - TERPtoSOAS    : other terpene conversion factor to SOAS
    !! - TotalEmission : Total Emission          [kg/m^2/s]
-   !! - EmissionPerSpecies : Emission Rate per Megan species  [kg/m^2/s]
+   !! - EmissionPerSpecies : Emission Rate per Bvoc species  [kg/m^2/s]
    !!
-   !! \ingroup catchem_megan_process
+   !! \ingroup catchem_bvoc_process
    !!!>
-   TYPE :: MeganStateType
+   TYPE :: BvocStateType
       ! Generic Variables for Every Process
       Logical                         :: Activate                !< Activate Process (True/False)
-      integer                         :: nMeganSpecies           !< Number of megan processes
-      integer, pointer                :: MeganSpeciesIndex(:)    !< Index of megan species
-      character(len=31), pointer      :: MeganSpeciesName(:)     !< name of megan species
+      INTEGER                         :: SchemeOpt               !< Scheme Option
+      integer                         :: nBvocSpecies           !< Number of BVOC processes
+      integer, pointer                :: BvocSpeciesIndex(:)    !< Index of BVOC species
+      character(len=31), pointer      :: BvocSpeciesName(:)     !< name of BVOC species
       integer, pointer                :: SpcIDs(:)               !< CATChem species IDs
       integer                         :: CatIndex                !< Index of emission category in EmisState
 
@@ -84,7 +85,7 @@ module CCPr_Megan_Common_Mod
       ! Module specific variables/arrays/data pointers come below
       !=================================================================
 
-   END TYPE MeganStateType
+   END TYPE BvocStateType
 
 contains
    !>
@@ -98,7 +99,7 @@ contains
    !! \param Distgauss   Gauss distance
    !! \param SunFrac  output of light-dependent emission factor
    !!
-   !! \ingroup catchem_megan_process
+   !! \ingroup catchem_bvoc_process
    !!!>
    subroutine Calc_Sun_Frac( LAI, Sinbeta, Distgauss, SunFrac)
       IMPLICIT NONE
@@ -139,7 +140,7 @@ contains
    !! \param CPD,
    !! \param BTA,   LIDF,  C_T1,  C_EO, A_NEW, A_GRO, A_MAT, A_OLD, BI_DIR
    !!
-   !! \ingroup catchem_megan_process
+   !! \ingroup catchem_bvoc_process
    !!!>
    subroutine GET_MEGAN_PARAMS( CPD,   BTA,   LIDF,  C_T1,  C_EO, A_NEW, A_GRO, A_MAT, A_OLD, BI_DIR, RC)
 
@@ -346,7 +347,7 @@ contains
       ELSE
          RC = CC_FAILURE
          MSG = 'Invalid compound name'
-         thisLoc = ' -> at CCPr_Megan_Common (in process/megan/ccpr_megan_common_mod.F90)'
+         thisLoc = ' -> at CCPr_BVOC_Common (in process/bvoc/ccpr_bvoc_common_mod.F90)'
          call CC_Error( MSG, RC , thisLoc)
          return
 
@@ -367,7 +368,7 @@ contains
    !! \param LAT, DOY, LocalHour
    !! \param D2RAD, RAD2D
    !!
-   !! \ingroup catchem_megan_process
+   !! \ingroup catchem_bvoc_process
    !!!>
    subroutine GET_GAMMA_PAR_PCEEA(Q_DIR_2, Q_DIFF_2, PARDR_AVG_SIM, PARDF_AVG_SIM,  &
       LAT, DOY, LocalHour, D2RAD, RAD2D, GAMMA_P_PCEEA)
@@ -471,7 +472,7 @@ contains
    !! \param LAT
    !! \param D2RAD
    !!
-   !! \ingroup catchem_megan_process
+   !! \ingroup catchem_bvoc_process
    !!!>
    subroutine SOLAR_ANGLE(DOY, SHOUR, LAT, D2RAD, SINbeta)
 
@@ -512,7 +513,7 @@ contains
    !! \param T_Leaf_Int, T_Leaf_Temp
    !! \param BETA
    !!
-   !! \ingroup catchem_megan_process
+   !! \ingroup catchem_bvoc_process
    !!!>
    subroutine GET_GAMMA_T_LI(T, BETA, T_Leaf_Int, T_Leaf_Temp, GAMMA_T_LI)
       IMPLICIT NONE
@@ -550,7 +551,7 @@ contains
    !! \param PT_15, PT_1
    !! \param CT1, CEO
    !!
-   !! \ingroup catchem_megan_process
+   !! \ingroup catchem_bvoc_process
    !!!>
    subroutine GET_GAMMA_T_LD(T, PT_15, PT_1, CT1, CEO, GAMMA_T_LD)
       IMPLICIT NONE
@@ -601,7 +602,7 @@ contains
    !! \param CMLAI
    !! \param BIDIREXCH
    !!
-   !! \ingroup catchem_megan_process
+   !! \ingroup catchem_bvoc_process
    !!!>
    subroutine GET_GAMMA_LAI(CMLAI, BIDIREXCH, GAMMA_LAI)
       IMPLICIT NONE
@@ -659,7 +660,7 @@ contains
    !! \param CT1, CEO
    !! \param T_Leaf_Int, T_Leaf_Temp
    !!
-   !! \ingroup catchem_megan_process
+   !! \ingroup catchem_bvoc_process
    !!!>
    subroutine GET_GAMMA_T_LD_C(T, PT_15, PT_24, CT1, CEO, T_Leaf_Int, T_Leaf_Temp, GAMMA_T_LD_C )
 
@@ -731,7 +732,7 @@ contains
    !! \param PARDR_AVG_SIM, PARDF_AVG_SIM
    !! \param P_Leaf_LAI, P_Leaf_Int, LAI, PSTD
    !!
-   !! \ingroup catchem_megan_process
+   !! \ingroup catchem_bvoc_process
    !!!>
    subroutine GET_GAMMA_PAR_C(Q_DIR_2, Q_DIFF_2, PARDR_AVG_SIM, PARDF_AVG_SIM, &
       P_Leaf_LAI, P_Leaf_Int, LAI, PSTD, GAMMA_P_C)
@@ -805,7 +806,7 @@ contains
    !!
    !! \param CMLAI
    !!
-   !! \ingroup catchem_megan_process
+   !! \ingroup catchem_bvoc_process
    !!!>
    subroutine GET_CDEA(CMLAI, CDEA)
       IMPLICIT NONE
@@ -852,7 +853,7 @@ contains
    !! \param DBTWN, TT
    !! \param AN, AG, AM, AO
    !!
-   !! \ingroup catchem_megan_process
+   !! \ingroup catchem_bvoc_process
    !!!>
    subroutine GET_GAMMA_AGE(CMLAI, PMLAI, DBTWN, TT, AN, AG, AM, AO, GAMMA_AGE)
       IMPLICIT NONE
@@ -953,7 +954,7 @@ contains
    !! \param GWETROOT
    !! \param CMPD
    !!
-   !! \ingroup catchem_megan_process
+   !! \ingroup catchem_bvoc_process
    !!!>
    subroutine GET_GAMMA_SM(GWETROOT, CMPD, GAMMA_SM)
       IMPLICIT NONE
@@ -1010,7 +1011,7 @@ contains
    !!
    !! \param CO2a
    !!
-   !! \ingroup catchem_megan_process
+   !! \ingroup catchem_bvoc_process
    !!!>
    subroutine GET_GAMMA_CO2(CO2a, GAMMA_CO2)
       IMPLICIT NONE
@@ -1125,7 +1126,7 @@ contains
    !! \param NORM_FAC
    !! \param RC
    !!
-   !! \ingroup catchem_megan_process
+   !! \ingroup catchem_bvoc_process
    !!!>
    subroutine CALC_NORM_FAC(D2RAD_FAC, NORM_FAC, RC)
       use Error_Mod,     Only : CC_SUCCESS !, CC_FAILURE, CC_Error
@@ -1388,7 +1389,7 @@ contains
    !! \param CMPD
    !! \param AE, RC
    !!
-   !! \ingroup catchem_megan_process
+   !! \ingroup catchem_bvoc_process
    !!!>
    subroutine CALC_AEF(PFT_16, CMPD ,AE, RC)
       IMPLICIT NONE
@@ -1666,7 +1667,7 @@ contains
           case default
             RC = CC_FAILURE
             MSG = 'Invalid compound name'
-            thisLoc = ' -> at CCPr_Megan_Common (in process/megan/ccpr_megan_common_mod.F90)'
+            thisLoc = ' -> at CCPr_bvoc_Common (in process/bvoc/ccpr_bvoc_common_mod.F90)'
             call CC_Error( MSG, RC , thisLoc)
             return
          end select
@@ -1681,4 +1682,4 @@ contains
    end subroutine CALC_AEF
 
 
-end module CCPr_Megan_Common_Mod
+end module CCPr_BVOC_Common_Mod

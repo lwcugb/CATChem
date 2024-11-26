@@ -143,9 +143,9 @@ CONTAINS
          RETURN
       ENDIF
 
-      call Config_Process_Megan(ConfigInput, Config, RC)
+      call Config_Process_Bvoc(ConfigInput, Config, RC)
       IF ( RC /= CC_SUCCESS ) THEN
-         errMsg = 'Error in "Config_Process_Megan"!'
+         errMsg = 'Error in "Config_Process_Bvoc"!'
          CALL CC_Error( errMsg, RC, thisLoc  )
          CALL QFYAML_CleanUp( ConfigInput         )
          CALL QFYAML_CleanUp( ConfigAnchored )
@@ -1156,9 +1156,9 @@ CONTAINS
 
    END SUBROUTINE Config_Process_SeaSalt
 
-   !> \brief Process MEGAN configuration
+   !> \brief Process BVOC configuration
    !!
-   !! This function processes the megan configuration and performs the necessary actions based on the configuration.
+   !! This function processes the biogenic VOC configuration and performs the necessary actions based on the configuration.
    !!
    !! \param[in] ConfigInput The YAML configuration object
    !! \param[inout] Config The configuration object
@@ -1166,7 +1166,7 @@ CONTAINS
    !!
    !! \ingroup core_modules
    !!!>
-   SUBROUTINE Config_Process_Megan( ConfigInput, Config, RC )
+   SUBROUTINE Config_Process_Bvoc( ConfigInput, Config, RC )
       USE CharPak_Mod,    ONLY : StrSplit
       USE Error_Mod
       USE Config_Opt_Mod,  ONLY : ConfigType
@@ -1206,15 +1206,15 @@ CONTAINS
       CHARACTER(LEN=QFYAML_StrLen) :: a_str(2)
 
       !========================================================================
-      ! Config_Process_Megan begins here!
+      ! Config_Process_Bvoc begins here!
       !========================================================================
 
       ! Initialize
       RC      = CC_SUCCESS
-      thisLoc = ' -> at Config_Process_Megan (in CATChem/src/core/config_mod.F90)'
+      thisLoc = ' -> at Config_Process_Bvoc (in CATChem/src/core/config_mod.F90)'
       errMsg = ''
       ! TODO #105 Fix reading of config file
-      key   = "process%megan%activate"
+      key   = "process%bvoc%activate"
       v_bool = MISSING_BOOL
       CALL QFYAML_Add_Get( ConfigInput, TRIM( key ), v_bool, "", RC )
       IF ( RC /= CC_SUCCESS ) THEN
@@ -1222,9 +1222,18 @@ CONTAINS
          CALL CC_Error( errMsg, RC, thisLoc )
          RETURN
       ENDIF
-      Config%megan_activate = v_bool
+      Config%bvoc_activate = v_bool
 
-      key   = "process%megan%CO2_Inhib_Opt"
+      key   = "process%bvoc%scheme_opt"
+      v_int = MISSING_INT
+      CALL QFYAML_Add_Get( ConfigInput, TRIM( key ), v_int, "", RC )
+      IF ( RC /= CC_SUCCESS ) THEN
+         errMsg = TRIM( key ) // 'Not Found, Setting Default to 1'
+         RETURN
+      ENDIF
+      Config%bvoc_scheme = v_int
+
+      key   = "process%bvoc%CO2_Inhib_Opt"
       v_bool = MISSING_BOOL
       CALL QFYAML_Add_Get( ConfigInput, TRIM( key ), v_bool, "", RC )
       IF ( RC /= CC_SUCCESS ) THEN
@@ -1234,22 +1243,23 @@ CONTAINS
       ENDIF
       Config%megan_CO2_Inhib_Opt = v_bool
 
-      key = 'process%megan%CO2_conc_ppm'
+      key = 'process%bvoc%CO2_conc_ppm'
       v_real = MISSING_REAL
       CALL QFYAML_Add_Get( ConfigInput, TRIM( key ), v_real, "", RC )
       IF ( RC /= CC_SUCCESS ) THEN
-         errMsg = TRIM( key ) // 'Not Found, Setting Default to -999'
+         errMsg = TRIM( key ) // 'Not Found, Setting Default to 390.0'
       ENDIF
       ! write(*,*) v_real
       Config%megan_CO2_conc_ppm = v_real
 
-      write(*,*) "Megan Configuration"
+      write(*,*) "BVOC Configuration"
       write(*,*) '------------------------------------'
-      write(*,*) 'Config%megan_activate = ', Config%megan_activate
+      write(*,*) 'Config%bvoc_activate = ', Config%bvoc_activate
+      write(*,*) 'Config%bvoc_scheme = ', Config%bvoc_scheme
       write(*,*) 'Config%megan_CO2_Inhib_Opt = ', Config%megan_CO2_Inhib_Opt
       write(*,*) 'Config%megan_CO2_conc_ppm = ', Config%megan_CO2_conc_ppm
       write(*,*) '------------------------------------'
 
-   END SUBROUTINE Config_Process_Megan
+   END SUBROUTINE Config_Process_Bvoc
 
 END MODULE config_mod

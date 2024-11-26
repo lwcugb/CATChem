@@ -42,7 +42,7 @@ MODULE Config_Opt_Mod
    !! - `dust_scheme_opt` : Scheme option for dust process
    !! - `seasalt_activate` : Activate seasalt process
    !! - `seasalt_scheme_opt` : Scheme option for seasalt process
-   !! - `megan_activate` : Activate Megan process
+   !! - `bvoc_activate` : Activate BVOC process
    !! - `megan_CO2_Inhib_Opt` : use CO2 inhibition for isoprene?
    !! - `megan_CO2_conc_ppm` : If so, provide CO2 concentrations
    !!
@@ -94,8 +94,9 @@ MODULE Config_Opt_Mod
       INTEGER                     :: seasalt_scheme
       real(fp)                    :: seasalt_scalefactor
 
-      ! Megan Process
-      LOGICAL                     :: megan_activate
+      ! BVOC Process
+      LOGICAL                     :: bvoc_activate
+      INTEGER                     :: bvoc_scheme
       LOGICAL                     :: megan_CO2_Inhib_Opt
       real(fp)                    :: megan_CO2_conc_ppm
 
@@ -175,8 +176,9 @@ CONTAINS
       Config%seasalt_activate = .FALSE.
       Config%seasalt_scheme = 1
 
-      !Megan Process
-      Config%megan_activate = .FALSE.
+      !BVOC Process
+      Config%bvoc_activate = .FALSE.
+      Config%bvoc_scheme = 1
       Config%megan_CO2_Inhib_Opt = .FALSE.
       Config%megan_CO2_conc_ppm = -999.0
 

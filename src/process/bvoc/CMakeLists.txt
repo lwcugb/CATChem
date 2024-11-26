@@ -1,6 +1,6 @@
-set(_srcs CCPr_Megan_Mod.F90 ccpr_megan_common_mod.F90 ccpr_scheme_megan_mod.F90)
+set(_srcs CCPr_BVOC_Mod.F90 ccpr_bvoc_common_mod.F90 ccpr_scheme_meganv21_mod.F90)
 
-set(_lib CATChem_process_megan)
+set(_lib CATChem_process_bvoc)
 
 add_library(${_lib} ${_srcs})
 target_link_libraries(${_lib} PUBLIC CATChem_core)

@@ -10,7 +10,7 @@
 !!
 !! \author Wei Li
 !! \date 07/2024
-!! \ingroup catchem_megan_process
+!! \ingroup catchem_bvoc_process
 !!!>
 
 module CCPr_Scheme_Megan_Mod
@@ -90,7 +90,7 @@ contains
       USE Constants,     Only : g0, PI_180 ! Example to pull in a constant from the CONSTANTS MODULE < Modify as needed >
       use precision_mod, only : fp, ZERO  ! Example to pull in a precision from the PRECISION MODULE < Modify as needed >
       Use Error_Mod,     Only : CC_SUCCESS    ! Error Check Success
-      USE CCPr_Megan_Common_Mod
+      USE CCPr_BVOC_Common_Mod
 
       IMPLICIT NONE
 

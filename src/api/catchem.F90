@@ -79,10 +79,10 @@ module CATChem
    use CCPr_SeaSalt_mod, only: cc_seasalt_run => CCPr_SeaSalt_Run               !< SeaSalt Process Run Routine
    use CCPr_SeaSalt_mod, only: cc_seasalt_finalize => CCPr_SeaSalt_Finalize     !< SeaSalt Process Finalization Routine
    ! Megan
-   use CCPr_Megan_Common_Mod, only: MeganStateType                              !< Megan State
-   use CCPr_Megan_mod, only: cc_megan_init => CCPr_Megan_Init                   !< Megan Process Initialization Routine
-   use CCPr_Megan_mod, only: cc_megan_run => CCPr_Megan_Run                     !< Megan Process Run Routine
-   use CCPr_Megan_mod, only: cc_megan_finalize => CCPr_Megan_Final              !< Megan Process Finalization Routine
+   use CCPr_Bvoc_Common_Mod, only: BvocStateType                              !< Megan State
+   use CCPr_Bvoc_mod, only: cc_bvoc_init => CCPr_Bvoc_Init                   !< Megan Process Initialization Routine
+   use CCPr_Bvoc_mod, only: cc_bvoc_run => CCPr_Bvoc_Run                     !< Megan Process Run Routine
+   use CCPr_Bvoc_mod, only: cc_bvoc_finalize => CCPr_Bvoc_Final              !< Megan Process Finalization Routine
 
    !
    implicit none
