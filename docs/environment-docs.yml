@@ -5,11 +5,17 @@ channels:
   - nodefaults
 dependencies:
   - python=3.11
+  - pip
   #
   # Docs
+  - doxygen
+  - graphviz
   - sphinx=8.*
   - sphinx-autobuild
   - sphinx-design
   - sphinx-book-theme
   - sphinx_rtd_theme
   - sphinx-togglebutton
+  #
+  - pip:
+    - doxysphinx
