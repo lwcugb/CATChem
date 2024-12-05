@@ -4,6 +4,10 @@ build:
   os: "ubuntu-22.04"
   tools:
     python: "mambaforge-22.9"
+  jobs:
+    pre_build:
+      - cd docs && doxygen Doxyfile
+      - cd docs && doxysphinx . $READTHEDOCS_OUTPUT/html/ Doxyfile
 
 sphinx:
   configuration: docs/conf.py
