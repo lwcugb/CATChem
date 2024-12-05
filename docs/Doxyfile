@@ -1,7 +1,6 @@
 # https://www.doxygen.nl/manual/config.html
 PROJECT_NAME = CATChem
-PROJECT_BRIEF = Configurable Atmospheric Chemistry
-PROJECT_LOGO = ../data/CATChem_logo_h55.png
+PROJECT_BRIEF =
 
 OPTIMIZE_FOR_FORTRAN = YES
 
@@ -25,6 +24,7 @@ DISABLE_INDEX = NO
 GENERATE_HTML = YES
 CREATE_SUBDIRS = NO
 OUTPUT_DIRECTORY = ./doxygen/
+GENERATE_LATEX = NO
 
 # Doxysphinx recommended
 SEARCHENGINE = NO
