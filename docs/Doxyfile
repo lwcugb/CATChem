@@ -5,11 +5,11 @@ PROJECT_BRIEF =
 OPTIMIZE_FOR_FORTRAN = YES
 
 INPUT = ../src/core \
-      = ../src/process/drydep \
-      = ../src/process/dust \
-      = ../src/process/plumerise \
-      = ../src/process/seasalt \
-      = ../src/api
+      ../src/process/drydep \
+      ../src/process/dust \
+      ../src/process/plumerise \
+      ../src/process/seasalt \
+      ../src/api
 FILE_PATTERNS = *.F90
 RECURSIVE = YES
 
