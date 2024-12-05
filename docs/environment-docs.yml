@@ -4,11 +4,12 @@ channels:
   - conda-forge
   - nodefaults
 dependencies:
-  - python=3.10
+  - python=3.11
   #
   # Docs
-  - sphinx=6.*
+  - sphinx=8.*
   - sphinx-autobuild
   - sphinx-design
+  - sphinx-book-theme
   - sphinx_rtd_theme
   - sphinx-togglebutton
