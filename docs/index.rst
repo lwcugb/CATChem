@@ -23,3 +23,8 @@ currently under development and more information will be provided soon.
 
    develop/development_team
    develop/developers_guide
+
+.. toctree::
+   :caption: Reference
+
+   API <doxygen/html/index>
