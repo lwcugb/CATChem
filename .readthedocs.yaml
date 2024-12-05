@@ -7,7 +7,7 @@ build:
   jobs:
     pre_build:
       - cd docs && doxygen Doxyfile
-      - cd docs && doxysphinx . $READTHEDOCS_OUTPUT/html/ Doxyfile
+      - cd docs && doxysphinx build . $READTHEDOCS_OUTPUT/html/ Doxyfile
 
 sphinx:
   configuration: docs/conf.py
