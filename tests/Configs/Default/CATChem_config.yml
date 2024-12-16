@@ -10,7 +10,8 @@ simulation:
   name: test
   start_date: 20240501 0000
   end_date: 20240501 0100
-  species_filename: CATChem_species.yml
+  species_filename: Configs/Default/CATChem_species.yml
+  emission_filename: Configs/Default/CATChem_emission.yml
   verbose:
     activate: true
 #============================================================================
@@ -18,6 +19,7 @@ simulation:
 #============================================================================
 grid:
   number_of_levels: 28
+  number_of_soil_layers: 4
 #============================================================================
 # Timesteps settings
 #============================================================================
@@ -45,8 +47,3 @@ process:
     activate: true
     scheme_opt: 1
     resuspension: false
-  bvoc:
-    activate: true
-    scheme_opt: 1
-    CO2_Inhib_Opt: true
-    CO2_conc_ppm: 390.0

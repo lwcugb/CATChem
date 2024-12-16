@@ -43,9 +43,13 @@ module precision_mod
    !=========================================================================
    ! Parameters for very tiny numbers
    !=========================================================================
-   REAL(fp),         PARAMETER, PUBLIC :: TINY         =  1.0e-16_fp !< Tiny value (kind=fp)
-   REAL(f4),         PARAMETER, PUBLIC :: TINY_REAL    =  1.0e-16_f4 !< Tiny value (kind=f4)
-   REAL(f8),         PARAMETER, PUBLIC :: TINY_DBLE    =  1.0e-31_f8 !< tiny value (kind=f8)
+   REAL(f4),         PARAMETER, PUBLIC :: TINY_REAL    =  1.0e-16_f4 !< A small value (kind=f4)
+   REAL(f8),         PARAMETER, PUBLIC :: TINY_DBLE    =  1.0e-31_f8 !< A small value (kind=f8)
+#ifdef USE_REAL8
+   REAL(fp),         PARAMETER, PUBLIC :: TINY_        = TINY_DBLE
+#else
+   REAL(fp),         PARAMETER, PUBLIC :: TINY_        = TINY_REAL
+#endif
 
    !=========================================================================
    ! Parameters for one
@@ -53,5 +57,29 @@ module precision_mod
    REAL(fp),         PARAMETER, PUBLIC :: ONE          =  1.0_fp !< One value (kind=fp)
    REAL(f4),         PARAMETER, PUBLIC :: ONE_REAL     =  1.0_f4 !< One value (kind=f4)
    REAL(f8),         PARAMETER, PUBLIC :: ONE_DBLE     =  1.0_f8 !< One value (kind=f8)
+
+   interface rae
+      module procedure rae_f4, rae_f8
+   end interface rae
+
+contains
+
+   !> Real approximately equal: `abs(a - b) < tiny(a)`
+   logical function rae_f4(a, b) result(res)
+      real(f4), intent(in) :: a, b
+      real(f4) :: diff
+
+      diff = abs(a - b)
+      res = diff < tiny(a)
+   end function rae_f4
+
+   !> Real approximately equal: `abs(a - b) < tiny(a)`
+   logical function rae_f8(a, b) result(res)
+      real(f8), intent(in) :: a, b
+      real(f8) :: diff
+
+      diff = abs(a - b)
+      res = diff < tiny(a)
+   end function rae_f8
 
 end module precision_mod

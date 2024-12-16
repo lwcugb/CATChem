@@ -18,3 +18,4 @@ set(_srcs
 
 add_library(CATChem_core ${_srcs})
 set_target_properties(CATChem_core PROPERTIES Fortran_MODULE_DIRECTORY ${CMAKE_BINARY_DIR}/include)
+target_compile_options(CATChem_core PRIVATE ${_catchem_compiler_options})

@@ -57,7 +57,7 @@ contains
 
       ! Uses
       Use CCPr_SeaSalt_Common_Mod
-      use precision_mod, only : fp, ZERO, ONE, f8
+      use precision_mod, only : fp, ZERO, ONE, rae
       use constants,     only : PI
 
       implicit none
@@ -125,7 +125,7 @@ contains
       !----------------------------------------------------------------
       scale = FROCEAN - FRSEAICE
 
-      if (scale .eq. 0) then
+      if (rae(scale, 0.0_fp)) then
          do_seasalt = .False.
       endif
 
@@ -174,11 +174,11 @@ contains
                bFac     = (0.380_fp-log10(rwet))/0.65_fp
 
                ! Number emissions flux (# m-2 s-1)
-               NumberEmissions = NumberEmissions + SeasaltEmissionGong( rwet, drwet, real(ustar, f8), scalefac, aFac, &
+               NumberEmissions = NumberEmissions + SeasaltEmissionGong( rwet, drwet, ustar, scalefac, aFac, &
                   bFac, rpow, exppow, wpow )
 
                ! Mass emissions flux (kg m-2 s-1)
-               MassEmissions = MassEmissions + SeasaltEmissionGong( rwet, drwet, real(ustar, f8), MassScaleFac, &
+               MassEmissions = MassEmissions + SeasaltEmissionGong( rwet, drwet, ustar, MassScaleFac, &
                   aFac, bFac, rpow, exppow, wpow )
 
                DryRadius = DryRadius + DeltaDryRadius

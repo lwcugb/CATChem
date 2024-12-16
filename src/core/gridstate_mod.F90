@@ -22,6 +22,7 @@ module GridState_Mod
       integer :: nx = 1
       integer :: ny = 1
       integer :: number_of_levels  !< The number of vertical levels
+      integer :: number_of_soil_layers  !< The number of soil layers
 
       ! Reals
       real(fp) :: area  !< Grid cell horizontal area [m^2]
@@ -40,12 +41,12 @@ contains
    !!
    !! \ingroup core_modules
    !!!>
-   subroutine Grid_Init_State(Config, GridState, RC)
+   subroutine Grid_Init_State(GridState, RC)
       use Error_Mod, only : CC_SUCCESS
       use Config_Opt_Mod, Only : ConfigType
       implicit none
 
-      type(ConfigType),    intent(in)    :: Config     !< Input Options object
+      ! type(ConfigType),    intent(in)    :: Config     !< Input Options object
       type(GridStateType), intent(inout) :: GridState  !< Grid State object
       INTEGER,             INTENT(OUT)   :: RC         !< Success or failure
 

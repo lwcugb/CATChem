@@ -8,7 +8,7 @@
 !! \ingroup catchem_seasalt_process
 !!!>
 module CCPr_SeaSalt_Common_Mod
-   use precision_mod, Only : fp, ZERO, f8
+   use precision_mod, Only : fp, ZERO, rae
    implicit none
 
    private
@@ -86,7 +86,7 @@ contains
 
       real(fp), intent(in) :: r         !< Wet particle radius [um]
       real(fp), intent(in) :: dr        !< Wet particle bin width [um]
-      real(f8), intent(in) :: w         !< Grid box mean wind speed [m s-1] (10-m or ustar wind)
+      real(fp), intent(in) :: w         !< Grid box mean wind speed [m s-1] (10-m or ustar wind)
       real(fp), intent(in) :: scalefac  !< scale factor
       real(fp), intent(in) :: aFac
       real(fp), intent(in) :: bFac
@@ -183,14 +183,14 @@ contains
       ! Input
       !------
       logical,  intent(in)    :: weibullFlag
-      real(f8), intent(in)    :: wm
+      real(fp), intent(in)    :: wm
 
       ! Output
       !-------
       integer,  intent(out)   :: RC
 
       ! Local Variables
-      real(f8) :: a, c, k, wt, x
+      real(fp) :: a, c, k, wt, x
       character(len=256) :: errMsg, thisLoc !  needed for error handling                      thisLoc
       ! Initialize
       errMsg = ''
@@ -198,17 +198,17 @@ contains
       RC = 0
       gweibull = 1.0_fp
 
-      wt = 4.d0
+      wt = 4.0_fp
 
       if (weibullFlag) then
          gweibull = 0.0_fp
 
-         if (wm > 0.01) then
-            k = 0.94d0 * sqrt(wm)
-            c = wm / gamma(1.d0 + 1.d0 / k)
+         if (wm > 0.01_fp) then
+            k = 0.94_fp * sqrt(wm)
+            c = wm / gamma(1.0_fp + 1.0_fp / k)
             x = (wt / c) ** k
-            a = 3.41d0 / k + 1.d0
-            gweibull = (c / wm) ** 3.41d0 * igamma(a,x, RC)
+            a = 3.41_fp / k + 1.0_fp
+            gweibull = (c / wm) ** 3.41_fp * igamma(a, x, RC)
          endif
       endif
 
@@ -227,43 +227,45 @@ contains
    !!
    !! \ingroup catchem_seasalt_process
    !!!>
-   DOUBLE PRECISION function igamma(A, X, rc)
+   real(fp) function igamma(A, X, rc)
 
       IMPLICIT NONE
-      double precision, intent(in) ::        A
-      DOUBLE PRECISION, INTENT(IN) ::      X
 
+      REAL(fp), INTENT(in) :: A
+      REAL, INTENT(IN) :: X
       integer, intent(out) :: rc
+
       ! LOCAL VARIABLE
-      DOUBLE PRECISION :: XAM, GIN,  S, R, T0
+      REAL(fp) :: XAM, GIN, S, R, T0
       INTEGER K
       rc = 0
+      igamma = 0
 
       XAM=-X+A*LOG(X)
-      IF (XAM.GT.700.0.OR.A.GT.170.0) THEN
+      IF (XAM.GT.700.0_fp.OR.A.GT.170.0_fp) THEN
          WRITE(*,*)'IGAMMA: a and/or x too large, X = ', X
          WRITE(*,*) 'A = ', A
          rc = -1
          return
       ENDIF
 
-      IF (X.EQ.0.0) THEN
+      IF (rae(X, 0.0_fp)) THEN
          IGAMMA=GAMMA(A)
 
-      ELSE IF (X.LE.1.0+A) THEN
-         S=1.0/A
+      ELSE IF (X.LE.1.0_fp+A) THEN
+         S=1.0_fp/A
          R=S
          DO  K=1,60
             R=R*X/(A+K)
             S=S+R
-            IF (ABS(R/S).LT.1.0e-15) EXIT
+            IF (ABS(R/S).LT.1.0e-15_fp) EXIT
          END DO
          GIN=EXP(XAM)*S
          IGAMMA=GAMMA(A)-GIN
-      ELSE IF (X.GT.1.0+A) THEN
-         T0=0.0
+      ELSE IF (X.GT.1.0_fp+A) THEN
+         T0=0.0_fp
          DO K=60,1,-1
-            T0=(K-A)/(1.0+K/(X+T0))
+            T0=(K-A)/(1.0_fp+K/(X+T0))
          end do
 
          IGAMMA=EXP(XAM)/(X+T0)

@@ -204,7 +204,7 @@ CONTAINS
    !!
    !! \ingroup CATChem_SeaSalt_Processes
    !!!>
-   SUBROUTINE CCPr_SeaSalt_Run( MetState, DiagState, SeaSaltState, ChemState, RC )
+   SUBROUTINE CCPr_SeaSalt_Run( MetState, SeaSaltState, RC )
 
       ! USE
       USE CCPr_Scheme_Gong03_mod,  ONLY: CCPr_Scheme_Gong03   !< Gong2003 SeaSalt Scheme
@@ -219,9 +219,9 @@ CONTAINS
 
       ! INPUT/OUTPUT PARAMETERS
       !------------------------
-      TYPE(DiagStateType), INTENT(INOUT)    :: DiagState   ! DiagState Instance
+      ! TYPE(DiagStateType), INTENT(INOUT)    :: DiagState   ! DiagState Instance
       TYPE(SeaSaltStateType), INTENT(INOUT) :: SeaSaltState   ! SeaSaltState Instance
-      TYPE(ChemStateType), INTENT(INOUT)    :: ChemState  ! ChemState Instance
+      ! TYPE(ChemStateType), INTENT(INOUT)    :: ChemState  ! ChemState Instance
 
       ! OUTPUT PARAMETERS
       !------------------

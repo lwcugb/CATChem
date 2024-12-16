@@ -17,6 +17,11 @@ module EmisState_Mod
    IMPLICIT NONE
    PRIVATE
 
+   PUBLIC :: Emis_Allocate
+   PUBLIC :: Emis_Find_Chem_Map_Index
+   PUBLIC :: EmisState_CleanUp
+   PUBLIC :: Apply_Emis_to_Chem
+
    !> \brief Emission Species State
    !!
    !! \details The Emission Species States contain information about the emitted species and
@@ -29,7 +34,7 @@ module EmisState_Mod
    !! \param units Units of the species
    !! \param nEmisMap Number of Emission mappings per emitted species
    !! \param EmisMapIndex Emission mapping to concentration index
-   !! \param EmisScale Scale factor
+   !! \param Scale Scale factor
    !! \param Flux Emission flux
    !!
    !!!>
@@ -45,12 +50,14 @@ module EmisState_Mod
       integer, ALLOCATABLE :: EmisMapIndex(:)  !< Emission mapping to concentration index
       integer              :: plumerise        !< Plumerise option (default = 0 for no plumerise) sofiev = 1 briggs = 2 simple linear weighted thickness = 3
       integer              :: EmisLayer        !< Emission layer
+      integer              :: nPlmSrc         !< Plumerise number of sources
 
       ! Real
       real(fp), ALLOCATABLE :: Scale(:)        !< Scale factor
       real(fp), ALLOCATABLE :: Flux(:)         !< Emission flux
       real(fp)              :: EmisHeight      !< Emission Height [m] - Simple emission height or -1 for PBLH
       real(fp), ALLOCATABLE :: PlmSrcFlx(:)    !< Plumerise source emission flux [kg/m2/s]
+      real(fp), ALLOCATABLE :: PlmRiseHgt(:)   !< Height of Plume rise [m]
       real(fp), ALLOCATABLE :: FRP(:)          !< Fire Radiative Power (W/m^2)
       real(fp), ALLOCATABLE :: STKDM(:)        !< Briggs stack diameter [m] (array of all point sources in grid cell)
       real(fp), ALLOCATABLE :: STKHT(:)        !< Briggs stack thickness [m] (array of all point sources in grid cell)
@@ -102,12 +109,12 @@ module EmisState_Mod
 
       ! Character
       CHARACTER(LEN=4) :: State = 'Emis' !< Name of this state
-      CHARACTER(LEN=20), ALLOCATABLE :: TotEmisNames(:)         !< Name of the state
+      CHARACTER(LEN=10), ALLOCATABLE :: TotEmisNames(:)         !< Name of the state
 
       ! Integers
       integer :: nCats         !< Number of emission categories
-      integer :: nEmisTotal
-      integer :: nEmisCats
+      integer :: nEmisTotal              !< Total number of emitted species
+      integer :: nEmisTotalPlumerise     !< Total number of plume rise categories
 
       ! Types
       type(EmisSpeciesType), ALLOCATABLE :: TotSpecies(:) !< Emitted species container
@@ -150,7 +157,7 @@ CONTAINS
 
       integer :: c ! Loop counter for emission Cats
       integer :: s ! Loop counter for emitted species
-
+      ! integer :: nPlumes ! temporary variable for number of plumes
 
       ! Initialize return code
       RC = CC_SUCCESS
@@ -160,112 +167,151 @@ CONTAINS
       ThisLoc = ' -> at Emis_Allocate (in core/emisstate_mod.F90)'
 
       if (EmisState%nCats > 0) then
+         print*, 'Number of Categories = ', EmisState%nCats
          do c = 1, EmisState%nCats
+            print*, 'Number of Species for CAT=', EmisState%Cats(c)%name, ' = ', EmisState%Cats(c)%nSpecies
             do s = 1, EmisState%Cats(c)%nSpecies
+               print*, 'Allocating ', EmisState%Cats(c)%Species(s)%name
 
                ALLOCATE(EmisState%Cats(c)%Species(s)%Flux(GridState%number_of_levels), STAT=RC)
                if (RC /= CC_SUCCESS) then
-                  ErrMsg = 'Error allocating "EmisState%Cats%Species%Flux"!'
-                  call Handle_Error(ErrMsg, RC, ThisLoc)
+                  ErrMsg = '  Error allocating "EmisState%Cats%Species%Flux"!'
+                  call CC_Error(ErrMsg, RC, ThisLoc)
                   return
                endif
+               print*, 'Flux allocated for ', EmisState%Cats(c)%Species(s)%name
 
                ALLOCATE(EmisState%Cats(c)%Species(s)%EmisMapIndex(EmisState%Cats(c)%Species(s)%nEmisMap), STAT=RC)
                if (RC /= CC_SUCCESS) then
-                  ErrMsg = 'Error allocating "EmisState%Cats%Species%EmisMapIndex"!'
-                  call Handle_Error(ErrMsg, RC, ThisLoc)
+                  ErrMsg = '  Error allocating "EmisState%Cats%Species%EmisMapIndex"!'
+                  call CC_Error(ErrMsg, RC, ThisLoc)
                   return
                endif
 
+               print*, '  EmisMapIndex allocated for ', EmisState%Cats(c)%Species(s)%name
+
+               ! if (EmisState%Cats(c)%Species(s)%nPlmSrc > 0) then ! if there are plume sources
+               !    nPlumes = EmisState%Cats(c)%Species(s)%nPlmSrc ! temporary variable for number of plumes
+               !    ALLOCATE(EmisState%Cats(c)%Species(s)%PlmSrcFlx(nPlumes), STAT=RC)
+               !    if (RC /= CC_SUCCESS) then
+               !       ErrMsg = 'Error allocating "EmisState%Cats%Species%PlmSrcFlx"!'
+               !       call CC_Error(ErrMsg, RC, ThisLoc)
+               !       return
+               !    endif
+               !    print*, '  PlmSrcFlx allocated for ', EmisState%Cats(c)%Species(s)%name
+
+               !    ALLOCATE(EmisState%Cats(c)%Species(s)%FRP(nPlumes), STAT=RC)
+               !    if (RC /= CC_SUCCESS) then
+               !       ErrMsg = 'Error allocating "EmisState%Cats%Species%FRP"!'
+               !       call CC_Error(ErrMsg, RC, ThisLoc)
+               !       return
+               !    endif
+               !    print*, '  FRP allocated for ', EmisState%Cats(c)%Species(s)%name
+
+               !    ALLOCATE(EmisState%Cats(c)%Species(s)%PlmRiseHgt(nPlumes), STAT=RC)
+               !    if (RC /= CC_SUCCESS) then
+               !       ErrMsg = 'Error allocating "EmisState%Cats%Species%PlmRiseHgt"!'
+               !       call CC_Error(ErrMsg, RC, ThisLoc)
+               !       return
+               !    endif
+               !    print*, '  PlmRiseHgt allocated for ', EmisState%Cats(c)%Species(s)%name
+
+               ! endif
             end do
          end do
+
+         ! call TotEmisSpecies_Allocate(GridState, EmisState, RC)
+         ! IF (RC /= CC_success) THEN
+         !    ErrMsg = 'Error in "TotEmisSpecies_Allocate"'
+         !    call CC_Error(ErrMsg, RC, ThisLoc)
+         !    return
+         ! ENDIF
+
       end if
 
    end subroutine Emis_Allocate
 
-   !> \brief Allocate the total emitted species
-   !!
-   !! \details Allocate the total emitted species
-   !!
-   !! \ingroup core_modules
-   !!
-   !! \param GridState Grid State
-   !! \param EmisState Emission State
-   !! \param RC Return code
-   !!
-   !!!>
-   subroutine TotEmisSpecies_Allocate(GridState, EmisState, RC)
+   ! !> \brief Allocate the total emitted species
+   ! !!
+   ! !! \details Allocate the total emitted species
+   ! !!
+   ! !! \ingroup core_modules
+   ! !!
+   ! !! \param GridState Grid State
+   ! !! \param EmisState Emission State
+   ! !! \param RC Return code
+   ! !!
+   ! !!!>
+   ! subroutine TotEmisSpecies_Allocate(GridState, EmisState, RC)
 
-      USE GridState_Mod, ONLY : GridStateType
+   !    USE GridState_Mod, ONLY : GridStateType
 
-      IMPLICIT NONE
+   !    IMPLICIT NONE
 
-      TYPE(GridStateType), INTENT(IN) :: GridState
+   !    TYPE(GridStateType), INTENT(IN) :: GridState
 
-      TYPE(EmisStateType), INTENT(INOUT) :: EmisState
+   !    TYPE(EmisStateType), INTENT(INOUT) :: EmisState
 
-      INTEGER, INTENT(OUT) :: RC
+   !    INTEGER, INTENT(OUT) :: RC
 
-      integer :: s ! Loop counter for emitted species
-      integer :: c ! Loop counter for emission Cats
-      integer :: t ! loop counter for total emitted species
+   !    integer :: s ! Loop counter for emitted species
+   !    integer :: c ! Loop counter for emission Cats
+   !    integer :: t ! loop counter for total emitted species
 
-      integer :: nT ! total number of emitted species counter
-      integer :: nS ! number of the same emitted species in different categories
+   !    ! integer :: nT ! total number of emitted species counter
+   !    ! integer :: nS ! number of the same emitted species in different categories
 
-      logical :: IsIn
+   !    ! logical :: IsIn
 
-      character(len=255) :: ErrMsg
-      character(len=255) :: ThisLoc
+   !    character(len=255) :: ErrMsg
+   !    character(len=255) :: ThisLoc
 
-      character(len=10) ::currName
+   !    character(len=10) ::currName
 
-      ! Initialize return code
-      RC = CC_SUCCESS
+   !    ! Initialize return code
+   !    RC = CC_SUCCESS
 
-      ! Initialize local variables
-      ErrMsg = ''
-      ThisLoc = ' -> at TotEmisSpecies_Allocate (in core/emisstate_mod.F90)'
+   !    ! Initialize local variables
+   !    ErrMsg = ''
+   !    ThisLoc = ' -> at TotEmisSpecies_Allocate (in core/emisstate_mod.F90)'
 
-      ALLOCATE(EmisState%TotEmisNames(0), STAT=RC)
-      if (EmisState%nCats > 0) then
-         EmisState%nEmisTotal = 0
-         do c = 1, EmisState%nCats
-            do s = 1, EmisState%Cats(c)%nSpecies
-               currName = EmisState%Cats(c)%Species(s)%name
-               if ( ANY( EmisState%TotEmisNames == TRIM(currName) ) .eqv. .False. ) THEN
-                  EmisState%nEmisTotal = EmisState%nEmisTotal + 1
-                  EmisState%TotEmisNames = [EmisState%TotEmisNames, TRIM(currName)]
-               endif
-            end do
-         end do
+   !    ALLOCATE(EmisState%TotEmisNames(0), STAT=RC)
+   !    if (EmisState%nCats > 0) then
+   !       EmisState%nEmisTotal = 0
+   !       do c = 1, EmisState%nCats
+   !          do s = 1, EmisState%Cats(c)%nSpecies
+   !             currName = EmisState%Cats(c)%Species(s)%name
+   !             if ( ANY( EmisState%TotEmisNames == TRIM(currName) ) .eqv. .False. ) THEN
+   !                EmisState%nEmisTotal = EmisState%nEmisTotal + 1
+   !                EmisState%TotEmisNames = [EmisState%TotEmisNames, currName]
+   !             endif
+   !          end do
+   !       end do
 
-         ALLOCATE(EmisState%TotSpecies(EmisState%nEmisTotal), STAT=RC)
-         IF (RC /= CC_SUCCESS) THEN
-            ErrMsg = 'Error allocating "EmisState%TotSpecies"!'
-            call Handle_Error(ErrMsg, RC, ThisLoc)
-            return
-         ENDIF
+   !       ALLOCATE(EmisState%TotSpecies(EmisState%nEmisTotal), STAT=RC)
+   !       IF (RC /= CC_SUCCESS) THEN
+   !          ErrMsg = 'Error allocating "EmisState%TotSpecies"!'
+   !          call CC_Error(ErrMsg, RC, ThisLoc)
+   !          return
+   !       ENDIF
 
-         do t = 1, EmisState%nEmisTotal
-            ! Fill Total Species fluxes and properties
-            EmisState%TotSpecies(t)%name = EmisState%TotEmisNames(s)
-            EmisState%TotSpecies(t)%Flux = 0. ! set all fluxes to zero
-            currName = EmisState%TotEmisNames(s)
-            do c = 1, EmisState%nCats
-               do s = 1, EmisState%Cats(c)%nSpecies
-                  if (currName == EmisState%Cats(c)%Species(s)%name) then
-                     EmisState%TotSpecies(t)%Flux(:) = EmisState%TotSpecies(t)%Flux(:) +  &
-                        EmisState%Cats(c)%Species(s)%Flux(:)
-                     EmisState%TotSpecies(t)%units = EmisState%Cats(c)%Species(s)%units
-                     EmisState%TotSpecies(t)%long_name = EmisState%Cats(c)%Species(s)%long_name
-                  endif
-               end do
-            end do
-         end do
-      endif
+   !       do t = 1, EmisState%nEmisTotal
+   !          ! Fill Total Species fluxes and properties
+   !          EmisState%TotSpecies(t)%name = EmisState%TotEmisNames(s)
+   !          EmisState%TotSpecies(t)%Flux(:) = 0. ! set all fluxes to zero
+   !          currName = EmisState%TotEmisNames(t)
+   !          do c = 1, EmisState%nCats
+   !             do s = 1, EmisState%Cats(c)%nSpecies
+   !                if (currName == EmisState%Cats(c)%Species(s)%name) then
+   !                   EmisState%TotSpecies(t)%units = EmisState%Cats(c)%Species(s)%units
+   !                   EmisState%TotSpecies(t)%long_name = EmisState%Cats(c)%Species(s)%long_name
+   !                endif
+   !             end do
+   !          end do
+   !       end do
+   !    endif
 
-   end subroutine TotEmisSpecies_Allocate
+   ! end subroutine TotEmisSpecies_Allocate
 
    !> \brief Find the index of the mapped species
    !!
@@ -308,9 +354,10 @@ CONTAINS
                call FindSpecByName(ChemState, EmisState%Cats(c)%Species(s)%EmisMapName(n), index, RC)
                if (RC /= CC_SUCCESS) then
                   ErrMsg = 'Error in find_species_by_name'
-                  call Handle_Error(ErrMsg, RC, ThisLoc)
+                  call CC_Error(ErrMsg, RC, ThisLoc)
                   return
                endif
+               EmisState%Cats(c)%Species(s)%EmisMapIndex(n) = index
                EmisState%Cats(c)%Species(s)%EmisMapIndex(n) = index
             enddo
          enddo
@@ -328,19 +375,27 @@ CONTAINS
    !! \param RC Return code
    !!
    !!!>
-   subroutine Apply_Emis_to_Chem(Species, MetState, ChemState, RC)
+   subroutine Apply_Emis_to_Chem(EmisState, MetState, ChemState, RC, surface_only_flag)
       USE ChemState_Mod, ONLY : ChemStateType
       USE MetState_Mod, ONLY : MetStateType
+      use constants, only : g0
 
-      TYPE(EmisSpeciesType), INTENT(IN)    :: Species
-      TYPE(MetStateType),    INTENT(IN)    :: MetState
-      TYPE(ChemStateType),   INTENT(INOUT) :: ChemState
-
+      TYPE(EmisStateType), INTENT(IN)    :: EmisState
+      TYPE(MetStateType),  INTENT(IN)    :: MetState
+      TYPE(ChemStateType), INTENT(INOUT) :: ChemState
+      LOGICAL, INTENT(IN), OPTIONAL :: surface_only_flag
       INTEGER, INTENT(OUT) :: RC
 
       ! Local
-      integer :: c ! Loop counter for emission Cats
-      integer :: s ! Loop counter for emitted species
+      integer :: c !< Loop counter for emission Cats
+      integer :: s !< Loop counter for emitted species
+      integer :: n !< Loop counter for mapped species
+      integer :: k !< Loop counter for height levels
+      real(kind=fp) :: scale  !< scaling factor
+      integer :: index        !< index of the mapped chemical species
+      real(kind=fp) :: cdt    !< time step
+      real(kind=fp) :: dqa    !< change in concentration
+      logical :: surface_only !< flag for surface only
 
       ! Error handling
       CHARACTER(LEN=255) :: ErrMsg
@@ -351,10 +406,48 @@ CONTAINS
       ErrMsg = ''
       ThisLoc = ' -> at Apply_Emis_to_Chem (in core/emisstate_mod.F90)'
 
-      ! TODO: implement this
+      cdt = MetState%TSTEP
+
+      if (present(surface_only_flag)) then
+         surface_only = surface_only_flag
+      else
+         surface_only = .false.
+      endif
+
+      cats: do c = 1, EmisState%nCats
+         species: do s = 1, EmisState%Cats(c)%nSpecies
+            mapping: do n = 1, EmisState%Cats(c)%Species(s)%nEmisMap
+               ! get the emis mapping and scale
+               scale = EmisState%Cats(c)%Species(s)%Scale(n)
+               index = EmisState%Cats(c)%Species(s)%EmisMapIndex(n)
+
+               associate( &
+               ! current flux of the emitted species
+                  emis => EmisState%Cats(c)%Species(s)%Flux, &
+               ! current concentration of the species at `index`
+                  conc => ChemState%ChemSpecies(index)%conc)
+
+                  levs: do k = 1, MetState%NLEVS
+                     dqa = emis(k) * scale * cdt * g0 / MetState%DELP(k)
+                     conc(k) = conc(k) + dqa
+                  end do levs
+
+               end associate
+
+            enddo mapping
+         enddo species
+      enddo cats
 
    end subroutine Apply_Emis_to_Chem
 
+   !> \brief Clean up the emission state
+   !!
+   !! \ingroup core_modules
+   !!
+   !! \param EmisState Emission State
+   !! \param RC Return code
+   !!
+   !!!>
    subroutine EmisState_CleanUp(EmisState, RC)
 
       TYPE(EmisStateType), INTENT(INOUT) :: EmisState
@@ -377,17 +470,37 @@ CONTAINS
       if (allocated(EmisState%TotEmisNames)) deallocate(EmisState%TotEmisNames)
       do c = 1, EmisState%nEmisTotal
          if (allocated(EmisState%TotSpecies(c)%Flux)) deallocate(EmisState%TotSpecies(c)%Flux)
+         if (allocated(EmisState%TotSpecies(c)%Flux)) deallocate(EmisState%TotSpecies(c)%Flux)
       end do
 
       ! Deallocate emission variables in each category
-      do c = 1, EmisState%nCats
-         do s = 1, EmisState%Cats(c)%nSpecies
+      cats: do c = 1, EmisState%nCats
+         species: do s = 1, EmisState%Cats(c)%nSpecies
             if (allocated(EmisState%Cats(c)%Species(s)%Flux)) &
                deallocate(EmisState%Cats(c)%Species(s)%Flux)
             if (allocated(EmisState%Cats(c)%Species(s)%EmisMapIndex)) &
                deallocate(EmisState%Cats(c)%Species(s)%EmisMapIndex)
-         end do
-      end do
+            if (allocated(EmisState%Cats(c)%Species(s)%Scale)) &
+               deallocate(EmisState%Cats(c)%Species(s)%Scale)
+            if (allocated(EmisState%Cats(c)%Species(s)%EmisMapName)) &
+               deallocate(EmisState%Cats(c)%Species(s)%EmisMapName)
+            if (allocated(EmisState%Cats(c)%Species(s)%PlmRiseHgt)) &
+               deallocate(EmisState%Cats(c)%Species(s)%PlmRiseHgt)
+            if (allocated(EmisState%Cats(c)%Species(s)%PlmSrcFlx)) &
+               deallocate(EmisState%Cats(c)%Species(s)%PlmSrcFlx)
+            if (allocated(EmisState%Cats(c)%Species(s)%FRP)) &
+               deallocate(EmisState%Cats(c)%Species(s)%FRP)
+            if (allocated(EmisState%Cats(c)%Species(s)%STKDM)) &
+               deallocate(EmisState%Cats(c)%Species(s)%STKDM)
+            if (allocated(EmisState%Cats(c)%Species(s)%STKHT)) &
+               deallocate(EmisState%Cats(c)%Species(s)%STKHT)
+            if (allocated(EmisState%Cats(c)%Species(s)%STKTK)) &
+               deallocate(EmisState%Cats(c)%Species(s)%STKTK)
+            if (allocated(EmisState%Cats(c)%Species(s)%STKVE)) &
+               deallocate(EmisState%Cats(c)%Species(s)%STKVE)
+         end do species
+      end do cats
+      if (allocated(EmisState%Cats)) deallocate(EmisState%Cats)
       if (allocated(EmisState%Cats)) deallocate(EmisState%Cats)
 
    end subroutine EmisState_CleanUp

@@ -199,7 +199,7 @@ CONTAINS
    !!
    !! \ingroup catchem_dust_process
    !!!>
-   SUBROUTINE CCPr_Dust_Run( MetState, DiagState, DustState, ChemState, RC )
+   SUBROUTINE CCPr_Dust_Run( MetState, DiagState, DustState, RC )
 
       ! USE
       USE CCPr_Scheme_Fengsha_Mod, ONLY: CCPr_Scheme_Fengsha  ! Fengsha Dust Scheme
@@ -215,7 +215,7 @@ CONTAINS
       !------------------------
       TYPE(DiagStateType), INTENT(INOUT) :: DiagState   ! DiagState Instance
       TYPE(DustStateType), INTENT(INOUT) :: DustState   ! DustState Instance
-      TYPE(ChemStateType), INTENT(INOUT) :: ChemState  ! ChemState Instance
+      ! TYPE(ChemStateType), INTENT(INOUT) :: ChemState  ! ChemState Instance
 
       ! OUTPUT PARAMETERS
       !------------------

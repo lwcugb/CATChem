@@ -16,7 +16,7 @@ program test_dust
    ! Error handling
    CHARACTER(LEN=512) :: errMsg
    CHARACTER(LEN=255) :: thisLoc
-   CHARACTER(LEN=18), PARAMETER :: configFile ='CATChem_config.yml'
+   CHARACTER(LEN=255), PARAMETER :: configFile = 'Configs/Default/CATChem_config.yml'
 
    thisLoc = 'test_dust -> at read CATChem_Config.yml'
    errMsg = ''
@@ -28,14 +28,14 @@ program test_dust
    write(*,*) '  C        A     A     T     C       H   H  C      E EE    M   M   M'
    write(*,*) '   CCCCC  A       A    T      CCCCC  H   H   CCCC   EEEEE  M       M'
    write(*,*) ''
-   write(*,*) ''
+   write(*,*) '  SEA SALT TEST'
 
    !----------------------------
    ! Test 1
    !----------------------------
 
    ! Read input file and initialize grid
-   call cc_read_config(Config, GridState, EmisState, ChemState, rc)
+   call cc_read_config(Config, GridState, EmisState, ChemState, rc, configFile)
    if (rc /= CC_success) then
       errMsg = 'Error reading configuration file: ' // TRIM( configFile )
       call cc_emit_error(errMsg, rc, thisLoc)
@@ -76,7 +76,7 @@ program test_dust
       stop 1
    end if
 
-   call cc_seasalt_run(MetState, DiagState, SeaSaltState, ChemState, rc)
+   call cc_seasalt_run(MetState, SeaSaltState, rc)
    if (rc /= CC_SUCCESS) then
       errMsg = 'Error in cc_seasalt_run'
       call cc_emit_error(errMsg, rc, thisLoc)
@@ -92,7 +92,7 @@ program test_dust
    title = "SeaSalt Test 2 | Test Gong03"
    SeaSaltState%SchemeOpt = 1
 
-   call cc_seasalt_run(MetState, DiagState, SeaSaltState, ChemState, rc)
+   call cc_seasalt_run(MetState, SeaSaltState, rc)
    if (rc /= CC_SUCCESS) then
       errMsg = 'Error in cc_seasalt_run'
       call cc_emit_error(errMsg, rc, thisLoc)
@@ -108,7 +108,7 @@ program test_dust
    title = "SeaSalt Test 3 | Test Gong97"
    SeaSaltState%SchemeOpt = 2
 
-   call cc_seasalt_run(MetState, DiagState, SeaSaltState, ChemState, rc)
+   call cc_seasalt_run(MetState, SeaSaltState, rc)
    if (rc /= CC_SUCCESS) then
       errMsg = 'Error in cc_seasalt_run'
       call cc_emit_error(errMsg, rc, thisLoc)
@@ -131,8 +131,10 @@ contains
       write(*,*) title_
       write(*,*) '======================================='
       write(*,*) '*************'
-      write(*,*) 'Configuration '
+      write(*,*) 'Configuration'
       write(*,*) '*************'
+      write(*,*) 'Config%seasalt_activate = ', Config_%seasalt_activate
+      write(*,*) 'Config%seasalt_scheme = ', Config_%seasalt_scheme
       write(*,*) 'SeaSaltState%activate = ', SeaSaltState_%activate
       write(*,*) 'SeaSaltState%SchemeOpt = ', SeaSaltState_%SchemeOpt
       write(*,*) 'SeaSaltState%SeaSaltScaleFactor = ', SeaSaltState_%SeaSaltScaleFactor

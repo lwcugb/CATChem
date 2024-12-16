@@ -48,6 +48,9 @@ MODULE QFYAML_Mod
      PUBLIC :: QFYAML_String_to_Real_Arr
      PUBLIC :: QFYAML_String_to_Integer_Arr
      PUBLIC :: QFYAML_String_to_String_Arr
+     PUBLIC :: QFYAML_Get_Size
+     PUBLIC :: QFYAML_Get_Type
+     PUBLIC :: QFYAML_Split_Category
    !
    ! !REMARKS:
    !  QFYAML -- The Quick Fortran YAML parser!
@@ -929,7 +932,6 @@ MODULE QFYAML_Mod
              INTEGER                      :: line_number
              INTEGER                      :: my_unit
              INTEGER                      :: ix
-             INTEGER                      :: jx
 
              ! Strings
              CHARACTER(LEN=QFYAML_NamLen) :: line_fmt
@@ -1092,7 +1094,7 @@ MODULE QFYAML_Mod
             EmisState%nCats = i ! number of total emission categories (level 0)
             ALLOCATE(EmisState%Cats(i), STAT=RC)
             IF ( RC /= 0 ) THEN
-               errMsg = 'Error allocating "EmisState%Cats"!'
+               errMsg = 'Error allocating "Cats"!'
                CALL Handle_Error( errMsg, RC, thisLoc )
                RETURN
             ENDIF
@@ -1130,6 +1132,7 @@ MODULE QFYAML_Mod
 
                   ! Set species names in the emission state
                   EmisState%Cats(i)%nSpecies = j ! number of species in this category
+                  ! write(*,*) '   Number of species in category ' // TRIM(current) // ': ', EmisState%Cats(i)%nSpecies
                   ALLOCATE(EmisState%Cats(i)%Species(j), STAT=RC) ! Allocate the number of species in each category
                   IF ( RC /= 0 ) THEN
                      errMsg = 'Error allocating "Species"!'
@@ -1139,6 +1142,8 @@ MODULE QFYAML_Mod
 
                   do s = 1, EmisState%Cats(i)%nSpecies
                      EmisState%Cats(i)%Species(s)%name = TRIM(names(s))
+                     ! write(*,*) '      Category: ' // TRIM(EmisState%Cats(i)%name) // ' Species: ' //  &
+                     !             TRIM(EmisState%Cats(i)%Species(s)%name)
                   enddo
 
                   ! Reset the current emis category Species names
@@ -1178,6 +1183,7 @@ MODULE QFYAML_Mod
             enddo
 
      END SUBROUTINE QFYAML_Read_Emis_File
+
      !>
      !!  Parses a single line of a YAML file and adds the relevant
      !!  variables to the yml configuration object.
@@ -1220,7 +1226,6 @@ MODULE QFYAML_Mod
        LOGICAL                            :: append
        INTEGER                            :: ix
        INTEGER                            :: ampsnd_ix
-       INTEGER                            :: anchor_ix
        INTEGER                            :: colon_ix
        INTEGER                            :: star_ix
        INTEGER                            :: trim_len
@@ -1232,7 +1237,6 @@ MODULE QFYAML_Mod
        CHARACTER(LEN=QFYAML_NamLen)       :: var_name
        CHARACTER(LEN=QFYAML_StrLen)       :: errMsg
        CHARACTER(LEN=QFYAML_StrLen)       :: line
-       CHARACTER(LEN=QFYAML_StrLen)       :: line2
        CHARACTER(LEN=QFYAML_StrLen)       :: thisLoc
        CHARACTER(LEN=QFYAML_StrLen)       :: last_cat
 
@@ -1706,7 +1710,8 @@ MODULE QFYAML_Mod
 
        ! Trap potential errors
        IF ( RC /= QFYAML_Success ) THEN
-          errMsg = 'Error encountered at "Prepare_Store_Var"!'
+          errMsg = 'Error encountered at "Prepare_Store_Var"! ' //              &
+            '(key with anchor = "' // trim(var_w_anchor) // '")'
           CALL Handle_Error( errMsg, RC, thisLoc )
           RETURN
        ENDIF
@@ -2065,7 +2070,7 @@ MODULE QFYAML_Mod
      !! \param[out]   category   Output category
      !! \param[out]   var_name   Output variable name
      !!!>
-     SUBROUTINE Split_Category( variable, category, var_name )
+     SUBROUTINE QFYAML_Split_Category( variable, category, var_name )
    !
    ! !INPUT PARAMETERS:
    !
@@ -2094,7 +2099,7 @@ MODULE QFYAML_Mod
           var_name = variable%var_name(ix+1:)
        ENDIF
 
-     END SUBROUTINE Split_Category
+     END SUBROUTINE QFYAML_Split_Category
      !>
      !! \brief Resize_Storage
      !!
@@ -2425,8 +2430,8 @@ MODULE QFYAML_Mod
        !=======================================================================
 
        ! Strip out brackets from the line
-       DO B = 1, LEN( QFYAML_brackets )
-          bkt = QFYAML_brackets(B:B)
+       DO B = 1, LEN( brackets )
+          bkt = brackets(B:B)
           ix  = INDEX( line, bkt )
           IF ( ix > 0 ) line(ix:ix) = " "
        ENDDO
@@ -4151,6 +4156,7 @@ MODULE QFYAML_Mod
       delimiter = ','
       count = 0
       start = 1
+      temp_string = ''
 
       ! Count the number of commas to determine the size of the array
       do i = 1, len_trim(input_string)
@@ -4211,6 +4217,7 @@ MODULE QFYAML_Mod
       delimiter = ','
       count = 0
       start = 1
+      temp_string = ''
 
       ! Count the number of commas to determine the size of the array
       do i = 1, len_trim(input_string)
@@ -4255,10 +4262,8 @@ MODULE QFYAML_Mod
       integer, intent(out) :: array_size
       integer, intent(inout) :: RC
 
-      character(len=:), allocatable :: temp_string
       character(len=1) :: delimiter
       integer :: i, start, end, count, ix
-      character(len=QFYAML_NamLen) :: temp_str
 
       CHARACTER(LEN=QFYAML_StrLen)    :: errMsg
       CHARACTER(LEN=QFYAML_StrLen)    :: thisLoc
@@ -4288,7 +4293,7 @@ MODULE QFYAML_Mod
       count = 0
       start = 1
 
-      ! Extract each number and convert to integer
+      ! Extract
       do i = 1, len_trim(input_string)
           if (input_string(i:i) == delimiter .or. i == len_trim(input_string)) then
               if (i == len_trim(input_string)) then
@@ -4297,27 +4302,31 @@ MODULE QFYAML_Mod
                   end = i - 1
               end if
 
-              temp_string = input_string(start:end)
-              read(temp_string, *) temp_str
-              str_arr(count + 1) = temp_str
+              str_arr(count + 1) = trim(adjustl(input_string(start:end)))
 
               count = count + 1
               start = i + 1
           end if
       end do
 
-      ! remove leading or trailing quotation marks
+      ! Remove first leading and/or trailing quotation marks
       do i = 1, array_size
-         temp_string = str_arr(i)
-         if (SCAN(str_arr(i), '"') /= 0) then
-            ix = INDEX(str_arr(i), '"')
-            write(*,*) TRIM(str_arr(i)) // ' ix = ', ix
-            if (ix == len_trim(temp_string)) then
-               temp_str = TRIM(temp_string(1:ix-1))
-            else if (ix == 1) then
-               temp_str = TRIM(temp_string(2:ix))
+         ! Leading
+         if (i > 1) then
+            ix = scan(str_arr(i), '"'//"'")
+            !write(*,*) trim(str_arr(i)) // ' ix = ', ix
+            if (ix == 1) then
+               str_arr(i) = str_arr(i)(2:len(str_arr(i)))
             endif
-            str_arr(i) = TRIM(temp_str)
+         endif
+
+         ! Trailing
+         if (i < array_size) then
+            ix = scan(str_arr(i), '"'//"'", back=.true.)
+            !write(*,*) trim(str_arr(i)) // ' ix = ', ix
+            if (ix > 0 .and. ix == len_trim(str_arr(i))) then
+               str_arr(i) = str_arr(i)(1:ix-1)
+            endif
          endif
       enddo
 

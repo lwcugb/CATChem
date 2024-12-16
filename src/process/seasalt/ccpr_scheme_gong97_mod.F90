@@ -59,7 +59,7 @@ contains
 
       ! Uses
       Use CCPr_SeaSalt_Common_Mod
-      use precision_mod, only : fp, ZERO, ONE, f8
+      use precision_mod, only : fp, ZERO, ONE, rae
       use constants,     only : PI
 
 
@@ -93,7 +93,7 @@ contains
       logical :: do_seasalt                            !< Enable Dust Calculation Flag
       integer :: n, ir                                 !< Loop counter
       integer :: nbins                                 !< number of SeaSalt bins
-      real(f8) :: w10m                                 !< 10m wind speed [m/s]
+      real(fp) :: w10m                                 !< 10m wind speed [m/s]
       ! real(fp), allocatable :: EmissionBin(:)          !< Emission Rate per Bin [kg/m2/s]
       ! real(fp), allocatable :: NumberEmissionBin(:)    !< Number of particles emitted per bin [#/m2/s]
       integer, parameter :: nr = 10                    !< Number of (linear) sub-size bins
@@ -134,7 +134,7 @@ contains
       ! Don't do Sea Salt over land
       !----------------------------------------------------------------
       scale = FROCEAN - FRSEAICE
-      if (scale .eq. 0) then
+      if (rae(scale, 0.0_fp)) then
          do_seasalt = .False.
       endif
 

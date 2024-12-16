@@ -11,36 +11,31 @@ module CATChem
    ! CATChem States
    !---------------
    use ChemState_Mod,  only: ChemStateType    !< Chemical State
-   !
-   use ChemState_Mod, only: ChemStateType
+   use GridState_Mod,  only: GridStateType    !< Grid State
+   use DiagState_Mod,  only: DiagStateType    !< Diagnostic State
+   use EmisState_Mod,  only: EmisStateType    !< Emission State
+   use MetState_Mod,   only: MetStateType     !< Meteorology State
+   use species_mod,    only: SpeciesType      !< Species State
+   use Config_Opt_Mod, only: ConfigType
+
+   !----------------
+   ! Core routines
+   !----------------
+   ! chemstate
    use ChemState_Mod, only: cc_find_species_by_name => FindSpecByName
    use ChemState_Mod, only: cc_get_species_conc => GetSpecConc
    use ChemState_Mod, only: cc_get_species_conc_by_name => GetSpecConcByName
    use ChemState_Mod, only: cc_get_species_conc_by_index => GetSpecConcByIndex
-   !
-   use Config_Opt_Mod, only: ConfigType
-   !
-   use Config_Mod, only: cc_read_config => Read_Input_File
-   !
-   use DiagState_Mod, only: DiagStateType
-   !
-   use Error_Mod, only: cc_check_var => CC_CheckVar
-   use Error_Mod, only: cc_emit_error => CC_Error
-   use Error_Mod, only: CC_FAILURE
-   use Error_Mod, only: CC_SUCCESS
-   use Error_Mod, only: cc_emit_warning => CC_Warning
-   !
-   use GridState_Mod, only: GridStateType
-   !
-   use DiagState_Mod,  only: DiagStateType    !< Diagnostic State
-   !
-   use EmisState_Mod,  only: EmisStateType    !< Emission State
-   !
-   use GridState_Mod,  only: GridStateType    !< Grid State
-   !
-   use MetState_Mod,   only: MetStateType     !< Meteorology State
-   !
-   use species_mod,    only: SpeciesType      !< Species State
+   use ChemState_Mod, only: cc_allocate_chemstate => Chem_Allocate
+   ! metstate
+   use MetState_Mod, only: cc_allocate_metstate => Met_Allocate
+   ! diagstate
+   use DiagState_Mod, only: cc_allocate_diagstate => Diag_Allocate
+   ! emisstate
+   use EmisState_Mod, only: cc_allocate_emisstate => Emis_Allocate
+   use EmisState_Mod, only: cc_deallocate_emisstate => EmisState_CleanUp
+   use EmisState_Mod, only: cc_emis_to_chem_map => Emis_Find_Chem_Map_Index
+   use EmisState_Mod, only: cc_apply_emis_to_chem => Apply_Emis_to_Chem
 
    !-------------------
    ! Configuration Read
@@ -64,7 +59,6 @@ module CATChem
    !------------------
    use precision_mod, only: cc_rk => fp                 !< Real Precision
 
-
    !------------------
    ! CATChem Processes
    !------------------
@@ -78,6 +72,17 @@ module CATChem
    use CCPr_SeaSalt_mod, only: cc_seasalt_init => CCPr_SeaSalt_Init             !< SeaSalt Process Initialization Routine
    use CCPr_SeaSalt_mod, only: cc_seasalt_run => CCPr_SeaSalt_Run               !< SeaSalt Process Run Routine
    use CCPr_SeaSalt_mod, only: cc_seasalt_finalize => CCPr_SeaSalt_Finalize     !< SeaSalt Process Finalization Routine
+   ! Plumerise
+   use CCPr_Plumerise_mod, only: PlumeRiseStateType                               !< Plumerise State
+   use CCPr_Plumerise_mod, only: cc_plumerise_init => CCPr_Plumerise_Init         !< Plumerise Process Initialization Routine
+   use CCPr_Plumerise_mod, only: cc_plumerise_run => CCPr_Plumerise_Run           !< Plumerise Process Run Routine
+   use CCPr_Plumerise_mod, only: cc_plumerise_finalize => CCPr_Plumerise_Finalize !< Plumerise Process Finalization Routine
+   ! Dry Dep
+   use CCPr_DryDep_mod, only: DryDepStateType                            !< DryDep State
+   use CCPr_DryDep_mod, only: cc_drydep_init => CCPr_DryDep_Init         !< DryDep Process Initialization Routine
+   use CCPr_DryDep_mod, only: cc_drydep_run => CCPr_DryDep_Run           !< DryDep Process Run Routine
+   use CCPr_DryDep_mod, only: cc_drydep_finalize => CCPr_DryDep_Finalize !< DryDep Process Finalization Routine
+
    ! Megan
    use CCPr_Bvoc_Common_Mod, only: BvocStateType                              !< Megan State
    use CCPr_Bvoc_mod, only: cc_bvoc_init => CCPr_Bvoc_Init                   !< Megan Process Initialization Routine

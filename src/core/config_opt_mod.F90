@@ -42,6 +42,9 @@ MODULE Config_Opt_Mod
    !! - `dust_scheme_opt` : Scheme option for dust process
    !! - `seasalt_activate` : Activate seasalt process
    !! - `seasalt_scheme_opt` : Scheme option for seasalt process
+   !! - `drydep_activate` : Activate drydep process
+   !! - `drydep_scheme` : Scheme option for drydep process
+   !! - `drydep_resuspension` : Activate resuspension
    !! - `bvoc_activate` : Activate BVOC process
    !! - `megan_CO2_Inhib_Opt` : use CO2 inhibition for isoprene?
    !! - `megan_CO2_conc_ppm` : If so, provide CO2 concentrations
@@ -103,7 +106,10 @@ MODULE Config_Opt_Mod
       ! Plumerise Process
       LOGICAL                     :: plumerise_activate
 
-
+      ! DryDeposition Process
+      LOGICAL                     :: drydep_activate
+      INTEGER                     :: drydep_scheme
+      LOGICAL                     :: drydep_resuspension  !< Turn on resuspension
 
    END TYPE ConfigType
 
@@ -139,8 +145,6 @@ CONTAINS
       !
       ! !LOCAL VARIABLES:
       !
-      ! Strings
-      CHARACTER(LEN=30) :: arrayId
 
       !----------------------------------------
       ! Initialize
@@ -176,7 +180,10 @@ CONTAINS
       Config%seasalt_activate = .FALSE.
       Config%seasalt_scheme = 1
 
-      !BVOC Process
+      ! Dry Dep Process
+      Config%drydep_activate = .FALSE.
+      Config%drydep_scheme = 1
+      Config%drydep_resuspension = .FALSE.      !BVOC Process
       Config%bvoc_activate = .FALSE.
       Config%bvoc_scheme = 1
       Config%megan_CO2_Inhib_Opt = .FALSE.
@@ -192,7 +199,7 @@ CONTAINS
    !!
    !! \ingroup core_modules
    !!!>
-   SUBROUTINE Cleanup_Config( Config, RC )
+   SUBROUTINE Cleanup_Config( RC )
       !
       ! !USES:
       !
@@ -200,7 +207,7 @@ CONTAINS
       !
       ! !INPUT/OUTPUT PARAMETERS:
       !
-      TYPE(ConfigType), INTENT(INOUT) :: Config   ! Input Options object
+      ! TYPE(ConfigType), INTENT(INOUT) :: Config   ! Input Options object
       !
       ! !OUTPUT PARAMETERS:
       !

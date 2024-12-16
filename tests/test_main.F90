@@ -5,7 +5,8 @@
 program test_main
    use CATChem
    use state_mod  ! FIXME: declare states here or move to a driver
-   use testing_mod, only: assert
+   use testing_mod, only: assert_close
+
 
    IMPLICIT NONE
 
@@ -20,7 +21,7 @@ program test_main
    ! Error handling
    CHARACTER(LEN=512) :: errMsg
    CHARACTER(LEN=255) :: thisLoc
-   CHARACTER(LEN=18), PARAMETER :: configFile = 'CATChem_config.yml'
+   CHARACTER(LEN=255), PARAMETER :: configFile = 'Configs/Default/CATChem_config.yml'
    ! set thisLoc
    thisLoc = 'test_main::test_main() -> at read CATChem_Conifg.yml'
    errMsg = ''
@@ -35,7 +36,7 @@ program test_main
    write(*,*) ''
 
    ! Read input file and initialize grid
-   call cc_read_config(Config, GridState, EmisState, ChemState, rc)
+   call cc_read_config(Config, GridState, EmisState, ChemState, rc, configFile)
    if (rc /= CC_SUCCESS) then
       errMsg = 'Error reading configuration file: ' // TRIM( configFile )
       call cc_emit_error(errMsg, rc, thisLoc)
@@ -43,6 +44,7 @@ program test_main
    endif
 
    ! Check Species names and idnex numbers for consistency
+   print *, 'Checking Species names and idnex numbers for consistency'
    call cc_find_species_by_name(ChemState, DUST1, index, RC)
    if (rc /= CC_SUCCESS) then
       errMsg = 'Error finding species index: ' // TRIM( DUST1 )
@@ -56,6 +58,7 @@ program test_main
    endif
 
    ! Check Species names and idnex numbers for consistency
+   print *, 'Checking Species cc_find_species_by_name'
    call cc_find_species_by_name(ChemState, DUST2, index, RC)
    if (rc /= CC_SUCCESS) then
       errMsg = 'Error finding species index: ' // TRIM( DUST1 )
@@ -91,10 +94,10 @@ program test_main
    endif
 
    ! Check numerical values of dust1
-   call assert(ChemState%ChemSpecies(1)%lower_radius == 0.1_fp, "dust1 lower radius")
-   call assert(ChemState%ChemSpecies(1)%upper_radius == 1.0_fp, "dust1 upper radius")
-   call assert(ChemState%ChemSpecies(1)%radius == 0.8_fp, "dust1 radius")
-   call assert(ChemState%ChemSpecies(1)%density == 2500.0_fp, "dust1 density")
+   call assert_close(ChemState%ChemSpecies(1)%lower_radius, 0.1_fp, msg="dust1 lower radius")
+   call assert_close(ChemState%ChemSpecies(1)%upper_radius, 1.0_fp, msg="dust1 upper radius")
+   call assert_close(ChemState%ChemSpecies(1)%radius, 0.8_fp, msg="dust1 radius")
+   call assert_close(ChemState%ChemSpecies(1)%density, 2500.0_fp, msg="dust1 density")
 
    ! write grid info
    write(*,*) 'Grid info:'

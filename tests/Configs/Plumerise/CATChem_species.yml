@@ -23,3 +23,21 @@ dust2:
   density: 2500.
   is_dust: true
   is_aerosol: true
+NO:
+  name: NO
+  long_name: 'Nitrogen Oxide'
+  description: NO
+  mw_g: 30.006
+  is_gas: true
+CO:
+  name: CO
+  long_name: 'Carbon Monoxide'
+  description: CO
+  mw_g: 28.010
+  is_gas: true
+ISOP:
+  name: ISOP
+  long_name: 'Isoprene'
+  description: ISOP
+  mw_g: 44.01
+  is_gas: true
