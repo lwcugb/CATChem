@@ -1409,27 +1409,12 @@ CONTAINS
       ! Scalars
       LOGICAL                      :: v_bool
       INTEGER                      :: v_int
-      !INTEGER                      :: nSubStrs
-      !INTEGER                      :: N
-      !INTEGER                      :: C
-
       ! Reals
       REAL(fp)                     :: v_real
-
-      ! Arrays
-      !INTEGER                      :: a_int(4)
-
       ! Strings
-      !CHARACTER(LEN=10)            :: xMin_Str, xMax_Str
-      !CHARACTER(LEN=10)            :: yMin_Str, yMax_Str
       CHARACTER(LEN=255)           :: thisLoc
       CHARACTER(LEN=512)           :: errMsg
       CHARACTER(LEN=QFYAML_StrLen) :: key
-      !CHARACTER(LEN=QFYAML_StrLen) :: v_str
-
-      ! String arrays
-      !CHARACTER(LEN=255)           :: subStrs(MAXDIM)
-      !CHARACTER(LEN=QFYAML_StrLen) :: a_str(2)
 
       !========================================================================
       ! Config_Process_Bvoc begins here!
