@@ -1409,27 +1409,27 @@ CONTAINS
       ! Scalars
       LOGICAL                      :: v_bool
       INTEGER                      :: v_int
-      INTEGER                      :: nSubStrs
-      INTEGER                      :: N
-      INTEGER                      :: C
+      !INTEGER                      :: nSubStrs
+      !INTEGER                      :: N
+      !INTEGER                      :: C
 
       ! Reals
       REAL(fp)                     :: v_real
 
       ! Arrays
-      INTEGER                      :: a_int(4)
+      !INTEGER                      :: a_int(4)
 
       ! Strings
-      CHARACTER(LEN=10)            :: xMin_Str, xMax_Str
-      CHARACTER(LEN=10)            :: yMin_Str, yMax_Str
-      CHARACTER(LEN=255)           :: thisLoc,  nLev
+      !CHARACTER(LEN=10)            :: xMin_Str, xMax_Str
+      !CHARACTER(LEN=10)            :: yMin_Str, yMax_Str
+      CHARACTER(LEN=255)           :: thisLoc
       CHARACTER(LEN=512)           :: errMsg
       CHARACTER(LEN=QFYAML_StrLen) :: key
-      CHARACTER(LEN=QFYAML_StrLen) :: v_str
+      !CHARACTER(LEN=QFYAML_StrLen) :: v_str
 
       ! String arrays
-      CHARACTER(LEN=255)           :: subStrs(MAXDIM)
-      CHARACTER(LEN=QFYAML_StrLen) :: a_str(2)
+      !CHARACTER(LEN=255)           :: subStrs(MAXDIM)
+      !CHARACTER(LEN=QFYAML_StrLen) :: a_str(2)
 
       !========================================================================
       ! Config_Process_Bvoc begins here!
@@ -1459,7 +1459,7 @@ CONTAINS
       ENDIF
       Config%bvoc_scheme = v_int
 
-      key   = "process%bvoc%CO2_Inhib_Opt"
+      key   = "process%bvoc%co2_inhib_opt"
       v_bool = MISSING_BOOL
       CALL QFYAML_Add_Get( ConfigInput, TRIM( key ), v_bool, "", RC )
       IF ( RC /= CC_SUCCESS ) THEN
@@ -1467,23 +1467,23 @@ CONTAINS
          CALL CC_Error( errMsg, RC, thisLoc )
          RETURN
       ENDIF
-      Config%megan_CO2_Inhib_Opt = v_bool
+      Config%megan_co2_inhib_opt = v_bool
 
-      key = 'process%bvoc%CO2_conc_ppm'
+      key = 'process%bvoc%co2_conc_ppm'
       v_real = MISSING_REAL
       CALL QFYAML_Add_Get( ConfigInput, TRIM( key ), v_real, "", RC )
       IF ( RC /= CC_SUCCESS ) THEN
          errMsg = TRIM( key ) // 'Not Found, Setting Default to 390.0'
       ENDIF
       ! write(*,*) v_real
-      Config%megan_CO2_conc_ppm = v_real
+      Config%megan_co2_conc_ppm = v_real
 
       write(*,*) "BVOC Configuration"
       write(*,*) '------------------------------------'
       write(*,*) 'Config%bvoc_activate = ', Config%bvoc_activate
       write(*,*) 'Config%bvoc_scheme = ', Config%bvoc_scheme
-      write(*,*) 'Config%megan_CO2_Inhib_Opt = ', Config%megan_CO2_Inhib_Opt
-      write(*,*) 'Config%megan_CO2_conc_ppm = ', Config%megan_CO2_conc_ppm
+      write(*,*) 'Config%megan_co2_inhib_opt = ', Config%megan_co2_inhib_opt
+      write(*,*) 'Config%megan_co2_conc_ppm = ', Config%megan_co2_conc_ppm
       write(*,*) '------------------------------------'
 
    END SUBROUTINE Config_Process_Bvoc

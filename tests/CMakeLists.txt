@@ -1,10 +1,10 @@
+include(CTest)
+
 add_compile_options(${_catchem_compiler_options})
 
 add_library(testing testing_mod.f90)
 target_link_libraries(testing PRIVATE CATChem_core)
 set_target_properties(testing PROPERTIES Fortran_MODULE_DIRECTORY ${CMAKE_BINARY_DIR}/include)
-
-enable_testing()
 
 add_executable(test_main test_main.F90)
 target_link_libraries(test_main PRIVATE CATChem_core)

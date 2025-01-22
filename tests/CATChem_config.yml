@@ -48,5 +48,5 @@ process:
   bvoc:
     activate: true
     scheme_opt: 1
-    CO2_Inhib_Opt: true
-    CO2_conc_ppm: 390.0
+    co2_inhib_opt: true
+    co2_conc_ppm: 390.0

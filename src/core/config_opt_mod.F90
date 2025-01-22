@@ -46,8 +46,8 @@ MODULE Config_Opt_Mod
    !! - `drydep_scheme` : Scheme option for drydep process
    !! - `drydep_resuspension` : Activate resuspension
    !! - `bvoc_activate` : Activate BVOC process
-   !! - `megan_CO2_Inhib_Opt` : use CO2 inhibition for isoprene?
-   !! - `megan_CO2_conc_ppm` : If so, provide CO2 concentrations
+   !! - `megan_co2_inhib_opt` : use CO2 inhibition for isoprene?
+   !! - `megan_co2_conc_ppm` : If so, provide CO2 concentrations
    !!
    !! \ingroup core_modules
    !!!>
@@ -100,8 +100,8 @@ MODULE Config_Opt_Mod
       ! BVOC Process
       LOGICAL                     :: bvoc_activate
       INTEGER                     :: bvoc_scheme
-      LOGICAL                     :: megan_CO2_Inhib_Opt
-      real(fp)                    :: megan_CO2_conc_ppm
+      LOGICAL                     :: megan_co2_inhib_opt
+      real(fp)                    :: megan_co2_conc_ppm
 
       ! Plumerise Process
       LOGICAL                     :: plumerise_activate
@@ -186,8 +186,8 @@ CONTAINS
       Config%drydep_resuspension = .FALSE.      !BVOC Process
       Config%bvoc_activate = .FALSE.
       Config%bvoc_scheme = 1
-      Config%megan_CO2_Inhib_Opt = .FALSE.
-      Config%megan_CO2_conc_ppm = -999.0
+      Config%megan_co2_inhib_opt = .FALSE.
+      Config%megan_co2_conc_ppm = -999.0
 
    END SUBROUTINE Set_Config
    !> \brief Cleanup the Config options

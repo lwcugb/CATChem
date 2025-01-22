@@ -3,9 +3,10 @@
 !! \brief Contains MEGAN2.1 biogenic VOC emission Scheme based on HEMCO and Sam Silva's canopy edits
 !!
 !! Reference:
-!! (1) Guenther et al, (GMD 2012) and associated MEGANv2.1 source code
+!! (1) HEMCO's HCOX_MEGAN_MOD module (https://github.com/geoschem/HEMCO), which is
+!!     based on Guenther et al, (GMD 2012) and associated MEGANv2.1 source code
 !!     https://doi.org/10.5194/gmd-5-1471-2012
-!! (2) Sam Silva's simplified canopy edits (GMD 2020)
+!! (2) Sam Silva's simplified canopy edits (GMD 2020) are also added
 !!     https://doi.org/10.5194/gmd-13-2569-2020
 !!
 !! \author Wei Li
@@ -87,8 +88,8 @@ contains
       RC)
 
       ! Uses
-      USE Constants,     Only : g0, PI_180 ! Example to pull in a constant from the CONSTANTS MODULE < Modify as needed >
-      use precision_mod, only : fp, ZERO  ! Example to pull in a precision from the PRECISION MODULE < Modify as needed >
+      USE Constants,     Only : PI_180 ! Example to pull in a constant from the CONSTANTS MODULE < Modify as needed >
+      use precision_mod, only : fp     ! Example to pull in a precision from the PRECISION MODULE < Modify as needed >
       Use Error_Mod,     Only : CC_SUCCESS    ! Error Check Success
       USE CCPr_BVOC_Common_Mod
 
@@ -163,7 +164,7 @@ contains
       REAL(fp)            :: PSTD
       REAL(fp)            :: Ea1L, Ea2L, SINbeta, SunF !canopy add
       LOGICAL             :: BIDIR
-      INTEGER             :: K, S !,DOY  !canopy add and below
+      INTEGER             :: K !, S, DOY  !canopy add and below
       REAL(fp)            :: T_Leaf_Int_Sun(5)
       REAL(fp)            :: T_Leaf_Int_Shade(5)
       REAL(fp)            :: T_Leaf_Temp_Sun(5)
@@ -338,7 +339,7 @@ contains
                GAMMA_PAR_Shade)
 
             call GET_GAMMA_T_LD_C( TS,                &
-               T_LASTXDAYS,         &
+            !   T_LASTXDAYS,         &
                T_LAST24H,           &
                CT1, CEO,            &
                T_Leaf_Int_Sun(K),   &
@@ -346,7 +347,7 @@ contains
                GAMMA_T_LD_Sun )
 
             call GET_GAMMA_T_LD_C(TS,                 &
-               T_LASTXDAYS,         &
+            !   T_LASTXDAYS,         &
                T_LAST24H,           &
                CT1, CEO,            &
                T_Leaf_Int_Shade(K), &

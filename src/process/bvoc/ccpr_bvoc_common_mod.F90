@@ -8,7 +8,7 @@
 !! \date 05/2024
 !!!>
 module CCPr_BVOC_Common_Mod
-   use precision_mod, only: fp, ZERO
+   use precision_mod, only: fp, ZERO, rae
    use Error_Mod
    use constants
    implicit none
@@ -91,8 +91,12 @@ contains
    !>
    !! \brief Computes the light-independent fraction of emissions
    !!
-   !! TODO: add reference
-   !!
+   !!References:
+   !! new function from below Sam et al, 2020
+   !! Silva, S. J., Heald, C. L., and Guenther, A. B.: Development of a reduced-complexity
+   !! plant canopy physics surrogate model for use in chemical transport models: a case study
+   !! with GEOS-Chem v12.3.0, Geosci. Model Dev., 13, 2569–2585,
+   !! https://doi.org/10.5194/gmd-13-2569-2020, 2020.
    !!
    !! \param LAI leaf area index
    !! \param Sinbeta
@@ -145,8 +149,8 @@ contains
    subroutine GET_MEGAN_PARAMS( CPD,   BTA,   LIDF,  C_T1,  C_EO, A_NEW, A_GRO, A_MAT, A_OLD, BI_DIR, RC)
 
       ! Uses
-      use precision_mod, only : fp, ZERO
-      use Error_Mod,     Only : CC_SUCCESS, CC_FAILURE, CC_Error
+      use precision_mod, only : fp
+      use Error_Mod,     Only : CC_FAILURE, CC_Error
       IMPLICIT NONE
       ! input Parameters
       character(LEN=256), intent(in) :: CPD       ! Compound name
@@ -375,8 +379,8 @@ contains
 
       IMPLICIT NONE
       ! Parameters
-      real(fp),  intent(in)  :: Q_DIR_2           !< Direct PAR [umol/m2/s]
-      real(fp),  intent(in)  :: Q_DIFF_2          !< Diffuse PAR [umol/m2/s]
+      real(fp),  intent(in)  :: Q_DIR_2           !< Direct PAR [W/m2]
+      real(fp),  intent(in)  :: Q_DIFF_2          !< Diffuse PAR [W/m2]
       real(fp),  intent(in)  :: PARDR_AVG_SIM     !< Avg direct PAR [W/m2]
       real(fp),  intent(in)  :: PARDF_AVG_SIM     !< Avg diffuse PAR [W/m2]
       real(fp),  intent(in)  :: LAT               !< Note: this may need a new function and put in local variable
@@ -398,6 +402,8 @@ contains
 
       ! Constants
       !real(fp), parameter :: mmd = 3.4         !< median mass diameter [microns]
+      ! W/m2 -> umol/m2/s
+      REAL(fp), PARAMETER  :: WM2_TO_UMOLM2S = 4.766_fp
 
       !-----------------------------------------------------
       ! Compute GAMMA_PAR_PCEEA
@@ -406,19 +412,18 @@ contains
       C_PPFD = 0.0_fp
       PTOA   = 0.0_fp
 
-      ! Convert past light conditions to micromol/m2/s (!!!Do not use)
-      mmPARDR_DAILY = PARDR_AVG_SIM  !* WM2_TO_UMOLM2S
-      mmPARDF_DAILY = PARDF_AVG_SIM  !* WM2_TO_UMOLM2S
+      ! Convert past light conditions to micromol/m2/s
+      mmPARDR_DAILY = PARDR_AVG_SIM  * WM2_TO_UMOLM2S
+      mmPARDF_DAILY = PARDF_AVG_SIM  * WM2_TO_UMOLM2S
 
       ! Work out the light at the top of the canopy.
       PAC_DAILY    = mmPARDR_DAILY + mmPARDF_DAILY
-      PAC_INSTANT  = Q_DIR_2       +  Q_DIFF_2
+      PAC_INSTANT  = (Q_DIR_2  +  Q_DIFF_2) * WM2_TO_UMOLM2S
 
       ! Get latitude
       !LAT = HcoState%Grid%YMID%Val(I,J)
 
       ! Get day of year, local-time and latitude
-      ! TODO: Evaluate RC?
       !CALL HcoClock_Get( HcoState%Clock, cDOY = DOY, RC=RC )
       !CALL HcoClock_GetLocal( HcoState, I, J, cH = LocalHour, RC=RC )
 
@@ -526,7 +531,8 @@ contains
 
       ! Local Variables
       !----------------
-      real(fp) :: L_T, L_PT_T    !<
+      real(fp) :: L_T     !<
+      !real(fp) :: L_PT_T  !<
       real(fp), parameter :: T_STANDARD = 303.0_fp
 
       !--------------------------------------------
@@ -553,12 +559,13 @@ contains
    !!
    !! \ingroup catchem_bvoc_process
    !!!>
-   subroutine GET_GAMMA_T_LD(T, PT_15, PT_1, CT1, CEO, GAMMA_T_LD)
+   !subroutine GET_GAMMA_T_LD(T, PT_15, PT_1, CT1, CEO, GAMMA_T_LD)
+   subroutine GET_GAMMA_T_LD(T, PT_15, CT1, CEO, GAMMA_T_LD)
       IMPLICIT NONE
       ! Parameters
       real(fp), intent(in)  :: T             !< Current leaf temperature [K]
       real(fp), intent(in)  :: PT_15         !< Average leaf temperature over the past 15 days
-      real(fp), intent(in)  :: PT_1          !< Average leaf temperature over the past arbitrary day(s). Not used at present
+      !real(fp), intent(in)  :: PT_1          !< Average leaf temperature over the past arbitrary day(s). Not used at present
       real(fp), intent(in)  :: CT1, CEO      !< Compound-specific parameters for light-dependent temperature activity
       real(fp), intent(out) :: GAMMA_T_LD  !< Temperature activity factor for the light-dependent emissions
 
@@ -612,7 +619,6 @@ contains
       real(fp), intent(out) :: GAMMA_LAI   !< LAI factor
 
       ! Local Variables
-      real(fp), parameter :: z0s = 0.0008467 !< ideal roughness length of soil
 
       !--------------------------------------------
       ! GET_GAMMA_LAI begins here!
@@ -662,7 +668,8 @@ contains
    !!
    !! \ingroup catchem_bvoc_process
    !!!>
-   subroutine GET_GAMMA_T_LD_C(T, PT_15, PT_24, CT1, CEO, T_Leaf_Int, T_Leaf_Temp, GAMMA_T_LD_C )
+   !subroutine GET_GAMMA_T_LD_C(T, PT_15, PT_24, CT1, CEO, T_Leaf_Int, T_Leaf_Temp, GAMMA_T_LD_C )
+   subroutine GET_GAMMA_T_LD_C(T, PT_24, CT1, CEO, T_Leaf_Int, T_Leaf_Temp, GAMMA_T_LD_C )
 
       IMPLICIT NONE
 
@@ -671,7 +678,8 @@ contains
       real(fp), intent(in) :: T             !<
       real(fp), intent(in) :: T_leaf_Int    !<
       real(fp), intent(in) :: T_Leaf_Temp   !<
-      real(fp), intent(in) :: PT_15         !< Average leaf temperature over the past 15 days. Not used at present
+      !!!!!!!TODO: Sam's version has no 15-day average temperature effects
+      !real(fp), intent(in) :: PT_15         !< Average leaf temperature over the past 15 days. Not used at present
       real(fp), intent(in) :: PT_24         !< Average leaf temperature over the past day
       real(fp), intent(in) :: CT1, CEO      !< Compound-specific parameters
 
@@ -738,8 +746,8 @@ contains
       P_Leaf_LAI, P_Leaf_Int, LAI, PSTD, GAMMA_P_C)
       IMPLICIT NONE
       ! Parameters
-      real(fp), intent(in)  :: Q_DIR_2          !< Direct PAR [umol/m2/s]
-      real(fp), intent(in)  :: Q_DIFF_2         !< Diffuse PAR [umol/m2/s]
+      real(fp), intent(in)  :: Q_DIR_2          !< Direct PAR [W/m2]
+      real(fp), intent(in)  :: Q_DIFF_2         !< Diffuse PAR [W/m2]
       real(fp), intent(in)  :: PARDR_AVG_SIM    !< Avg direct PAR [W/m2]
       real(fp), intent(in)  :: PARDF_AVG_SIM    !< Avg diffuse PAR [W/m2]
       real(fp), intent(in)  :: P_Leaf_LAI       !<
@@ -885,7 +893,7 @@ contains
       ! Compute TI and TM
       ! (mpb,2009)
       !-----------------------
-
+      TI = 0.0_fp !avoid uninitialized warning when compiling
       IF ( TT <= 303.0_fp ) THEN
          TI = 5.0_fp + 0.7_fp * ( 300.0_fp - TT )
       ELSEIF ( TT >  303.0_fp ) THEN
@@ -897,7 +905,8 @@ contains
       ! Compute GAMMA_AGE
       !-----------------------
 
-      IF ( CMLAI == PMLAI ) THEN !(i.e. LAI stays the same)
+      !use rae function from pecision_mod to avoid "equality comparison for real" warning
+      IF ( rae(CMLAI, PMLAI) ) THEN !(i.e. LAI stays the same)
 
          FNEW = 0.0_fp
          FGRO = 0.1_fp
@@ -1138,28 +1147,28 @@ contains
 
       ! Local Variables
       !----------------
-      real(fp) :: PAC_DAILY, PHI, BBB, AAA, GAMMA_P_STANDARD
+      real(fp) :: PAC_DAILY
       real(fp) :: GAMMA_T_LI_STANDARD
       real(fp) :: GAMMA_SM_STANDARD
       real(fp) :: CMLAI, GAMMA_LAI_STANDARD
       real(fp) :: GAMMA_AGE_STANDARD
       real(fp) :: PT_15, T, R, CEO, CT1, E_OPT, T_OPT, CT2, X
-      real(fp) :: GAMMA_T_LD_STANDARD
       real(fp) :: LDF, GAMMA_STANDARD
-      !canopy add by Sam Silva
+      !canopy add by Sam Silva (some variables are unused because of this)
+      !real(fp) :: PHI, AAA, BBB, EA2L, GAMMA_P_STANDARD, GAMMA_T_LD_STANDARD
       real(fp) ::  SunF, GAMMA_TP_STANDARD
       real(fp) :: T_Leaf_Int_Sun(5)
       real(fp) :: T_Leaf_Int_Shade(5)
       real(fp) :: T_Leaf_Temp_Sun(5)
       real(fp) :: T_Leaf_Temp_Shade(5)
-      real(fp) :: T_Leaf_Wind_Sun(5)
-      real(fp) :: T_Leaf_Wind_Shade(5)
+      !real(fp) :: T_Leaf_Wind_Sun(5)
+      !real(fp) :: T_Leaf_Wind_Shade(5)
       real(fp) :: P_Leaf_Int_Sun(5)
       real(fp) :: P_Leaf_Int_Shade(5)
       real(fp) :: P_Leaf_LAI_Sun(5)
       real(fp) :: P_Leaf_LAI_Shade(5)
       real(fp) :: Distgauss(5), CDEA(5), VPGWT(5)
-      real(fp) :: EA2L, EA1L, GAMMA_T_LD_SUN, GAMMA_T_LD_SHADE
+      real(fp) :: EA1L, GAMMA_T_LD_SUN, GAMMA_T_LD_SHADE
       real(fp) :: L_PT_T, L_T, C1, LAI, GAMMA_PAR_SUN
       real(fp) :: GAMMA_PAR_SHADE, ALPHA, PAC_INSTANT
       integer  :: Q

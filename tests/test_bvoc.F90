@@ -50,8 +50,8 @@ program test_dust
    write(*,*) 'title = ', title
    write(*,*) 'Config%bvoc_activate = ', Config%bvoc_activate
    write(*,*) 'Config%bvoc_scheme = ', Config%bvoc_scheme
-   write(*,*) 'Config%megan_CO2_Inhib_Opt = ', Config%megan_CO2_Inhib_Opt
-   write(*,*) 'Config%megan_CO2_conc_ppm = ', Config%megan_CO2_conc_ppm
+   write(*,*) 'Config%megan_co2_inhib_opt = ', Config%megan_co2_inhib_opt
+   write(*,*) 'Config%megan_co2_conc_ppm = ', Config%megan_co2_conc_ppm
    write(*,*) 'EmisState%nCats = ', EmisState%nCats
    !write(*,*) 'EmisState%Cats = ', EmisState%Cats  !cannot write allocatable variables here; need to put in the subroutin at the bottom
 
@@ -72,10 +72,9 @@ program test_dust
    !----------------------------
    ! Test 2
    !----------------------------
-   ! Set number of dust species to zero for now (TODO: not sure whether should be used)
-   !ChemState%nSpeciesSeaSalt = 0
 
    ! Meteorological State (get from 20190620 18:00:00 HEMCO log out)
+   MetState%TSTEP= 3600
    MetState%LAI= 3.9094312191009521
    allocate(MetState%PFT_16(16))
    MetState%PFT_16= (/0.00, 0.11120668053627014, 0.00, 0.00, 0.00, 0.00, 0.00, 0.35108909010887146, &
@@ -102,34 +101,44 @@ program test_dust
    MetState%AEF_OCIM= 3.0705341449874024E-011
    MetState%AEF_SABI= 1.0054971341792413E-011
 
+   ! Allocate DiagState
+   call cc_allocate_diagstate(Config, DiagState, ChemState, RC)
+   if (rc /= CC_SUCCESS) then
+      errMsg = 'Error in cc_allocate_diagstate'
+      stop 1
+   endif
+
    title = "BVOC Test 2 | Test each species"
    Config%bvoc_activate = .TRUE.
 
-   call cc_bvoc_init(Config, ChemState, EmisState, BvocState, RC)
+   !call cc_bvoc_init(Config, ChemState, EmisState, BvocState, RC)
+   call cc_bvoc_init(Config, EmisState, BvocState, RC)
    if (rc /= CC_SUCCESS) then
       errMsg = 'Error in cc_bvoc_init'
       call cc_emit_error(errMsg, rc, thisLoc)
       stop 1
    end if
 
-   call cc_bvoc_run(MetState, EmisState, DiagState, BvocState, ChemState, RC )
+   !call cc_bvoc_run(MetState, EmisState, DiagState, BvocState, ChemState, RC )
+   call cc_bvoc_run(MetState, EmisState,  DiagState, BvocState, RC )
    if (rc /= CC_SUCCESS) then
       errMsg = 'Error in cc_bvoc_run'
       call cc_emit_error(errMsg, rc, thisLoc)
       stop 1
    end if
 
-   call print_info(Config, BvocState, MetState, title)
+   call print_info(Config, BvocState, MetState, DiagState, title)
    call assert(BvocState%TotalEmission > 0.0_fp, "Test BVOC species")
    BvocState%TotalEmission = 0.0_fp
 
 
 contains
 
-   subroutine print_info(Config_, BvocState_, MetState_, title_)
+   subroutine print_info(Config_, BvocState_, MetState_, DiagState_, title_)
       type(ConfigType), intent(in) :: Config_
       type(MetStateType), intent(in) :: MetState_
       type(BvocStateType), intent(in) :: BvocState_
+      type(DiagStatetype), INTENT(in) :: DiagState_
       character(len=*), intent(in) :: title_
 
       write(*,*) '======================================='
@@ -138,6 +147,7 @@ contains
       write(*,*) '*************'
       write(*,*) 'Configuration '
       write(*,*) '*************'
+      write(*,*) 'Config%bvoc_activate = ', Config_%bvoc_activate
       write(*,*) 'BvocState%activate = ', BvocState_%activate
       write(*,*) 'BvocState%CatIndex = ', BvocState_%CatIndex
       write(*,*) 'BvocState%CO2Inhib = ', BvocState_%CO2Inhib
@@ -149,6 +159,7 @@ contains
       write(*,*) 'BvocState%BvocSpeciesName=', BvocState_%BvocSpeciesName
       write(*,*) 'BvocState%EmissionPerSpecies=', BvocState_%EmissionPerSpecies
       write(*,*) 'BvocState%TotalEmission = ', BvocState_%TotalEmission
+      write(*,*) 'DiagState%PARDR_LASTXDAYS = ', DiagState_%PARDR_LASTXDAYS
 
    end subroutine print_info
 

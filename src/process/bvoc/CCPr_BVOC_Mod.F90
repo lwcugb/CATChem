@@ -37,14 +37,15 @@ CONTAINS
    !! \param RC               Error return code
    !!
    !!!>
-   SUBROUTINE CCPR_BVOC_Init( Config, ChemState, EmisState, BvocState, RC )
+   !SUBROUTINE CCPR_BVOC_Init( Config, ChemState, EmisState, BvocState, RC )
+   SUBROUTINE CCPR_BVOC_Init( Config, EmisState, BvocState, RC )
       ! USE
 
       IMPLICIT NONE
       ! INPUT PARAMETERS
       !-----------------
       TYPE(ConfigType),  intent(in)    :: Config     ! Module options
-      TYPE(ChemStateType),  intent(in)    :: ChemState  ! Chemical state
+      !TYPE(ChemStateType),  intent(in)    :: ChemState  ! Chemical state
       TYPE(EmisStateType),  intent(in)    :: EmisState  ! Emission state
 
       ! INPUT/OUTPUT PARAMETERS
@@ -87,15 +88,15 @@ CONTAINS
          ! CO2 inhibition option
          !TODO: what if it is not given in the configuration file properly
          !------------------
-         BvocState%CO2Inhib = Config%megan_CO2_Inhib_Opt
+         BvocState%CO2Inhib = Config%megan_co2_inhib_opt
 
          ! Set CO2 concentration (ppm)
          !!TODO: Do we give it a negative value if it is missing in config
          !----------------------------
-         if (Config%megan_CO2_conc_ppm < 0) then
+         if (Config%megan_co2_conc_ppm < 0) then
             BvocState%CO2conc = 390.0_fp
          else
-            BvocState%CO2conc = Config%megan_CO2_conc_ppm
+            BvocState%CO2conc = Config%megan_co2_conc_ppm
          endif
 
          ! Check GLOBCO2 if CO2 inhibition is turned on (LISOPCO2 = .TRUE.)
@@ -176,7 +177,8 @@ CONTAINS
    !! \param [INOUT] EmisState The EmisState object
    !! \param [OUT] RC Return code
    !!!>
-   SUBROUTINE CCPr_BVOC_Run( MetState, EmisState, DiagState, BvocState, ChemState, RC )
+   !SUBROUTINE CCPr_BVOC_Run( MetState, EmisState, DiagState, BvocState, ChemState, RC )
+   SUBROUTINE CCPr_BVOC_Run( MetState, EmisState, DiagState, BvocState, RC )
 
       ! USE
       USE CCPr_Scheme_Megan_Mod, ONLY: CCPr_Scheme_Megan  ! Megan scheme
@@ -184,13 +186,13 @@ CONTAINS
 
       IMPLICIT NONE
       ! INPUT PARAMETERS
-      TYPE(MetStatetype),  INTENT(IN) :: MetState       ! MetState Instance
+      TYPE(MetStatetype),  INTENT(INOUT) :: MetState       ! MetState Instance
 
       ! INPUT/OUTPUT PARAMETERS
       TYPE(EmisStateType), INTENT(INOUT) :: EmisState   ! Emission Instance
       TYPE(DiagStatetype), INTENT(INOUT) :: DiagState   ! DiagState Instance
       TYPE(BvocStateType), INTENT(INOUT) :: BvocState   ! Bvoc State Instance
-      TYPE(ChemStatetype), INTENT(INOUT) :: ChemState   ! ChemState Instance
+      !TYPE(ChemStatetype), INTENT(INOUT) :: ChemState   ! ChemState Instance
 
       ! OUTPUT PARAMETERS
       INTEGER, INTENT(OUT) :: RC                         ! Return Code
@@ -198,7 +200,16 @@ CONTAINS
       ! LOCAL VARIABLES
       CHARACTER(LEN=255) :: ErrMsg, thisLoc, MSG
       REAL(fp),PARAMETER :: D2RAD = PI_180
-      integer            :: c, s, cat_bvoc_idx
+      integer            :: s !, c, cat_bvoc_idx
+      ! e-folding time to be applied to long-term past conditions (in days)
+      REAL(fp), PARAMETER  :: TAU_DAYS  = 5.0_fp
+      ! e-folding time to be applied to short-term past conditions (in hours)
+      REAL(fp), PARAMETER  :: TAU_HOURS = 12.0_fp
+      REAL(fp)           :: TS_EMIS  !emission time step
+      REAL(fp)           :: DNEWFRAC
+      REAL(fp)           :: DOLDFRAC
+      REAL(fp)           :: HNEWFRAC
+      REAL(fp)           :: HOLDFRAC
       logical, save      :: FIRST = .TRUE.
 
       ! Initialize
@@ -220,6 +231,9 @@ CONTAINS
             endif
             FIRST = .FALSE.
          endif
+
+         ! Set to 1 day since we know that LAI is updated every day.
+         MetState%D_BTW_M=  1.0_fp
 
          ! Run the BVOC Scheme (only MEGANv2.1 for now)
          ! Put the scheme function in a loop based on EmisSate%cat%nSpecies and calculate
@@ -276,6 +290,44 @@ CONTAINS
             BvocState%TotalEmission = BvocState%TotalEmission + BvocState%EmissionPerSpecies(s)
 
          end do ! for each species requested in EmisState
+
+         !-----------------------------------------------------------------
+         ! Update historical temperature / radiation values
+         !-----------------------------------------------------------------
+         ! Calculate weights for running means of historic variables
+         ! DNEWFRAC and DOLDFRAC are the weights given to the current
+         ! and existing value, respectively, when updating running means
+         ! over the last X days. HNEWFRAC and HOLDFRAC are the same but
+         ! for the 24H means. (following MEGAN in HEMCO)
+
+         !TODO: use the same time step with MET for now; emission may have its own in the future; make sure the unit is seconds
+         TS_EMIS  = MetState%TSTEP
+         DNEWFRAC = TS_EMIS / ( TAU_DAYS * 24.0_fp * 3600.0_fp )
+         DOLDFRAC = 1.0_fp - DNEWFRAC
+         HNEWFRAC = TS_EMIS / ( TAU_HOURS * 3600.0_fp )
+         HOLDFRAC = 1.0_fp - HNEWFRAC
+
+         ! Updated temperature of last 24 hours
+         MetState%T_LAST24H = ( HOLDFRAC * MetState%T_LAST24H ) + ( HNEWFRAC * MetState%TS )
+         ! Updated temperature of last NUM_DAYS
+         MetState%T_LASTXDAYS = ( DOLDFRAC * MetState%T_LASTXDAYS ) + ( DNEWFRAC * MetState%TS )
+         ! Updated direct radiation of last NUM_DAYS
+         MetState%PARDR_LASTXDAYS = ( DOLDFRAC * MetState%PARDR_LASTXDAYS ) + ( DNEWFRAC * MetState%Q_DIR_2 )
+         ! Updated diffuse radiation of last NUM_DAYS
+         MetState%PARDF_LASTXDAYS = ( DOLDFRAC * MetState%PARDF_LASTXDAYS ) + ( DNEWFRAC * MetState%Q_DIFF_2 )
+         ! Updated LAI of last 24 hours (named LAI_PREVDAY in HEMCO and given to PMISOLAI; here we use PMISOLAI directly)
+         MetState%PMISOLAI = ( HOLDFRAC * MetState%PMISOLAI ) + ( HNEWFRAC * MetState%LAI )
+
+         ! Fill Diagnostic Variables
+         !TODO: This is better to be done in Restart files if we have them in the future
+         !TODO: There also should be some initial values for these historical variables if it is a 'cold' start. The initial values used in HEMCO is:
+         !TODO: T_LAST24H =288.15_fp; T_LASTXDAYS =288.15; PARDR_LASTXDAYS=30.0; PARDF_LASTXDAYS=48.0; PMISOLAI =current LAI
+         !--------------------------
+         DiagState%T_LAST24H        = MetState%T_LAST24H
+         DiagState%T_LASTXDAYS      = MetState%T_LASTXDAYS
+         DiagState%PARDR_LASTXDAYS  = MetState%PARDR_LASTXDAYS
+         DiagState%PARDF_LASTXDAYS  = MetState%PARDF_LASTXDAYS
+         DiagState%PMISOLAI         = MetState%PMISOLAI
 
       endif !if BOVC is activated or not
 
