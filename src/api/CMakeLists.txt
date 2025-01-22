@@ -9,5 +9,8 @@ target_link_libraries(${_lib} PUBLIC CATChem_process_seasalt)
 target_link_libraries(${_lib} PUBLIC CATChem_process_plumerise)
 target_link_libraries(${_lib} PUBLIC CATChem_process_drydep)
 target_link_libraries(${_lib} PUBLIC CATChem_process_bvoc)
-set_target_properties(${_lib} PROPERTIES Fortran_MODULE_DIRECTORY ${CMAKE_BINARY_DIR}/include)
+set_target_properties(
+  ${_lib}
+  PROPERTIES Fortran_MODULE_DIRECTORY ${CMAKE_BINARY_DIR}/include
+)
 target_compile_options(${_lib} PRIVATE ${_catchem_compiler_options})
