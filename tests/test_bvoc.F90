@@ -1,4 +1,4 @@
-program test_dust
+program test_bvoc
    use CATChem, fp => cc_rk
    use testing_mod, only: assert
    use state_mod
@@ -163,4 +163,4 @@ contains
 
    end subroutine print_info
 
-end program test_dust
+end program test_bvoc
