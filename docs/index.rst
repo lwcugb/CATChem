@@ -1,5 +1,5 @@
 CATChem
-==============
+=======
 
 **CATChem**  (Configurable ATmospheric Chemistry) is a modelling
 component that includes all chemical and aerosol processes needed to perform
