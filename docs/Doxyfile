@@ -4,12 +4,14 @@ PROJECT_BRIEF =
 
 OPTIMIZE_FOR_FORTRAN = YES
 
-INPUT = ../src/core \
+INPUT = doxygen/index.md \
+        ../src/core \
         ../src/process/drydep \
         ../src/process/dust \
         ../src/process/plumerise \
         ../src/process/seasalt \
         ../src/api
+USE_MDFILE_AS_MAINPAGE = index.md
 FILE_PATTERNS = *.F90
 RECURSIVE = YES
 
