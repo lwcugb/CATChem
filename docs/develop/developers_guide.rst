@@ -1,7 +1,7 @@
 Developer's Guide
 =================
 
-Description of Branches
+Description of branches
 -----------------------
 
 main
@@ -75,21 +75,21 @@ changes.
 
        $ git clone https://github.com/ufs-community/CATChem.git
 
-How to Add a New Process
-------------------------
+How to add a new *process*
+--------------------------
 
 CATChem is developed to be able to be easily extensible with new processes.
 There are just a few steps that are required to be able to include a new process.
 
-- First create a new directory under src/process for your new process
-  ```
-  cd src/process
-  mkdir src/process/<new process>
-  ```
+- First create a new directory under src/process for your new process::
+
+    $ cd src/process
+    $ mkdir src/process/<new process>
 
 - Each process should include a process driver named ``CCPr_<new process>_Mod.F90``.
   You can find a template under ``src/process/Process_driver_template.F90``.
   In it, each process driver contains three phases:
+
   * Init: Processes the config and initializes process defaults if activated
   * Run: Runs the process and adds to ``DiagState`` and ``ChemState`` for any process
   * Finalize: Deallocate any arrays that were allocated.
