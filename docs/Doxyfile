@@ -15,7 +15,8 @@ RECURSIVE = YES
 
 # Doxygen Awesome
 HTML_EXTRA_STYLESHEET = ../docs2/static/doxygen-awesome.css \
-                        ../docs2/static/doxygen-awesome-sidebar-only.css
+                        ../docs2/static/doxygen-awesome-sidebar-only.css \
+                        tweaks.css
 HTML_COLORSTYLE = LIGHT
 
 # Doxysphinx required
