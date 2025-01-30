@@ -1427,6 +1427,11 @@ contains
       REAL(fp)                :: EM_FRAC_ALD2(15), EM_FRAC_EOH(15)
       REAL(fp)                :: EM_FRAC_FAXX(15), EM_FRAC_AAXX(15)
       REAL(fp)                :: EM_FRAC_CH2O(15)
+      !try to calculate the seven read-in species online
+      REAL(fp)                :: PFT_EF_ISOP(15), PFT_EF_MBOX(15)
+      REAL(fp)                :: PFT_EF_BPIN(15), PFT_EF_CARE(15)
+      REAL(fp)                :: PFT_EF_LIMO(15), PFT_EF_OCIM(15)
+      REAL(fp)                :: PFT_EF_SABI(15)
       !-----------------------------------------------------------------
       ! Point to PFT fractions (the array needs to be in that order)
       !-----------------------------------------------------------------
@@ -1474,6 +1479,57 @@ contains
       ! but not net emissions to the above canopy atmosphere since they don't
       !  account for within-canopy deposition. Only an issue for OVOCs.
 
+      !try to calculate the seven read-in species online now
+      !               EF1        EF2        EF3         EF4        EF5
+      PFT_EF_ISOP = (/600.0_fp,  3000.0_fp, 1.0_fp,     7000.0_fp, 10000.0_fp, &
+      !               EF6        EF7        EF8         EF9        EF10
+         7000.0_fp, 10000.0_fp,11000.0_fp, 2000.0_fp, 4000.0_fp,  &
+      !               EF11       EF12       EF13        EF14       EF15
+         4000.0_fp, 1600.0_fp, 800.0_fp,   200.0_fp,  1.0_fp/)
+
+      !               EF1       EF2       EF3       EF4       EF5
+      PFT_EF_MBOX = (/700.0_fp, 60.0_fp,  0.01_fp,  0.01_fp,  0.01_fp, &
+      !               EF6       EF7       EF8       EF9       EF10
+         0.01_fp,  0.01_fp,  2.0_fp,   0.01_fp,  0.01_fp, &
+      !               EF11      EF12      EF13      EF14      EF15
+         0.01_fp,  0.01_fp,  0.01_fp,  0.01_fp,  0.01_fp/)
+
+      !               EF1       EF2       EF3       EF4       EF5
+      PFT_EF_BPIN = (/300.0_fp, 300.0_fp, 200.0_fp, 120.0_fp, 130.0_fp, &
+      !               EF6       EF7       EF8       EF9       EF10
+         120.0_fp, 130.0_fp, 130.0_fp, 100.0_fp, 150.0_fp, &
+      !               EF11      EF12      EF13      EF14      EF15
+         100.0_fp, 1.5_fp  , 1.5_fp  , 1.5_fp  , 1.5_fp/)
+
+      !               EF1       EF2       EF3       EF4       EF5
+      PFT_EF_CARE = (/160.0_fp, 160.0_fp, 80.0_fp, 40.0_fp,   30.0_fp, &
+      !               EF6       EF7       EF8       EF9       EF10
+         40.0_fp,  30.0_fp,  30.0_fp,  30.0_fp,  100.0_fp, &
+      !               EF11      EF12      EF13      EF14      EF15
+         30.0_fp,  0.3_fp  , 0.3_fp  , 0.3_fp  , 0.3_fp/)
+
+      !               EF1       EF2       EF3       EF4       EF5
+      PFT_EF_LIMO = (/100.0_fp, 100.0_fp, 130.0_fp, 80.0_fp,  80.0_fp, &
+      !               EF6       EF7       EF8       EF9       EF10
+         80.0_fp,  80.0_fp,  80.0_fp,  60.0_fp,  100.0_fp, &
+      !               EF11      EF12      EF13      EF14      EF15
+         60.0_fp,  0.7_fp  , 0.7_fp  , 0.7_fp  , 0.7_fp/)
+
+      !               EF1       EF2       EF3       EF4       EF5
+      PFT_EF_OCIM = (/70.0_fp,  70.0_fp,  60.0_fp,  150.0_fp, 120.0_fp, &
+      !               EF6       EF7       EF8       EF9       EF10
+         150.0_fp, 120.0_fp, 120.0_fp, 90.0_fp,  150.0_fp, &
+      !               EF11      EF12      EF13      EF14      EF15
+         90.0_fp,  2.0_fp  , 2.0_fp  , 2.0_fp  , 2.0_fp/)
+
+      !               EF1       EF2       EF3       EF4       EF5
+      PFT_EF_SABI = (/70.0_fp,  70.0_fp,  40.0_fp,  80.0_fp,  50.0_fp, &
+      !               EF6       EF7       EF8       EF9       EF10
+         80.0_fp,  50.0_fp,  50.0_fp,  50.0_fp,  70.0_fp, &
+      !               EF11      EF12      EF13      EF14      EF15
+         50.0_fp,  0.7_fp  , 0.7_fp  , 0.7_fp  , 0.7_fp/)
+
+      ! default EF online calculation below
       !               EF1       EF2       EF3       EF4       EF5
       PFT_EF_OMON = (/180.0_fp, 180.0_fp, 170.0_fp, 150.0_fp, 150.0_fp, &
       !               EF6       EF7       EF8       EF9       EF10
@@ -1618,6 +1674,28 @@ contains
          ARR_IND = P + 1
          ! Don't need to divide PFT_16 by 100 since it is already fraction
          select case ( TRIM(CMPD) )
+            !try to calculate the seven read-in species online now
+            ! ISOP: 100% of category
+          case ('ISOP')
+            AE = AE + PFT_16(ARR_IND) * PFT_EF_ISOP(P)
+            ! MBOX: 100% of category
+          case ('MBOX')
+            AE = AE + PFT_16(ARR_IND) * PFT_EF_MBOX(P)
+            ! BPIN: 100% of category
+          case ('BPIN')
+            AE = AE + PFT_16(ARR_IND) * PFT_EF_BPIN(P)
+            ! CARE: 100% of category
+          case ('CARE')
+            AE = AE + PFT_16(ARR_IND) * PFT_EF_CARE(P)
+            ! LIMO: 100% of category
+          case ('LIMO')
+            AE = AE + PFT_16(ARR_IND) * PFT_EF_LIMO(P)
+            ! OCIM: 100% of category
+          case ('OCIM')
+            AE = AE + PFT_16(ARR_IND) * PFT_EF_OCIM(P)
+            ! SABI: 100% of category
+          case ('SABI')
+            AE = AE + PFT_16(ARR_IND) * PFT_EF_SABI(P)
             ! ---> Now compute EFs for a-pinene and myrcene as well
             ! a-pinene: 100% of category
           case ('APIN')

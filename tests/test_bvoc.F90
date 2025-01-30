@@ -93,13 +93,14 @@ program test_bvoc
    MetState%DOY= 171
    MetState%LocalHour= 12.00
    MetState%D_BTW_M=  1.00
-   MetState%AEF_ISOP= 1.8055753025901623E-009
-   MetState%AEF_MBOX= 4.9856540616165277E-013
-   MetState%AEF_BPIN= 1.3127712426530056E-011
-   MetState%AEF_CARE= 3.6563258621377127E-012
-   MetState%AEF_LIMO= 6.3985420662872528E-012
-   MetState%AEF_OCIM= 3.0705341449874024E-011
-   MetState%AEF_SABI= 1.0054971341792413E-011
+   !These are read from file. Keep them here for now
+   !MetState%AEF_ISOP= 1.8055753025901623E-009
+   !MetState%AEF_MBOX= 4.9856540616165277E-013
+   !MetState%AEF_BPIN= 1.3127712426530056E-011
+   !MetState%AEF_CARE= 3.6563258621377127E-012
+   !MetState%AEF_LIMO= 6.3985420662872528E-012
+   !MetState%AEF_OCIM= 3.0705341449874024E-011
+   !MetState%AEF_SABI= 1.0054971341792413E-011
 
    ! Allocate DiagState
    call cc_allocate_diagstate(Config, DiagState, ChemState, RC)
@@ -154,7 +155,7 @@ contains
       write(*,*) 'BvocState%CO2conc  = ', BvocState_%CO2conc
       write(*,*) 'MetState%LAI =', MetState_%LAI
       write(*,*) 'MetState%DOY =', MetState_%DOY
-      write(*,*) 'MetState%AEF_ISOP =', MetState_%AEF_ISOP
+      !write(*,*) 'MetState%AEF_ISOP =', MetState_%AEF_ISOP
       write(*,*) 'MetState%PFT_16 =', MetState_%PFT_16
       write(*,*) 'BvocState%BvocSpeciesName=', BvocState_%BvocSpeciesName
       write(*,*) 'BvocState%EmissionPerSpecies=', BvocState_%EmissionPerSpecies

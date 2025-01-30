@@ -45,13 +45,13 @@ contains
    !! \param DOY               Day of year
    !! \param LocalHour         Local hour
    !! \param D_BTW_M           Days between mid-months
-   !! \param AEF_ISOP          Emission factor of ISOP read from file
-   !! \param AEF_MBOX          Emission factor of MBOX read from file
-   !! \param AEF_BPIN          Emission factor of BPIN read from file
-   !! \param AEF_CARE          Emission factor of CARE read from file
-   !! \param AEF_LIMO          Emission factor of LIMO read from file
-   !! \param AEF_OCIM          Emission factor of OCIM read from file
-   !! \param AEF_SABI          Emission factor of SABI read from file
+   !!!! \param AEF_ISOP          Emission factor of ISOP read from file
+   !!!! \param AEF_MBOX          Emission factor of MBOX read from file
+   !!!! \param AEF_BPIN          Emission factor of BPIN read from file
+   !!!! \param AEF_CARE          Emission factor of CARE read from file
+   !!!! \param AEF_LIMO          Emission factor of LIMO read from file
+   !!!! \param AEF_OCIM          Emission factor of OCIM read from file
+   !!!! \param AEF_SABI          Emission factor of SABI read from file
    !! \param EmisPerSpec       Emission per Species
    !! \param RC                Success or Failure
    !!
@@ -78,13 +78,6 @@ contains
       DOY,                 &
       LocalHour,           &
       D_BTW_M,             &
-      AEF_ISOP,            &
-      AEF_MBOX,            &
-      AEF_BPIN,            &
-      AEF_CARE,            &
-      AEF_LIMO,            &
-      AEF_OCIM,            &
-      AEF_SABI,            &
       RC)
 
       ! Uses
@@ -117,13 +110,14 @@ contains
       integer,           intent(in)     :: DOY                   !< Day of year
       real(fp),          intent(in)     :: LocalHour             !< Local hour
       real(fp),          intent(in)     :: D_BTW_M               !< Days between mid-months
-      real(fp),          intent(in)     :: AEF_ISOP              !< Emission factor of ISOP read from file
-      real(fp),          intent(in)     :: AEF_MBOX              !< Emission factor of MBOX read from file
-      real(fp),          intent(in)     :: AEF_BPIN              !< Emission factor of BPIN read from file
-      real(fp),          intent(in)     :: AEF_CARE              !< Emission factor of CARE read from file
-      real(fp),          intent(in)     :: AEF_LIMO              !< Emission factor of LIMO read from file
-      real(fp),          intent(in)     :: AEF_OCIM              !< Emission factor of OCIM read from file
-      real(fp),          intent(in)     :: AEF_SABI              !< Emission factor of SABI read from file
+      !These seven EFs are changed to be read online now instead of read from file
+      !real(fp),          intent(in)     :: AEF_ISOP              !< Emission factor of ISOP read from file
+      !real(fp),          intent(in)     :: AEF_MBOX              !< Emission factor of MBOX read from file
+      !real(fp),          intent(in)     :: AEF_BPIN              !< Emission factor of BPIN read from file
+      !real(fp),          intent(in)     :: AEF_CARE              !< Emission factor of CARE read from file
+      !real(fp),          intent(in)     :: AEF_LIMO              !< Emission factor of LIMO read from file
+      !real(fp),          intent(in)     :: AEF_OCIM              !< Emission factor of OCIM read from file
+      !real(fp),          intent(in)     :: AEF_SABI              !< Emission factor of SABI read from file
       !real(fp),          intent(inout)  :: EmisPerSpec(:)       !< Emission per Species
       real(fp),          intent(inout)  :: EmisPerSpec           !< Emission per Species
       !real(fp),          intent(inout)  :: TotalEmis            !< Total Emission (TODO: not used by now)
@@ -388,26 +382,26 @@ contains
          call GET_GAMMA_SM( GWETROOT, CMPD, GAMMA_SM )
 
          ! --------------------------------------------------
-         ! emission factor (TODO: AE of these seven species are from file reading)
+         ! emission factor (Note: EFs of these seven species are now calculated online instead of reading from file)
          ! --------------------------------------------------
-         select case ( TRIM(CMPD) )
-          case ('ISOP')
-            AEF = AEF_ISOP
-          case ('MBOX')
-            AEF = AEF_MBOX
-          case ('BPIN')
-            AEF = AEF_BPIN
-          case ('CARE')
-            AEF = AEF_CARE
-          case ('LIMO')
-            AEF = AEF_LIMO
-          case ('OCIM')
-            AEF = AEF_OCIM
-          case ('SABI')
-            AEF = AEF_SABI
-          case default !others are calculated inline
-            call CALC_AEF(PFT_16, CMPD, AEF, RC)
-         end select
+         !select case ( TRIM(CMPD) )
+         ! case ('ISOP')
+         !   AEF = AEF_ISOP
+         ! case ('MBOX')
+         !   AEF = AEF_MBOX
+         ! case ('BPIN')
+         !   AEF = AEF_BPIN
+         ! case ('CARE')
+         !   AEF = AEF_CARE
+         ! case ('LIMO')
+         !   AEF = AEF_LIMO
+         ! case ('OCIM')
+         !   AEF = AEF_OCIM
+         ! case ('SABI')
+         !   AEF = AEF_SABI
+         ! case default !others are calculated inline
+         call CALC_AEF(PFT_16, CMPD, AEF, RC)
+         !end select
 
          ! --------------------------------------------------
          ! calculate emission

@@ -263,13 +263,6 @@ CONTAINS
                   MetState%DOY,                 &
                   MetState%LocalHour,           &
                   MetState%D_BTW_M,             &
-                  MetState%AEF_ISOP,            &
-                  MetState%AEF_MBOX,            &
-                  MetState%AEF_BPIN,            &
-                  MetState%AEF_CARE,            &
-                  MetState%AEF_LIMO,            &
-                  MetState%AEF_OCIM,            &
-                  MetState%AEF_SABI,            &
                   RC)
                if (RC /= CC_SUCCESS) then
                   errMsg = 'Error in CCPr_Scheme_Megan'
