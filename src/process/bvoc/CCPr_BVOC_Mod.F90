@@ -88,10 +88,10 @@ CONTAINS
          ! CO2 inhibition option
          !TODO: what if it is not given in the configuration file properly
          !------------------
-         BvocState%CO2Inhib = Config%megan_co2_inhib_opt
+         BvocState%CO2Inhib = Config%megan_co2_inhib
 
          ! Set CO2 concentration (ppm)
-         !!TODO: Do we give it a negative value if it is missing in config
+         ! In case it is given as a negative value in config
          !----------------------------
          if (Config%megan_co2_conc_ppm < 0) then
             BvocState%CO2conc = 390.0_fp

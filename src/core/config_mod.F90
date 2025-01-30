@@ -1440,34 +1440,33 @@ CONTAINS
       CALL QFYAML_Add_Get( ConfigInput, TRIM( key ), v_int, "", RC )
       IF ( RC /= CC_SUCCESS ) THEN
          errMsg = TRIM( key ) // 'Not Found, Setting Default to 1'
-         RETURN
+         CALL CC_Error( errMsg, RC, thisLoc )
       ENDIF
       Config%bvoc_scheme = v_int
 
-      key   = "process%bvoc%co2_inhib_opt"
+      key   = "process%bvoc%co2_inhib"
       v_bool = MISSING_BOOL
       CALL QFYAML_Add_Get( ConfigInput, TRIM( key ), v_bool, "", RC )
       IF ( RC /= CC_SUCCESS ) THEN
-         errMsg = 'Error parsing ' // TRIM( key ) // '!'
+         errMsg = TRIM( key ) // 'Not Found, Setting Default to TRUE'
          CALL CC_Error( errMsg, RC, thisLoc )
-         RETURN
       ENDIF
-      Config%megan_co2_inhib_opt = v_bool
+      Config%megan_co2_inhib = v_bool
 
       key = 'process%bvoc%co2_conc_ppm'
       v_real = MISSING_REAL
       CALL QFYAML_Add_Get( ConfigInput, TRIM( key ), v_real, "", RC )
       IF ( RC /= CC_SUCCESS ) THEN
          errMsg = TRIM( key ) // 'Not Found, Setting Default to 390.0'
+         CALL CC_Error( errMsg, RC, thisLoc )
       ENDIF
-      ! write(*,*) v_real
       Config%megan_co2_conc_ppm = v_real
 
       write(*,*) "BVOC Configuration"
       write(*,*) '------------------------------------'
       write(*,*) 'Config%bvoc_activate = ', Config%bvoc_activate
       write(*,*) 'Config%bvoc_scheme = ', Config%bvoc_scheme
-      write(*,*) 'Config%megan_co2_inhib_opt = ', Config%megan_co2_inhib_opt
+      write(*,*) 'Config%megan_co2_inhib = ', Config%megan_co2_inhib
       write(*,*) 'Config%megan_co2_conc_ppm = ', Config%megan_co2_conc_ppm
       write(*,*) '------------------------------------'
 

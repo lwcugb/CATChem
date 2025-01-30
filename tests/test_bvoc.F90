@@ -50,7 +50,7 @@ program test_bvoc
    write(*,*) 'title = ', title
    write(*,*) 'Config%bvoc_activate = ', Config%bvoc_activate
    write(*,*) 'Config%bvoc_scheme = ', Config%bvoc_scheme
-   write(*,*) 'Config%megan_co2_inhib_opt = ', Config%megan_co2_inhib_opt
+   write(*,*) 'Config%megan_co2_inhib = ', Config%megan_co2_inhib
    write(*,*) 'Config%megan_co2_conc_ppm = ', Config%megan_co2_conc_ppm
    write(*,*) 'EmisState%nCats = ', EmisState%nCats
    !write(*,*) 'EmisState%Cats = ', EmisState%Cats  !cannot write allocatable variables here; need to put in the subroutin at the bottom
