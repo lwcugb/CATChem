@@ -1441,6 +1441,7 @@ CONTAINS
       IF ( RC /= CC_SUCCESS ) THEN
          errMsg = TRIM( key ) // 'Not Found, Setting Default to 1'
          CALL CC_Error( errMsg, RC, thisLoc )
+         v_int = 1 ! default is one
       ENDIF
       Config%bvoc_scheme = v_int
 
@@ -1450,6 +1451,7 @@ CONTAINS
       IF ( RC /= CC_SUCCESS ) THEN
          errMsg = TRIM( key ) // 'Not Found, Setting Default to TRUE'
          CALL CC_Error( errMsg, RC, thisLoc )
+         v_bool = .TRUE. ! default is true
       ENDIF
       Config%megan_co2_inhib = v_bool
 
@@ -1459,6 +1461,7 @@ CONTAINS
       IF ( RC /= CC_SUCCESS ) THEN
          errMsg = TRIM( key ) // 'Not Found, Setting Default to 390.0'
          CALL CC_Error( errMsg, RC, thisLoc )
+         v_real = 390.0_fp ! default is 390 ppm
       ENDIF
       Config%megan_co2_conc_ppm = v_real
 
