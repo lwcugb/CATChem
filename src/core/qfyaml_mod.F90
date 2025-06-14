@@ -1,4 +1,4 @@
-!> \file qfyaml_mod.F90
+! \file qfyaml_mod.F90
 !! \brief This file contains the QFYAML module
 !!
 !! Contains routines for reading a YAML file into Fortran,
@@ -15,14 +15,10 @@ MODULE QFYAML_Mod
      USE Precision_Mod
      IMPLICIT NONE
      PRIVATE
-   !
-   ! !PUBLIC TYPES:
-   !
+
      PUBLIC :: yp
      PUBLIC :: QFYAML_t
-   !
-   ! !PUBLIC DATA MEMBERS:
-   !
+
      ! Constants
      PUBLIC :: QFYAML_Failure
      PUBLIC :: QFYAML_MaxArr
@@ -51,35 +47,7 @@ MODULE QFYAML_Mod
      PUBLIC :: QFYAML_Get_Size
      PUBLIC :: QFYAML_Get_Type
      PUBLIC :: QFYAML_Split_Category
-   !
-   ! !REMARKS:
-   !  QFYAML -- The Quick Fortran YAML parser!
-   !
-   !  I developed this package because I needed a quick-and-dirty YAML parser
-   !  in Fortran for reading in certain YAML files (e.g. species database)
-   !  into the GEOS-Chem model. I found that certain Fortran YAML parsers
-   !  either did not support mapping, or required the bleeding edge versions
-   !  of Fortran compilers.
-   !
-   !  The back end is code that was taken from the "config_fortran" package
-   !  (https://github.com/jannisteunissen/config_fortran) by H. J. Teunissen.
-   !  and subsequently modified by myself.
-   !
-   !  The front end (parser) has been modified to accept YAML format instead of
-   !  configuration file format.  Not all features of YAML have been implemented.
-   !  At present, I have only tested with YAML mappings but as time allows I
-   !  can try to add other YAML features.
-   !
-   !  At present, nested levels of variables are not supported, but
-   !  might be in the future.
-   !
-   !  I have removed some routines that are not as pertinent to YAML input
-   !  from the original config-fortran code.
-   !
-   !      -- Bob Yantosca (15 Apr 2020), yantosca@seas.harvard.edu
-   !
-   ! !DEFINED PARAMETERS:
-   !
+
      ! The precision kind-parameter (4-byte)
      INTEGER, PARAMETER :: yp                    = f4
 
@@ -1847,10 +1815,10 @@ MODULE QFYAML_Mod
      !! \brief Trim_Comment
      !!
      !! Strip comments, but only outside quoted strings
-     !! (so that var = '#yolo' is valid when # is a comment char)
+     !! (so that quoted strings containing comment characters are preserved)
      !!
-     !! \param[in]    line        Input line
-     !! \param[in]    comment_chars Character(s) to be stripped
+     !! \param line Input line
+     !! \param comment_chars Character(s) to be stripped
      !!!>
      SUBROUTINE Trim_Comment(line, comment_chars)
    !
@@ -1901,8 +1869,8 @@ MODULE QFYAML_Mod
      !!
      !! Checks a QFYAML configuration variable.
      !!
-     !! \param[in]    yml        Input QFYAML configuration variable
-     !! \param[out]   RC         Return code
+     !! \param    yml        Input QFYAML configuration variable
+     !! \param   RC         Return code
      !!
      !!!>
      SUBROUTINE QFYAML_Check( yml, RC )
@@ -1949,7 +1917,7 @@ MODULE QFYAML_Mod
      !!
      !! Find the depth of a category or variable name
      !!
-     !! \param[in]    name        Input name
+     !! \param    name        Input name
      !!!>
      FUNCTION QFYAML_FindDepth( name ) RESULT( depth )
    !
@@ -1984,10 +1952,10 @@ MODULE QFYAML_Mod
      !! file.  This is useful for finding the next higher level variable
      !! in the QFYAML configuration file.
      !!
-     !! \param[in]    yml        Input QFYAML configuration variable
-     !! \param[in]    trg_str    Target string
-     !! \param[out]   n_matches  Number of variables that match the target
-     !! \param[out]   match_vars Variable names that match the target
+     !! \param yml Input QFYAML configuration variable
+     !! \param trg_str Target string
+     !! \param match_ct Number of variables that match the target
+     !! \param match_vars Variable names that match the target
      !!!>
      SUBROUTINE QFYAML_FindNextHigher( yml, trg_str, match_ct, match_vars )
    !
@@ -2066,9 +2034,9 @@ MODULE QFYAML_Mod
      !! \brief Split_Category
      !! \details splits the category and the var name
      !!
-     !! \param[in]    variable   Input QFYAML configuration variable
-     !! \param[out]   category   Output category
-     !! \param[out]   var_name   Output variable name
+     !! \param    variable   Input QFYAML configuration variable
+     !! \param   category   Output category
+     !! \param   var_name   Output variable name
      !!!>
      SUBROUTINE QFYAML_Split_Category( variable, category, var_name )
    !
@@ -2106,8 +2074,7 @@ MODULE QFYAML_Mod
      !! \details Resize the storage size of variable, which can be of type
      !!  INTEGER, LOGICAL, REAL, or CHARACTER
      !!
-     !! \param[in]    variable   Input QFYAML configuration variable
-     !! \param[out]   variable   Output QFYAML configuration variable
+     !! \param variable Input/Output QFYAML configuration variable
      !!!>
      SUBROUTINE Resize_Storage( variable )
    !
@@ -2145,14 +2112,14 @@ MODULE QFYAML_Mod
      !! \details Helper routine to store variables. This is useful because
      !!  a lot of the same code is executed for the different types of variables.
      !!
-     !! \param[in]    yml         Input QFYAML object
-     !! \param[in]    var_name    Input variable name
-     !! \param[in]    var_type    Input variable type
-     !! \param[in]    var_size    Input variable size
-     !! \param[in]    description Input variable description
-     !! \param[in]    ix          Input index
-     !! \param[out]   RC          Input return code
-     !! \param[in]    dynamic_size
+     !! \param    yml         Input QFYAML object
+     !! \param    var_name    Input variable name
+     !! \param    var_type    Input variable type
+     !! \param    var_size    Input variable size
+     !! \param    description Input variable description
+     !! \param    ix          Input index
+     !! \param   RC          Input return code
+     !! \param    dynamic_size
      !!!>
      SUBROUTINE Prepare_Store_Var( yml,      var_name,    var_type,             &
                                    var_size, description, ix,                   &
@@ -2242,11 +2209,12 @@ MODULE QFYAML_Mod
      !! Helper routine to get variables. This is useful because a
      !! lot of the same code is executed for the different types of variables.
      !!
+     !! \param yml Input/Output QFYAML configuration variable
      !! \param var_name Variable name
      !! \param var_type Variable type
      !! \param var_size Variable size
-     !! \param ix       Index of variable
-     !! \param RC       Error code
+     !! \param ix Index of variable
+     !! \param RC Error code
      !!!>
      SUBROUTINE Prepare_Get_Var( yml, var_name, var_type, var_size, ix, RC )
    !
@@ -2827,7 +2795,7 @@ MODULE QFYAML_Mod
      !!  Note that this also happens automatically when such an object goes out
      !!  of scope.
      !!
-     !! \param[inout] yml
+     !! \param yml
      !!
      !!!>
      SUBROUTINE QFYAML_CleanUp( yml )
@@ -2857,10 +2825,10 @@ MODULE QFYAML_Mod
      !!
      !! \details Get the size of a variable.
      !!
-     !! \param[in] yml
-     !! \param[in] var_name
-     !! \param[out] res
-     !! \param[out] RC
+     !! \param yml
+     !! \param var_name
+     !! \param res
+     !! \param RC
      !!
      !!!>
      SUBROUTINE QFYAML_Get_Size( yml, var_name, res, RC )
@@ -2912,10 +2880,10 @@ MODULE QFYAML_Mod
      !!
      !! \details Get the type of a given variable of a configuration type
      !!
-     !! \param[in] yml
-     !! \param[in] var_name
-     !! \param[out] res
-     !! \param[out] RC
+     !! \param yml
+     !! \param var_name
+     !! \param res
+     !! \param RC
      !!
      !!!>
      SUBROUTINE QFYAML_Get_Type( yml, var_name, res, RC )
@@ -2966,7 +2934,7 @@ MODULE QFYAML_Mod
      !! \details Returns the position of the first non-whitespace
      !!  character in a string
      !!
-     !! \param[in] str String to search
+     !! \param str String to search
      !!!>
      FUNCTION First_Char_Pos( str ) RESULT( pos )
    !
@@ -2994,11 +2962,11 @@ MODULE QFYAML_Mod
      !!
      !! \details Computes the category and varname from the category stack.
      !!
-     !! \param[in] cat_index
-     !! \param[in] cat_stack
-     !! \param[out] category
-     !! \param[out] var_name
-     !! \param[out] append
+     !! \param cat_index
+     !! \param cat_stack
+     !! \param category
+     !! \param var_name
+     !! \param append
      !!!>
      SUBROUTINE Get_Sequence_VarName( cat_index, cat_stack,                     &
                                       category,  var_name,  append             )
@@ -3593,7 +3561,7 @@ MODULE QFYAML_Mod
      END SUBROUTINE Get_Bool_Array
 
 
-     !> Get a real value of a given name
+     ! Get a real value of a given name
      !!
      !! /param[in] yml YAML object
      !! /param[in] var_name Name of the variable

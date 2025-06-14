@@ -1,16 +1,27 @@
-!>
-!! \file
-!! \brief Contains a Template for any given CCPr Scheme
+!> \file ccpr_scheme_template.F90
+!! \brief Template for new process schemes in CATChem
+!! \ingroup process_modules
 !!
-!! To use:
-!! - replace SCHEME by an identifier for the scheme (e.g. 'fengsha')
-!! - replace PROCESS by an identifier for the process group (e.g. 'Dust')
-!!
-!! Reference: Please include citation here
-!!
-!! \author Barry baker
+!! \author Barry Baker
 !! \date 05/2024
-!!!>
+!!
+!! This file provides a template for creating new atmospheric chemistry
+!! process schemes in the CATChem modeling system.
+!!
+!! \details
+!! To use this template:
+!! - Replace SCHEME with a scheme identifier (e.g., 'Fengsha', 'Gong97')
+!! - Replace PROCESS with the process group identifier (e.g., 'Dust', 'SeaSalt')
+!! - Implement the scheme-specific calculations and parameterizations
+!! - Add appropriate scientific references and citations
+!! - Update documentation to describe the scheme methodology
+!!
+!! The template provides the basic module structure for implementing
+!! scientific parameterizations within the CATChem process framework.
+!!
+!! \section scheme_reference Reference
+!! Please include appropriate scientific citations here
+!!
 module CCPr_Scheme_SCHEME_Mod
 
    implicit none
@@ -21,7 +32,7 @@ module CCPr_Scheme_SCHEME_Mod
 
 contains
 
-   !> \brief Brief description of the subroutine
+   ! \brief Brief description of the subroutine
    !!
    !! \param MetState     Meteorological Variables
    !! \param DiagState    Diagnostic Variables

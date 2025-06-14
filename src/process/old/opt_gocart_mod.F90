@@ -8815,14 +8815,14 @@
 
 
 !  ---  module control parameters set in subroutine "aer_init"
-!> number of actual bands for sw aerosols; calculated according to
+! number of actual bands for sw aerosols; calculated according to
       integer, parameter :: NSPC = 5
 !! laswflg setting
       integer, parameter :: NSWBND  = 14
-!> number of actual bands for lw aerosols; calculated according to
+! number of actual bands for lw aerosols; calculated according to
 !! lalwflg and lalw1bd settings
       integer, parameter :: NLWBND  = 16
-!> total number of bands for sw+lw aerosols
+! total number of bands for sw+lw aerosols
       integer, parameter :: NSWLWBD = NSWBND+NLWBND
       integer, parameter :: NSWSTR = 1
       integer, parameter :: NBDSW  = NSWBND
@@ -8830,7 +8830,7 @@
       real (kind=kind_chem), parameter :: f_zero = 0.0
       real (kind=kind_chem), parameter :: f_one  = 1.0
       integer, parameter :: NIAERCM = 102
-!> \name Starting/ending wavenumber for each of the SW bands
+! \name Starting/ending wavenumber for each of the SW bands
       real (kind=kind_chem), dimension(NSWBND), parameter :: wvnum1 =   &
      &      (/ 2600.0, 3250.0, 4000.0, 4650.0, 5150.0, 6150.0, 7700.0,  &
      &         8050.0,12850.0,16000.0,22650.0,29000.0,38000.0,  820.0 /)
@@ -8838,16 +8838,16 @@
      &      (/ 3250.0, 4000.0, 4650.0, 5150.0, 6150.0, 7700.0, 8050.0,  &
      &        12850.0,16000.0,22650.0,29000.0,38000.0,50000.0, 2600.0 /)
 
-      !> num of bands for aer data (gocart)
+      ! num of bands for aer data (gocart)
       integer, parameter :: KAERBNDD=61
       integer, parameter :: KAERBNDI=56
-!> num of rh levels for rh-dep components
+! num of rh levels for rh-dep components
       integer, parameter :: KRHLEV =36
-!> num of gocart rh indep aerosols
+! num of gocart rh indep aerosols
       integer, parameter :: KCM1 = 5
-!> num of gocart rh dep aerosols
+! num of gocart rh dep aerosols
       integer, parameter :: KCM2 = 10
-!> num of gocart aerosols
+! num of gocart aerosols
       integer, parameter :: KCM  = KCM1 + KCM2
       real (kind=kind_chem), dimension(KRHLEV) :: rhlev_grt
       data  rhlev_grt / .00, .05, .10, .15, .20, .25, .30, .35,      &
@@ -8865,7 +8865,7 @@
      &       rhidext0_grt, rhidsca0_grt, rhidssa0_grt, rhidasy0_grt
       real (kind=kind_chem), dimension(kaerbndd,krhlev,kcm2)::          &
      &       rhdpext0_grt, rhdpsca0_grt, rhdpssa0_grt, rhdpasy0_grt
-!> gocart species
+! gocart species
       integer, parameter         :: num_gc = 5
       character*2                :: gridcomp(num_gc)
       integer, dimension (num_gc):: num_radius, radius_lower

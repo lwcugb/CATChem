@@ -1,10 +1,21 @@
 !> \file CCPr_Dust_mod.F90
-!! \brief Driver for the CATCHem Process: Dust
+!! \brief Driver for the CATChem Process: Dust
 !!
-!! \defgroup catchem_dust_process
+!! \defgroup catchem_dust_process CATChem Dust Process
+!! \brief Dust emission and transport processes
+!! \ingroup process_modules
 !!
-!! The CATChem Dust Process group holds all the CATCHem dust processes.
-!!!>
+!! This group contains all modules, functions, and data types related to
+!! dust emission calculations in the CATChem atmospheric chemistry model.
+!! Includes various dust schemes like Ginoux and Fengsha, as well as
+!! common dust utilities and state management.
+!!
+!! \author CATChem Development Team
+!! \date 2024
+!!
+!! This module provides the main driver for dust emission processes in CATChem,
+!! including initialization, execution, and finalization of dust calculations.
+!!
 MODULE CCPr_Dust_mod
 
    ! USES:
@@ -27,12 +38,16 @@ MODULE CCPr_Dust_mod
 CONTAINS
 
    !>
-   !! \brief Initialize the CATCHem Dust Process
+   !! \brief Initialize the CATChem Dust Process
    !!
-   !! \param Config_Opt  CATCHem configuration options
-   !! \param DustState   CATCHem dust state
-   !! \param ChmState    CATCHem chemical state
-   !! \param RC          Error return code
+   !! Initializes the dust emission process with default or configured parameters.
+   !! Sets up dust bin properties, size distributions, and links to chemical species.
+   !!
+   !! \param Config CATChem configuration options
+   !! \param DustState CATChem dust state to be initialized
+   !! \param ChemState CATChem chemical state
+   !! \param EmisState CATChem emission state
+   !! \param RC Error return code
    !!
    !! \ingroup catchem_dust_process
    !!!>
@@ -234,13 +249,16 @@ CONTAINS
    END SUBROUTINE CCPR_DUST_INIT
 
    !>
-   !! \brief Run the dust scheme
+   !! \brief Run the dust emission scheme
    !!
-   !! \param [IN] MetState The MetState object
-   !! \param [INOUT] DiagState The DiagState object
-   !! \param [INOUT] DustState The DustState object
-   !! \param [INOUT] ChemState The ChemState object
-   !! \param [OUT] RC Return code
+   !! Executes dust emission calculations using the selected scheme (Fengsha or Ginoux).
+   !! Computes dust fluxes and updates emission and diagnostic states.
+   !!
+   !! \param MetState The meteorological state containing atmospheric conditions
+   !! \param DiagState The diagnostic state for storing dust emission outputs
+   !! \param DustState The dust state containing process parameters and settings
+   !! \param EmisState The emission state for storing dust emission fluxes
+   !! \param RC Return code indicating success or failure
    !!
    !! \ingroup catchem_dust_process
    !!!>
@@ -355,10 +373,13 @@ CONTAINS
    END SUBROUTINE CCPr_Dust_Run
 
    !>
-   !! \brief Finalize the dust scheme
+   !! \brief Finalize the dust emission process
    !!
-   !! \param [INOUT] DustState The DustState object
-   !! \param [OUT] RC Return code
+   !! Cleans up and deallocates memory used by the dust emission process.
+   !! Frees arrays and resets state variables.
+   !!
+   !! \param DustState The dust state to be finalized
+   !! \param RC Return code indicating success or failure
    !!
    !! \ingroup catchem_dust_process
    !!!>

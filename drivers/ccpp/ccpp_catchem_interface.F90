@@ -1,5 +1,13 @@
 !> \file ccpp_catchem_interface.F90
-!! \brief CATCHEM-CCPP interface utilities module
+!! \brief CCPP interface module for CATChem integration
+!!
+!! \defgroup catchem_ccpp_group CATChem CCPP Interface
+!! \brief CCPP interface drivers and utilities for CATChem
+!! \ingroup catchem
+!!
+!! This group contains all CCPP-compliant interface modules and utilities
+!! for integrating CATChem with the Common Community Physics Package (CCPP)
+!! framework. Includes initialization, run, and finalization routines.
 !!
 !! \details
 !! This is the CCPP-Compliant wrapper for interfacing CATCHEM chemistry model with CCPP
@@ -11,33 +19,58 @@
 !! \author Barry Baker and Wei Li, NOAA/OAR/ARL
 !!
 !! \date November 2024
-!! \defgroup catchem_ccpp_group CATChem CCPP Interface
-!! \ingroup catchem_ccpp_group
 !!
 !! \note This is part of the CATCHEM-CCPP interface layer that enables
 !!       chemistry calculations within the CCPP framework
-!!!>
+!!
+!> \brief Main CCPP interface module for CATChem
+!!
+!! This module provides the primary interface between CATChem and the
+!! Common Community Physics Package (CCPP) framework. It handles initialization,
+!! execution, and finalization of CATChem within CCPP-compliant models.
+!!
+!! \ingroup catchem_ccpp_group
 module ccpp_catchem_interface
 
-  use catchem_types, only: catchem_container_type !> CATChem container type
+  use catchem_types, only: catchem_container_type !< CATChem container type
 
   !use physcons, only: g => con_g, pi => con_pi
-  use machine, only: kind_phys
+  use machine, only: kind_phys !< Machine-dependent precision parameters
   !use catchem_config
-  use CATChem
-  use catchem_wrapper_utils
+  use CATChem !< Main CATChem module
+  use catchem_wrapper_utils !< CATChem wrapper utilities
 
 implicit none
 
 private
 
+!> \brief Public interface routines for CCPP integration
 public :: ccpp_catchem_interface_init, ccpp_catchem_interface_run, ccpp_catchem_interface_finalize
 
-type(ConfigType) :: Config                          !> CATChem configuration object
+!> \brief CATChem configuration object
+!! \details Stores configuration parameters for CATChem model initialization and execution
+type(ConfigType) :: Config
+
+!> \brief Dust process state object
+!! \details Contains state variables and parameters for dust emission and transport processes
 type(DustStateType) :: DustState
+
+!> \brief Sea salt process state object
+!! \details Contains state variables and parameters for sea salt emission and transport processes
 type(SeaSaltStateType) :: SeaSaltState
+
+!> \brief Dry deposition process state object
+!! \details Contains state variables and parameters for dry deposition processes
 type(DryDepStateType) :: DryDepState
-type(catchem_container_type) :: CATChemStates       !> Container for all CATChem states
+
+!> \brief Meteorological state object
+!! \details Contains meteorological fields required for chemistry calculations
+type(MetStateType) :: MetState
+
+!> \brief Main CATChem container
+!! \details Container object that holds all CATChem state variables and provides
+!!          unified interface for chemistry calculations
+type(catchem_container_type) :: CATChemStates
 
 !   integer :: im    !> Number of horizontal points
 !   integer :: kme   !> Number of vertical levels
@@ -47,43 +80,43 @@ contains
 
 
 
-   !> \section arg_table_ccpp_catchem_interface_init Argument Table
-   !! \htmlinclude ccpp_catchem_interface_init.html
+   !> \brief Initialize the CATChem CCPP interface
    !!
-   !! \brief Initialize the CATChem container
+   !! This subroutine initializes the CATChem container and reads the configuration
+   !! file to set up the chemistry model for CCPP integration. It allocates necessary
+   !! data structures and prepares the model for chemistry calculations.
+   !!
+   !! \param[in] im Number of horizontal grid points
+   !! \param[in] do_catchem Logical flag to enable/disable CATChem calculations
    !! \param[in] catchem_configfile_in Name of the CATChem configuration file
-   !! \param[in] do_catchem_in Flag to enable CATChem calculations
-   !! \param[in] export_catchem_diags_in Flag to export CATChem diagnostics
-   !! \param[in] n_dbg_lines_in Number of debug lines
-   !! \param[in] im Number of horizontal points
-   !! \param[in] kme Number of vertical levels
-   !! \param[in] nsoil Number of soil layers
-   !! \param[out] errmsg Error message
-   !! \param[out] errflg Error flag
+   !! \param[out] errmsg Error message string for CCPP error handling
+   !! \param[out] errflg Error flag for CCPP error handling (0=success, /=0=error)
    !!
-   !! \note This subroutine initializes the CATChem container and reads the configuration
-   !!       file to set up the chemistry model
+   !! \details
+   !! This routine performs the following operations:
+   !! - Checks if CATChem is enabled via the do_catchem flag
+   !! - Initializes CATChem configuration from the specified config file
+   !! - Allocates and initializes state objects for dust, sea salt, and dry deposition
+   !! - Sets up the main CATChem container for the specified grid dimensions
+   !!
+   !! \note This routine must be called before any CATChem run routines
    !!
    !! \ingroup catchem_ccpp_group
-   !!!>
    subroutine ccpp_catchem_interface_init(im, do_catchem, catchem_configfile_in,  &
                                   errmsg, errflg)
       implicit none
+
       ! Input parameters
-      character(len=*), intent(in) :: catchem_configfile_in
-      logical,          intent(in) :: do_catchem
-      !logical,          intent(in) :: export_catchem_diags_in
-      !integer,          intent(in) :: n_dbg_lines_in
-      integer,          intent(in) :: im
-      !integer,          intent(in) :: kme
-      !integer,          intent(in) :: nsoil
-      !integer,          intent(in) :: nLandType
+      character(len=*), intent(in) :: catchem_configfile_in !< Configuration file path
+      logical,          intent(in) :: do_catchem            !< Enable CATChem flag
+      integer,          intent(in) :: im                    !< Horizontal dimension
 
       ! Output parameters
-      character(len=*), intent(out) :: errmsg
-      integer,          intent(out) :: errflg
+      character(len=*), intent(out) :: errmsg !< CCPP error message
+      integer,          intent(out) :: errflg !< CCPP error flag
+
       ! Local variables
-      CHARACTER(LEN=255)    :: ThisLoc
+      CHARACTER(LEN=255) :: ThisLoc !< Location identifier for error reporting
 
       errmsg = ''
       errflg = 0
@@ -107,23 +140,38 @@ contains
 
    end subroutine ccpp_catchem_interface_init
 
-  !> \brief Brief description of the subroutine
+  !> \brief Finalize the CATChem CCPP interface
   !!
-  !! \section arg_table_ccpp_catchem_interface_finalize Argument Table
-  !! \htmlinclude ccpp_catchem_interface_finalize.html
+  !! This subroutine finalizes the CATChem container and cleans up all allocated
+  !! memory and resources used by the chemistry model.
   !!
-  !>
+  !! \param[in] do_catchem Logical flag indicating if CATChem is enabled
+  !! \param[out] errmsg Error message string for CCPP error handling
+  !! \param[out] errflg Error flag for CCPP error handling (0=success, /=0=error)
+  !!
+  !! \details
+  !! This routine performs cleanup operations including:
+  !! - Deallocating state objects for dust, sea salt, and dry deposition processes
+  !! - Cleaning up the main CATChem container
+  !! - Releasing any allocated memory resources
+  !!
+  !! \note This routine should be called at the end of model execution to prevent
+  !!       memory leaks and ensure proper cleanup
+  !!
+  !! \ingroup catchem_ccpp_group
   subroutine ccpp_catchem_interface_finalize(do_catchem, errmsg, errflg)
 
    implicit none
 
    ! Input parameters
-   logical, intent(in) :: do_catchem
+   logical, intent(in) :: do_catchem !< Enable CATChem flag
+
    ! Output parameters
-   character(len=*), intent(out) :: errmsg
-   integer, intent(out) :: errflg
+   character(len=*), intent(out) :: errmsg !< CCPP error message
+   integer, intent(out) :: errflg          !< CCPP error flag
+
    ! Local variables
-   CHARACTER(LEN=255)    :: ThisLoc
+   CHARACTER(LEN=255) :: ThisLoc !< Location identifier for error reporting
 
    errmsg = ''
    errflg = 0
@@ -140,13 +188,41 @@ contains
 
   end subroutine ccpp_catchem_interface_finalize
 
-  !>
-  !! This is the Configurable ATmospheric Chemistry (CATChem)
-  !! This is the CATChem interface Module
-  !! \section arg_table_ccpp_catchem_interface_run Argument Table
-  !! \htmlinclude ccpp_catchem_interface_run.html
+  !> \brief Execute CATChem chemistry calculations within CCPP framework
   !!
-  !>
+  !! This subroutine performs the main CATChem chemistry calculations including
+  !! dust emission, sea salt emission, dry deposition, and other atmospheric
+  !! chemistry processes for a single time step.
+  !!
+  !! \param[in] im Horizontal loop extent (number of grid points)
+  !! \param[in] kte Vertical layer dimension (number of vertical levels)
+  !! \param[in] kme Vertical interface dimension (number of levels + 1)
+  !! \param[in] garea Grid cell area for each horizontal point (m²)
+  !! \param[in] nsoil Number of soil layers
+  !! \param[in] nlndcat Number of land surface vegetation categories
+  !! \param[in] nsoilcat Number of soil type categories
+  !! \param[in] lat Latitude of grid points (degrees North)
+  !! \param[in] lon Longitude of grid points (degrees East)
+  !! \param[in] do_catchem Logical flag to enable CATChem calculations
+  !! \param[in] dt Physics time step (seconds)
+  !! \param[in] jdate Current forecast date and time array
+  !!
+  !! \details
+  !! This routine orchestrates the execution of various atmospheric chemistry
+  !! processes including:
+  !! - Dust emission and transport calculations
+  !! - Sea salt emission and transport
+  !! - Dry deposition processes
+  !! - Chemical species concentration updates
+  !! - Diagnostic output generation
+  !!
+  !! The routine interfaces with the host model's meteorological fields,
+  !! land surface properties, and tracer arrays to perform comprehensive
+  !! atmospheric chemistry calculations.
+  !!
+  !! \note This routine should be called once per physics time step
+  !!
+  !! \ingroup catchem_ccpp_group
   subroutine ccpp_catchem_interface_run(im, kte, kme, garea, nsoil, nlndcat, nsoilcat, &
      lat, lon, & ! Grid information
      do_catchem, & ! CATChem Flag on

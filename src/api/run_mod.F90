@@ -1,11 +1,12 @@
 !> \file run_mod.F90
-!! \brief Run module for the program.
+!! \brief Run module for CATChem atmospheric chemistry processes
 !!
-!! This module contains subroutines and functions related to the run of the program.
-!! It includes subroutines for run emissions and other processes.
+!! This module contains the main process execution routines for CATChem,
+!! including initialization, run, and finalization of all atmospheric
+!! chemistry processes such as emissions, dry deposition, and other
+!! chemical transformations.
 !!
 !! \ingroup core_modules
-!!!>
 module run_mod
    USE MetState_Mod, ONLY : MetStateType
    USE ChemState_Mod, ONLY : ChemStateType
@@ -28,16 +29,28 @@ module run_mod
 contains
 
 
-   !> \brief Initialize the emission state
+   !> Run all CATChem atmospheric chemistry processes
    !!
-   !! This subroutine allocates the emission state.
+   !! This subroutine executes all enabled atmospheric chemistry processes
+   !! including emissions, dry deposition, and other chemical processes
+   !! for a single time step.
    !!
-   !! \param GridState The grid state containing information about the grid.
-   !! \param EmisState The emission state to be initialized.
-   !! \param RC The return code.
+   !! @param MetState The meteorological state containing atmospheric conditions
+   !! @param DiagState The diagnostic state for storing process outputs
+   !! @param ChemState The chemical state containing species concentrations
+   !! @param EmisState The emission state containing emission data
+   !! @param DustState The dust process state
+   !! @param SeaSaltState The sea salt process state
+   !! @param DryDepState The dry deposition process state
+   !! @param RC The return code indicating success (CC_SUCCESS) or failure
    !!
-   !! \ingroup core_modules
-   !!!>
+   !! The processes are executed in the following order:
+   !! 1. Emission processes (dust, sea salt, etc.)
+   !! 2. Dry deposition calculations
+   !! 3. Wet deposition calculations (planned)
+   !!
+   !! @note All processes update the ChemState and DiagState objects
+   !! @warning RC should be checked after calling this routine
    subroutine Run_Process(MetState, DiagState, ChemState, EmisState, DustState, SeaSaltState, DryDepState, RC)
       !
       use CCPR_DryDep_Mod, Only : CCPR_DryDep_Run
@@ -81,19 +94,26 @@ contains
    end subroutine Run_Process
 
 
-   !> \brief Run the emission processes
+   !> Run atmospheric emission processes
    !!
-   !! This subroutine runs the emission processes.
+   !! This subroutine executes emission processes including dust, sea salt,
+   !! and other aerosol emissions, then applies them to the chemical state.
    !!
-   !! \param MetState The meteorological state.
-   !! \param DiagState The diagnostic state.
-   !! \param ChemState The chemical state.
-   !! \param DustState The dust state.
-   !! \param SeaSaltState The sea salt state.
-   !! \param RC The return code.
+   !! @param MetState The meteorological state containing atmospheric conditions
+   !! @param DiagState The diagnostic state for storing process outputs
+   !! @param ChemState The chemical state containing species concentrations
+   !! @param EmisState The emission state containing emission data
+   !! @param DustState The dust process state
+   !! @param SeaSaltState The sea salt process state
+   !! @param RC The return code indicating success (CC_SUCCESS) or failure
    !!
-   !! \ingroup core_modules
-   !!!>
+   !! The emission processes include:
+   !! - Dust emission calculations using Ginux scheme with 5 size bins
+   !! - Sea salt emission calculations based on wind speed
+   !! - Application of all emissions to the chemistry state
+   !!
+   !! @note Dust emissions currently work with default 5 bins regardless of namelist
+   !! @warning RC should be checked after calling this routine
    subroutine Run_Emis(MetState, DiagState, ChemState, EmisState, DustState, SeaSaltState, RC)
       use CCPr_Dust_mod, ONLY : CCPR_Dust_Run
       use CCPr_SeaSalt_mod, ONLY : CCPR_SeaSalt_Run
@@ -147,6 +167,25 @@ contains
    end subroutine Run_Emis
 
 
+   !> Finalize all CATChem atmospheric chemistry processes
+   !!
+   !! This subroutine performs cleanup and finalization for all
+   !! atmospheric chemistry processes, deallocating memory and
+   !! closing any open resources.
+   !!
+   !! @param DustState The dust process state to finalize
+   !! @param SeaSaltState The sea salt process state to finalize
+   !! @param DryDepState The dry deposition process state to finalize
+   !! @param RC The return code indicating success (CC_SUCCESS) or failure
+   !!
+   !! The finalization includes:
+   !! - Cleanup of dust emission process state
+   !! - Cleanup of sea salt emission process state
+   !! - Cleanup of dry deposition process state
+   !! - Cleanup of wet deposition process state (planned)
+   !!
+   !! @note This routine should be called at the end of simulation
+   !! @warning RC should be checked after calling this routine
    subroutine Finalize_Process(DustState, SeaSaltState, DryDepState, RC)
       !
       use CCPR_Dust_Mod, Only : CCPr_Dust_Finalize
@@ -192,6 +231,28 @@ contains
 
    end subroutine Finalize_Process
 
+   !> Initialize all CATChem atmospheric chemistry processes
+   !!
+   !! This subroutine performs initialization of all atmospheric chemistry
+   !! processes including dust emission, sea salt emission, and dry deposition.
+   !! It must be called before any process execution routines.
+   !!
+   !! @param config The CATChem configuration object containing setup parameters
+   !! @param ChemState The chemical state to be initialized with species data
+   !! @param EmisState The emission state to be initialized for emission processes
+   !! @param DustState The dust process state to be initialized
+   !! @param SeaSaltState The sea salt process state to be initialized
+   !! @param DryDepState The dry deposition process state to be initialized
+   !! @param RC The return code indicating success (CC_SUCCESS) or failure
+   !!
+   !! The initialization includes:
+   !! - Setting up dust emission process parameters and lookup tables
+   !! - Configuring sea salt emission parameterizations
+   !! - Preparing dry deposition velocity calculations
+   !! - Validating process configuration consistency
+   !!
+   !! @note This routine must be called after state allocation but before process execution
+   !! @warning RC should be checked after calling this routine
    subroutine Init_Process (config, ChemState, EmisState, DustState, SeaSaltState, DryDepState, RC)
       use CCPr_Dust_mod, only: CCPr_Dust_Init
       use CCPr_SeaSalt_mod, only: CCPr_SeaSalt_Init

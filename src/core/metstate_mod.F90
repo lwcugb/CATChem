@@ -1,4 +1,4 @@
-!> \file metstate_mod.F90
+! \file metstate_mod.F90
 !! \brief Module for meteorology state variables
 !!
 !! This module contains subroutines and functions related to the MetStateType instance of CATChem.
@@ -30,7 +30,7 @@ MODULE MetState_Mod
    ! Derived type for Meteorology State
    !=========================================================================
 
-   !> \brief Derived type for Meteorology State
+   ! \brief Derived type for Meteorology State
    !!
    !! \ingroup core_modules
    !!!>
@@ -40,165 +40,165 @@ MODULE MetState_Mod
 
       ! NLEVS
       !------
-      INTEGER               :: NLEVS             !< Number of vertical levels
+      INTEGER               :: NLEVS             ! Number of vertical levels
 
       ! TIMESTEP
       !---------
-      REAL(fp)              :: TSTEP             !< Time step [s]
-      INTEGER               :: YMD               ! Year, month, day
-      INTEGER               :: HMS               ! Hour, minute, second
+      REAL(fp)              :: TSTEP             ! Time step [s]
+      INTEGER               :: YMD               ! Year, month, day (YYYYMMDD format)
+      INTEGER               :: HMS               ! Hour, minute, second (HHMMSS format)
 
       ! Logicals
       !---------
-      LOGICAL           :: IsLand            !< Is this a land grid box?
-      LOGICAL           :: IsWater           !< Is this a water grid box?
-      LOGICAL           :: IsIce             !< Is this a ice grid box?
-      LOGICAL           :: IsSnow            !< Is this a snow grid box?
-      LOGICAL,  ALLOCATABLE :: InStratMeso(:)    !< Are we in the stratosphere or mesosphere?
-      LOGICAL,  ALLOCATABLE :: InStratosphere(:) !< Are we in the stratosphere?
-      LOGICAL,  ALLOCATABLE :: InTroposphere(:)  !< Are we in the troposphere?
-      LOGICAL,  ALLOCATABLE :: InPbl(:)          !< Are we in the PBL?
-      LOGICAL,  ALLOCATABLE :: IsLocalNoon       ! Is it local noon (between 11 and 13 local solar time?
+      LOGICAL           :: IsLand            ! Is this a land grid box?
+      LOGICAL           :: IsWater           ! Is this a water grid box?
+      LOGICAL           :: IsIce             ! Is this a ice grid box?
+      LOGICAL           :: IsSnow            ! Is this a snow grid box?
+      LOGICAL,  ALLOCATABLE :: InStratMeso(:)    ! Are we in the stratosphere or mesosphere?
+      LOGICAL,  ALLOCATABLE :: InStratosphere(:) ! Are we in the stratosphere?
+      LOGICAL,  ALLOCATABLE :: InTroposphere(:)  ! Are we in the troposphere?
+      LOGICAL,  ALLOCATABLE :: InPbl(:)          ! Are we in the PBL?
+      LOGICAL,  ALLOCATABLE :: IsLocalNoon       ! Is it local noon (between 11 and 13 local solar time)?
 
       ! Land Specific Fields
       !---------------------
-      REAL(fp)              :: AREA_M2         !< Grid box surface area [m2]
-      INTEGER               :: LWI             !< Land water ice mask (0-sea, 1-land, 2-ice)
-      REAL(fp)              :: CLAYFRAC        !< Fraction of clay [1]
-      INTEGER               :: DSOILTYPE       !< Dominant soil type
-      INTEGER               :: DLUSE           !< Dominant land-use type
-      REAL(fp)              :: FRVEG           !< Fraction of veg [1]
-      REAL(fp)              :: FRLAKE          !< Fraction of lake [1]
-      REAL(fp)              :: FRLAND          !< Fraction of land [1]
-      REAL(fp)              :: FRLANDIC        !< Fraction of land ice [1]
-      REAL(fp)              :: FROCEAN         !< Fraction of ocean [1]
-      REAL(fp)              :: FRSEAICE        !< Sfc sea ice fraction
-      REAL(fp)              :: FRSNO           !< Sfc snow fraction
-      REAL(fp)              :: LAI             !< Leaf area index [m2/m2] (online) Dominant
-      REAL(fp)              :: GVF             !< Green Vegetative Fraction
-      REAL(fp)              :: RDRAG           !< Drag Partition [1]
-      REAL(fp)              :: SANDFRAC        !< Fraction of sand [1]
-      REAL(fp)              :: SEAICE00        !< Sea ice coverage 00-10%
-      REAL(fp)              :: SEAICE10        !< Sea ice coverage 10-20%
-      REAL(fp)              :: SEAICE20        !< Sea ice coverage 20-30%
-      REAL(fp)              :: SEAICE30        !< Sea ice coverage 30-40%
-      REAL(fp)              :: SEAICE40        !< Sea ice coverage 40-50%
-      REAL(fp)              :: SEAICE50        !< Sea ice coverage 50-60%
-      REAL(fp)              :: SEAICE60        !< Sea ice coverage 60-70%
-      REAL(fp)              :: SEAICE70        !< Sea ice coverage 70-80%
-      REAL(fp)              :: SEAICE80        !< Sea ice coverage 80-90%
-      REAL(fp)              :: SEAICE90        !< Sea ice coverage 90-100%
-      REAL(fp)              :: SNODP           !< Snow depth [m]
-      REAL(fp)              :: SNOMAS          !< Snow mass [kg/m2]
-      REAL(fp)              :: SSM             !< Sediment Supply Map [1]
-      REAL(fp)              :: USTAR_THRESHOLD !< Threshold friction velocity [m/s]
-      INTEGER,  ALLOCATABLE :: nLNDTYPE        !< # of landtypes in box (I,J)
-      REAL(fp)              :: GWETTOP         !< Top soil moisture [1]
-      REAL(fp)              :: GWETROOT        !< Root Zone soil moisture [1]
-      REAL(fp)              :: WILT            !< Wilt point [1]
-      INTEGER,  ALLOCATABLE :: nSOIL           !< # number of soil layers
-      REAL(fp), ALLOCATABLE :: SOILM(:)        !< Volumetric Soil moisture [m3/m3]
-      REAL(fp), ALLOCATABLE :: FRLANDUSE(:)    !< Fractional Land Use
-      REAL(fp), ALLOCATABLE :: FRSOIL(:)       !< Fractional Soil
-      REAL(fp), ALLOCATABLE :: FRLAI(:)        !< LAI in each Fractional Land use type [m2/m2]
-      real(fp)              :: LAT             !< Latitude
-      real(fp)              :: LON             !< Longitude
-      character(len=20)     :: LUCNAME         !< name of land use category
+      REAL(fp)              :: AREA_M2         ! Grid box surface area [m2]
+      INTEGER               :: LWI             ! Land water ice mask (0-sea, 1-land, 2-ice)
+      REAL(fp)              :: CLAYFRAC        ! Fraction of clay [1]
+      INTEGER               :: DSOILTYPE       ! Dominant soil type
+      INTEGER               :: DLUSE           ! Dominant land-use type
+      REAL(fp)              :: FRVEG           ! Fraction of veg [1]
+      REAL(fp)              :: FRLAKE          ! Fraction of lake [1]
+      REAL(fp)              :: FRLAND          ! Fraction of land [1]
+      REAL(fp)              :: FRLANDIC        ! Fraction of land ice [1]
+      REAL(fp)              :: FROCEAN         ! Fraction of ocean [1]
+      REAL(fp)              :: FRSEAICE        ! Sfc sea ice fraction
+      REAL(fp)              :: FRSNO           ! Sfc snow fraction
+      REAL(fp)              :: LAI             ! Leaf area index [m2/m2] (online) Dominant
+      REAL(fp)              :: GVF             ! Green Vegetative Fraction
+      REAL(fp)              :: RDRAG           ! Drag Partition [1]
+      REAL(fp)              :: SANDFRAC        ! Fraction of sand [1]
+      REAL(fp)              :: SEAICE00        ! Sea ice coverage 00-10%
+      REAL(fp)              :: SEAICE10        ! Sea ice coverage 10-20%
+      REAL(fp)              :: SEAICE20        ! Sea ice coverage 20-30%
+      REAL(fp)              :: SEAICE30        ! Sea ice coverage 30-40%
+      REAL(fp)              :: SEAICE40        ! Sea ice coverage 40-50%
+      REAL(fp)              :: SEAICE50        ! Sea ice coverage 50-60%
+      REAL(fp)              :: SEAICE60        ! Sea ice coverage 60-70%
+      REAL(fp)              :: SEAICE70        ! Sea ice coverage 70-80%
+      REAL(fp)              :: SEAICE80        ! Sea ice coverage 80-90%
+      REAL(fp)              :: SEAICE90        ! Sea ice coverage 90-100%
+      REAL(fp)              :: SNODP           ! Snow depth [m]
+      REAL(fp)              :: SNOMAS          ! Snow mass [kg/m2]
+      REAL(fp)              :: SSM             ! Sediment Supply Map [1]
+      REAL(fp)              :: USTAR_THRESHOLD ! Threshold friction velocity [m/s]
+      INTEGER,  ALLOCATABLE :: nLNDTYPE        ! # of landtypes in box (I,J)
+      REAL(fp)              :: GWETTOP         ! Top soil moisture [1]
+      REAL(fp)              :: GWETROOT        ! Root Zone soil moisture [1]
+      REAL(fp)              :: WILT            ! Wilt point [1]
+      INTEGER,  ALLOCATABLE :: nSOIL           ! # number of soil layers
+      REAL(fp), ALLOCATABLE :: SOILM(:)        ! Volumetric Soil moisture [m3/m3]
+      REAL(fp), ALLOCATABLE :: FRLANDUSE(:)    ! Fractional Land Use
+      REAL(fp), ALLOCATABLE :: FRSOIL(:)       ! Fractional Soil
+      REAL(fp), ALLOCATABLE :: FRLAI(:)        ! LAI in each Fractional Land use type [m2/m2]
+      real(fp)              :: LAT             ! Latitude
+      real(fp)              :: LON             ! Longitude
+      character(len=20)     :: LUCNAME         ! name of land use category
 
       ! Radiation Related Surface Fields
       !---------------------------------
-      REAL(fp)              :: ALBD_VIS       !< Visible surface albedo [1]
-      REAL(fp)              :: ALBD_NIR       !< Near-IR surface albedo [1]
-      REAL(fp)              :: ALBD_UV        !< UV surface albedo [1]
-      REAL(fp)              :: PARDR          !< Direct photsynthetically active radiation [W/m2]
-      REAL(fp)              :: PARDF          !< Diffuse photsynthetically active radiation [W/m2]
-      REAL(fp)              :: SUNCOS         !< COS(solar zenith angle) at current time
-      REAL(fp)              :: SUNCOSmid      !< COS(solar zenith angle) at midpoint of chem timestep
-      REAL(fp)              :: SUNCOSsum      !< Sum of COS(SZA) for HEMCO OH diurnal variability
-      REAL(fp)              :: SZAFACT        !< Diurnal scale factor for HEMCO OH diurnal variability (computed) [1]
-      REAL(fp)              :: SWGDN          !< Incident radiation @ ground [W/m2]
+      REAL(fp)              :: ALBD_VIS       ! Visible surface albedo [1]
+      REAL(fp)              :: ALBD_NIR       ! Near-IR surface albedo [1]
+      REAL(fp)              :: ALBD_UV        ! UV surface albedo [1]
+      REAL(fp)              :: PARDR          ! Direct photsynthetically active radiation [W/m2]
+      REAL(fp)              :: PARDF          ! Diffuse photsynthetically active radiation [W/m2]
+      REAL(fp)              :: SUNCOS         ! COS(solar zenith angle) at current time
+      REAL(fp)              :: SUNCOSmid      ! COS(solar zenith angle) at midpoint of chem timestep
+      REAL(fp)              :: SUNCOSsum      ! Sum of COS(SZA) for HEMCO OH diurnal variability
+      REAL(fp)              :: SZAFACT        ! Diurnal scale factor for HEMCO OH diurnal variability (computed) [1]
+      REAL(fp)              :: SWGDN          ! Incident radiation @ ground [W/m2]
 
 
 
       ! Flux Related Fields
       !--------------------
-      REAL(fp)              :: EFLUX             !< Latent heat flux [W/m2]
-      REAL(fp)              :: HFLUX             !< Sensible heat flux [W/m2]
-      REAL(fp)              :: U10M              !< E/W wind speed @ 10m ht [m/s]
-      REAL(fp)              :: USTAR             !< Friction velocity [m/s]
-      REAL(fp)              :: V10M              !< N/S wind speed @ 10m ht [m/s]
-      REAL(fp)              :: Z0                !< Surface roughness height [m]
-      REAL(fp)              :: Z0H               !< Surface roughness height, for heat (thermal roughness) [m]
-      REAL(fp), ALLOCATABLE :: FRZ0(:)           !< Aerodynamic Roughness Length per FRLANDUSE
-      REAL(fp)              :: PBLH              !< PBL height [m]
-      REAL(fp), ALLOCATABLE :: F_OF_PBL(:)       !< Fraction of box within PBL [1]
-      REAL(fp), ALLOCATABLE :: F_UNDER_PBLTOP(:) !< Fraction of box under PBL top
-      real(fp)              :: OBK        !< Monin-Obhukov length [m]
+      REAL(fp)              :: EFLUX             ! Latent heat flux [W/m2]
+      REAL(fp)              :: HFLUX             ! Sensible heat flux [W/m2]
+      REAL(fp)              :: U10M              ! E/W wind speed @ 10m ht [m/s]
+      REAL(fp)              :: USTAR             ! Friction velocity [m/s]
+      REAL(fp)              :: V10M              ! N/S wind speed @ 10m ht [m/s]
+      REAL(fp)              :: Z0                ! Surface roughness height [m]
+      REAL(fp)              :: Z0H               ! Surface roughness height, for heat (thermal roughness) [m]
+      REAL(fp), ALLOCATABLE :: FRZ0(:)           ! Aerodynamic Roughness Length per FRLANDUSE
+      REAL(fp)              :: PBLH              ! PBL height [m]
+      REAL(fp), ALLOCATABLE :: F_OF_PBL(:)       ! Fraction of box within PBL [1]
+      REAL(fp), ALLOCATABLE :: F_UNDER_PBLTOP(:) ! Fraction of box under PBL top
+      real(fp)              :: OBK        ! Monin-Obhukov length [m]
 
       ! Cloud & Precipitation Related Fields
       !-------------------------------------
-      REAL(fp)              :: CLDFRC         !< Column cloud fraction [1]
-      REAL(fp)              :: CONV_DEPTH     !< Convective cloud depth [m]
-      REAL(fp)              :: FLASH_DENS     !< Lightning flash density [#/km2/s]
-      REAL(fp)              :: CNV_FRC        !< Convective fraction [1]
-      REAL(fp), ALLOCATABLE :: CLDF(:)        !< 3-D cloud fraction [1]
-      REAL(fp), ALLOCATABLE :: CMFMC(:)       !< Cloud mass flux [kg/m2/s]
-      REAL(fp), ALLOCATABLE :: DQRCU(:)       !< Conv precip production rate [kg/kg/s] (assume per dry air)
-      REAL(fp), ALLOCATABLE :: DQRLSAN(:)     !< LS precip prod rate [kg/kg/s] (assume per dry air)
-      REAL(fp), ALLOCATABLE :: DTRAIN(:)      !< Detrainment flux [kg/m2/s]
-      REAL(fp)              :: PRECANV        !< Anvil previp @ ground [kg/m2/s] -> [mm/day]
-      REAL(fp)              :: PRECCON        !< Conv  precip @ ground [kg/m2/s] -> [mm/day]
-      REAL(fp)              :: PRECLSC        !< Large-scale precip @ ground kg/m2/s] -> [mm/day]
-      REAL(fp)              :: PRECTOT        !< Total precip @ ground [kg/m2/s] -> [mm/day]
-      REAL(fp), ALLOCATABLE :: QI(:)          !< Mass fraction of cloud ice water [kg/kg dry air]
-      REAL(fp), ALLOCATABLE :: QL(:)          !< Mass fraction of cloud liquid water [kg/kg dry air]
-      REAL(fp), ALLOCATABLE :: PFICU(:)       !< Dwn flux ice prec:conv [kg/m2/s]
-      REAL(fp), ALLOCATABLE :: PFILSAN(:)     !< Dwn flux ice prec:LS+anv [kg/m2/s]
-      REAL(fp), ALLOCATABLE :: PFLCU(:)       !< Dwn flux liq prec:conv [kg/m2/s]
-      REAL(fp), ALLOCATABLE :: PFLLSAN(:)     !< Dwn flux ice prec:LS+anv [kg/m2/s]
-      REAL(fp), ALLOCATABLE :: TAUCLI(:)      !< Opt depth of ice clouds [1]
-      REAL(fp), ALLOCATABLE :: TAUCLW(:)      !< Opt depth of H2O clouds [1]
+      REAL(fp)              :: CLDFRC         ! Column cloud fraction [1]
+      REAL(fp)              :: CONV_DEPTH     ! Convective cloud depth [m]
+      REAL(fp)              :: FLASH_DENS     ! Lightning flash density [#/km2/s]
+      REAL(fp)              :: CNV_FRC        ! Convective fraction [1]
+      REAL(fp), ALLOCATABLE :: CLDF(:)        ! 3-D cloud fraction [1]
+      REAL(fp), ALLOCATABLE :: CMFMC(:)       ! Cloud mass flux [kg/m2/s]
+      REAL(fp), ALLOCATABLE :: DQRCU(:)       ! Conv precip production rate [kg/kg/s] (assume per dry air)
+      REAL(fp), ALLOCATABLE :: DQRLSAN(:)     ! LS precip prod rate [kg/kg/s] (assume per dry air)
+      REAL(fp), ALLOCATABLE :: DTRAIN(:)      ! Detrainment flux [kg/m2/s]
+      REAL(fp)              :: PRECANV        ! Anvil previp @ ground [kg/m2/s] -> [mm/day]
+      REAL(fp)              :: PRECCON        ! Conv  precip @ ground [kg/m2/s] -> [mm/day]
+      REAL(fp)              :: PRECLSC        ! Large-scale precip @ ground kg/m2/s] -> [mm/day]
+      REAL(fp)              :: PRECTOT        ! Total precip @ ground [kg/m2/s] -> [mm/day]
+      REAL(fp), ALLOCATABLE :: QI(:)          ! Mass fraction of cloud ice water [kg/kg dry air]
+      REAL(fp), ALLOCATABLE :: QL(:)          ! Mass fraction of cloud liquid water [kg/kg dry air]
+      REAL(fp), ALLOCATABLE :: PFICU(:)       ! Dwn flux ice prec:conv [kg/m2/s]
+      REAL(fp), ALLOCATABLE :: PFILSAN(:)     ! Dwn flux ice prec:LS+anv [kg/m2/s]
+      REAL(fp), ALLOCATABLE :: PFLCU(:)       ! Dwn flux liq prec:conv [kg/m2/s]
+      REAL(fp), ALLOCATABLE :: PFLLSAN(:)     ! Dwn flux ice prec:LS+anv [kg/m2/s]
+      REAL(fp), ALLOCATABLE :: TAUCLI(:)      ! Opt depth of ice clouds [1]
+      REAL(fp), ALLOCATABLE :: TAUCLW(:)      ! Opt depth of H2O clouds [1]
 
       ! State Related Fields
       !---------------------
-      REAL(fp)              :: PHIS           !< Surface geopotential height [m2/s2]
-      REAL(fp), ALLOCATABLE :: Z(:)           !< Full Layer Geopotential Height
-      REAL(fp), ALLOCATABLE :: ZMID(:)        !< Mid Layer Geopotential Height
-      REAL(fp), ALLOCATABLE :: BXHEIGHT(:)    !< Grid box height [m] (dry air)
-      REAL(fp)              :: PS_WET         !< Wet surface pressure at start of timestep [hPa]
-      REAL(fp)              :: PS_DRY         !< Dry surface pressure at start of timestep [hPa]
-      REAL(fp)              :: QV2M           !< Specific Humidity at 2m [kg/kg]
-      REAL(fp), ALLOCATABLE :: QV(:)          !< Specific Humidity [kg/kg]
-      REAL(fp)              :: T2M            !< Temperature 2m [K]
-      REAL(fp)              :: TS             !< Surface temperature [K]
-      REAL(fp)              :: TSKIN          !< Surface skin temperature [K]
-      REAL(fp), ALLOCATABLE :: T(:)           !< Temperature [K]
-      REAL(fp), ALLOCATABLE :: THETA(:)       !< Potential temperature [K]
-      REAL(fp), ALLOCATABLE :: TV(:)          !< Virtual temperature [K]
-      REAL(fp), ALLOCATABLE :: V(:)           !< N/S component of wind [m s-1]
-      REAL(fp), ALLOCATABLE :: U(:)           !< E/W component of wind [m s-1]
-      REAL(fp)              :: SST            !< Sea surface temperature [K]
-      REAL(fp)              :: SLP            !< Sea level pressure [hPa]
-      REAL(fp)              :: PS             !< Surface Pressure [hPa]
-      REAL(fp), ALLOCATABLE :: OMEGA(:)       !< Updraft velocity [Pa/s]
-      REAL(fp), ALLOCATABLE :: RH(:)          !< Relative humidity [%]
-      REAL(fp)              :: TO3            !< Total overhead O3 column [DU]
-      REAL(fp)              :: TROPP          !< Tropopause pressure [hPa]
-      INTEGER               :: TropLev        !< Tropopause level [1]
-      REAL(fp)              :: TropHt         !< Tropopause height [km]
-      REAL(fp), ALLOCATABLE :: SPHU(:)        !< Specific humidity [g H2O/kg tot air]
-      REAL(fp), ALLOCATABLE :: AIRDEN(:)      !< Dry air density [kg/m3]
-      REAL(fp), ALLOCATABLE :: AIRNUMDEN(:)   !< Dry air density [molec/cm3]
-      REAL(fp), ALLOCATABLE :: MAIRDEN(:)     !< Moist air density [kg/m3]
-      REAL(fp), ALLOCATABLE :: AVGW(:)        !< Water vapor volume mixing ratio [vol H2O/vol dry air]
-      REAL(fp), ALLOCATABLE :: DELP(:)        !< Delta-P (wet) across box [hPa]
-      REAL(fp), ALLOCATABLE :: DELP_DRY(:)    !< Delta-P (dry) across box [hPa]
-      REAL(fp), ALLOCATABLE :: DAIRMASS(:)    !< Dry air mass [kg] in grid box
-      REAL(fp), ALLOCATABLE :: AIRVOL(:)      !< Grid box volume [m3] (dry air)
-      REAL(fp), ALLOCATABLE :: PEDGE_DRY(:)   !< Dry air partial pressure @ level edges [hPa]
-      REAL(fp), ALLOCATABLE :: PEDGE(:)       !< Air partial pressure @ level edges [hPa]
-      REAL(fp), ALLOCATABLE :: PMID(:)        !< Average wet air pressure [hPa] defined as arithmetic average of edge pressures
-      REAL(fp), ALLOCATABLE :: PMID_DRY(:)    !< Dry air partial pressure [hPa] defined as arithmetic avg of edge pressures
+      REAL(fp)              :: PHIS           ! Surface geopotential height [m2/s2]
+      REAL(fp), ALLOCATABLE :: Z(:)           ! Full Layer Geopotential Height
+      REAL(fp), ALLOCATABLE :: ZMID(:)        ! Mid Layer Geopotential Height
+      REAL(fp), ALLOCATABLE :: BXHEIGHT(:)    ! Grid box height [m] (dry air)
+      REAL(fp)              :: PS_WET         ! Wet surface pressure at start of timestep [hPa]
+      REAL(fp)              :: PS_DRY         ! Dry surface pressure at start of timestep [hPa]
+      REAL(fp)              :: QV2M           ! Specific Humidity at 2m [kg/kg]
+      REAL(fp), ALLOCATABLE :: QV(:)          ! Specific Humidity [kg/kg]
+      REAL(fp)              :: T2M            ! Temperature 2m [K]
+      REAL(fp)              :: TS             ! Surface temperature [K]
+      REAL(fp)              :: TSKIN          ! Surface skin temperature [K]
+      REAL(fp), ALLOCATABLE :: T(:)           ! Temperature [K]
+      REAL(fp), ALLOCATABLE :: THETA(:)       ! Potential temperature [K]
+      REAL(fp), ALLOCATABLE :: TV(:)          ! Virtual temperature [K]
+      REAL(fp), ALLOCATABLE :: V(:)           ! N/S component of wind [m s-1]
+      REAL(fp), ALLOCATABLE :: U(:)           ! E/W component of wind [m s-1]
+      REAL(fp)              :: SST            ! Sea surface temperature [K]
+      REAL(fp)              :: SLP            ! Sea level pressure [hPa]
+      REAL(fp)              :: PS             ! Surface Pressure [hPa]
+      REAL(fp), ALLOCATABLE :: OMEGA(:)       ! Updraft velocity [Pa/s]
+      REAL(fp), ALLOCATABLE :: RH(:)          ! Relative humidity [%]
+      REAL(fp)              :: TO3            ! Total overhead O3 column [DU]
+      REAL(fp)              :: TROPP          ! Tropopause pressure [hPa]
+      INTEGER               :: TropLev        ! Tropopause level [1]
+      REAL(fp)              :: TropHt         ! Tropopause height [km]
+      REAL(fp), ALLOCATABLE :: SPHU(:)        ! Specific humidity [g H2O/kg tot air]
+      REAL(fp), ALLOCATABLE :: AIRDEN(:)      ! Dry air density [kg/m3]
+      REAL(fp), ALLOCATABLE :: AIRNUMDEN(:)   ! Dry air density [molec/cm3]
+      REAL(fp), ALLOCATABLE :: MAIRDEN(:)     ! Moist air density [kg/m3]
+      REAL(fp), ALLOCATABLE :: AVGW(:)        ! Water vapor volume mixing ratio [vol H2O/vol dry air]
+      REAL(fp), ALLOCATABLE :: DELP(:)        ! Delta-P (wet) across box [hPa]
+      REAL(fp), ALLOCATABLE :: DELP_DRY(:)    ! Delta-P (dry) across box [hPa]
+      REAL(fp), ALLOCATABLE :: DAIRMASS(:)    ! Dry air mass [kg] in grid box
+      REAL(fp), ALLOCATABLE :: AIRVOL(:)      ! Grid box volume [m3] (dry air)
+      REAL(fp), ALLOCATABLE :: PEDGE_DRY(:)   ! Dry air partial pressure @ level edges [hPa]
+      REAL(fp), ALLOCATABLE :: PEDGE(:)       ! Air partial pressure @ level edges [hPa]
+      REAL(fp), ALLOCATABLE :: PMID(:)        ! Average wet air pressure [hPa] defined as arithmetic average of edge pressures
+      REAL(fp), ALLOCATABLE :: PMID_DRY(:)    ! Dry air partial pressure [hPa] defined as arithmetic avg of edge pressures
 
    END TYPE MetStateType
 
@@ -248,9 +248,9 @@ CONTAINS
       IMPLICIT NONE
 
       ! Arguments
-      TYPE(GridStateType), INTENT(IN)  :: GridState !< Grid state
-      TYPE(MetStateType), INTENT(INOUT) :: MetState !< Meteorological state
-      INTEGER,            INTENT(OUT)   :: RC       !< Return code
+      TYPE(GridStateType), INTENT(IN)  :: GridState ! Grid state
+      TYPE(MetStateType), INTENT(INOUT) :: MetState ! Meteorological state
+      INTEGER,            INTENT(OUT)   :: RC       ! Return code
 
       ! Local variables
       CHARACTER(LEN=255) :: ErrMsg, thisLoc

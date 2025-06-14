@@ -1,4 +1,4 @@
-!> \file config_mod.F90
+! \file config_mod.F90
 !!\brief Contains the ConfigType type and Read_Input_File subroutine
 !!
 !! This module contains subroutines and functions related to the ConfigType DataType of CATChem.
@@ -28,13 +28,16 @@ MODULE Config_Mod
 
 CONTAINS
 
-   !> \brief Read the configuration file
+   ! \brief Read the configuration file
    !!
    !! This subroutine reads the configuration file and populates the ConfigType object.
    !!
    !! \param Config The configuration options
    !! \param GridState The grid state containing information about the grid
+   !! \param EmisState The emission state to be populated
+   !! \param ChemState The chemical state to be populated
    !! \param RC The return code
+   !! \param ConfigFilename Optional configuration filename to override default
    !!
    !! \ingroup core_modules
    !!!>
@@ -206,7 +209,7 @@ CONTAINS
 
    END SUBROUTINE Read_Input_File
 
-   !> Reads the species database
+   ! Reads the species database
    !!
    !! \param   filename The name of the species database
    !! \param   GridState The grid state object
@@ -819,13 +822,13 @@ CONTAINS
    END SUBROUTINE Config_Emis_State
 
 
-   !> \brief Process simulation configuration
+   ! \brief Process simulation configuration
    !!
    !! This function processes the simulation configuration and performs the necessary actions based on the configuration.
    !!
-   !! \param[in] ConfigInput The YAML configuration object
-   !! \param[inout] Config The configuration object
-   !! \param[out] RC The return code
+   !! \param ConfigInput The YAML configuration object
+   !! \param Config The configuration object
+   !! \param RC The return code
    !!
    !! \ingroup core_modules
    !!!>
@@ -915,13 +918,13 @@ CONTAINS
 
    END SUBROUTINE Config_Simulation
 
-   !> \brief Process grid configuration
+   ! \brief Process grid configuration
    !!
    !! This function processes the grid configuration and performs the necessary actions based on the configuration.
    !!
-   !! \param[in] ConfigInput The YAML configuration object
-   !! \param[inout] Config The configuration object
-   !! \param[out] RC The return code
+   !! \param ConfigInput The YAML configuration object
+   !! \param Config The configuration object
+   !! \param RC The return code
    !!
    !! \ingroup core_modules
    !!!>
@@ -1018,13 +1021,13 @@ CONTAINS
 
    END SUBROUTINE Config_Grid
 
-   !> \brief Process dust configuration
+   ! \brief Process dust configuration
    !!
    !! This function processes the dust configuration and performs the necessary actions based on the configuration.
    !!
-   !! \param[in] ConfigInput The YAML configuration object
-   !! \param[inout] Config The configuration object
-   !! \param[out] RC The return code
+   !! \param ConfigInput The YAML configuration object
+   !! \param Config The configuration object
+   !! \param RC The return code
    !!
    !! \ingroup core_modules
    !!!>
@@ -1135,13 +1138,13 @@ CONTAINS
 
    END SUBROUTINE Config_Process_Dust
 
-   !> \brief Process seasalt configuration
+   ! \brief Process seasalt configuration
    !!
    !! This function processes the seasalt configuration and performs the necessary actions based on the configuration.
    !!
-   !! \param[in] ConfigInput The YAML configuration object
-   !! \param[inout] Config The configuration object
-   !! \param[out] RC The return code
+   !! \param ConfigInput The YAML configuration object
+   !! \param Config The configuration object
+   !! \param RC The return code
    !!
    !! \ingroup core_modules
    !!!>
@@ -1229,13 +1232,13 @@ CONTAINS
 
    END SUBROUTINE Config_Process_SeaSalt
 
-   !> \brief Process plumerise configuration
+   ! \brief Process plumerise configuration
    !!
    !! This function processes the plumerise configuration and performs the necessary actions based on the configuration.
    !!
-   !! \param[in] ConfigInput The YAML configuration object
-   !! \param[inout] Config The configuration object
-   !! \param[out] RC The return code
+   !! \param ConfigInput The YAML configuration object
+   !! \param Config The configuration object
+   !! \param RC The return code
    !!
    !! \ingroup core_modules
    !!!>
@@ -1288,13 +1291,13 @@ CONTAINS
    END SUBROUTINE Config_Process_Plumerise
 
 
-   !> \brief Process DryDep configuration
+   ! \brief Process DryDep configuration
    !!
    !! This function processes the DryDep configuration and performs the necessary actions based on the configuration.
    !!
-   !! \param[in] ConfigInput The YAML configuration object
-   !! \param[inout] Config The configuration object
-   !! \param[out] RC The return code
+   !! \param ConfigInput The YAML configuration object
+   !! \param Config The configuration object
+   !! \param RC The return code
    !!
    !! \ingroup core_modules
    !!!>

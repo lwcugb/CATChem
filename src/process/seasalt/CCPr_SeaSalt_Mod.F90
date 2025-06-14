@@ -1,14 +1,15 @@
 !> \file CCPr_SeaSalt_mod.F90
-!! \brief Driver for the CATCHem Process: SeaSalt
+!! \brief Driver for the CATChem Process: SeaSalt
+!! \ingroup catchem_seasalt_process
 !!
-!! Driver for the seasalt process.
+!! \author CATChem Development Team
+!! \date 2024
 !!
-!! \defgroup catchem_seasalt_process
-!! \ingroup catchem
+!! This module provides the main driver for sea salt emission processes in CATChem,
+!! including initialization, execution, and finalization of sea salt calculations.
+!! The module supports multiple sea salt emission schemes and handles the
+!! integration with the atmospheric chemistry system.
 !!
-!!
-!! The CATChem SeaSalt Process group holds all the CATCHem SeaSalt processes.
-!!!>
 MODULE CCPr_SeaSalt_mod
 
    ! USES:
@@ -31,12 +32,16 @@ MODULE CCPr_SeaSalt_mod
 CONTAINS
 
    !>
-   !! \brief Initialize the CATCHem SeaSalt Process
+   !! \brief Initialize the CATChem SeaSalt Process
    !!
-   !! \param Config_Opt  CATCHem configuration options
-   !! \param SeaSaltState   CATCHem SeaSalt state
-   !! \param ChmState    CATCHem chemical state
-   !! \param RC          Error return code
+   !! Initializes the sea salt aerosol emission process with default or configured parameters.
+   !! Sets up sea salt bin properties, size distributions, and links to chemical species.
+   !!
+   !! \param Config CATChem configuration options
+   !! \param SeaSaltState CATChem sea salt state to be initialized
+   !! \param ChemState CATChem chemical state
+   !! \param EmisState CATChem emission state
+   !! \param RC Error return code
    !!
    !! \ingroup catchem_seasalt_process
    !!!>
@@ -244,22 +249,25 @@ CONTAINS
    END SUBROUTINE CCPR_SeaSalt_INIT
 
    !>
-   !! \brief Run the seasalt scheme
+   !! \brief Run the sea salt emission scheme
    !!
-   !! \param [IN] MetState The MetState object
-   !! \param [INOUT] DiagState The DiagState object
-   !! \param [INOUT] SeaSaltState The SeaSaltState object
-   !! \param [INOUT] ChemState The ChemState object
-   !! \param [OUT] RC Return code
+   !! Executes sea salt aerosol emission calculations using the selected scheme
+   !! (Gong 1997, Gong 2003, or GEOS-12). Computes sea salt fluxes based on
+   !! wind speed and sea surface conditions.
    !!
-   !! \ingroup CATChem_SeaSalt_Processes
+   !! \param MetState The meteorological state containing atmospheric conditions
+   !! \param SeaSaltState The sea salt state containing process parameters
+   !! \param EmisState The emission state for storing sea salt emission fluxes
+   !! \param RC Return code indicating success or failure
+   !!
+   !! \ingroup catchem_seasalt_process
    !!!>
    SUBROUTINE CCPr_SeaSalt_Run( MetState, SeaSaltState, EmisState, RC )
 
       ! USE
-      USE CCPr_Scheme_Gong03_mod,  ONLY: CCPr_Scheme_Gong03   !< Gong2003 SeaSalt Scheme
-      USE CCPr_Scheme_Gong97_mod,  ONLY: CCPr_Scheme_Gong97   !< Gong1997 SeaSalt Scheme
-      USE CCPr_Scheme_GEOS12_mod,  ONLY: CCPr_Scheme_GEOS12   !< Gong1997 SeaSalt Scheme
+      USE CCPr_Scheme_Gong03_mod,  ONLY: CCPr_Scheme_Gong03   ! Gong2003 SeaSalt Scheme
+      USE CCPr_Scheme_Gong97_mod,  ONLY: CCPr_Scheme_Gong97   ! Gong1997 SeaSalt Scheme
+      USE CCPr_Scheme_GEOS12_mod,  ONLY: CCPr_Scheme_GEOS12   ! Gong1997 SeaSalt Scheme
 
       IMPLICIT NONE
 
@@ -375,12 +383,15 @@ CONTAINS
    END SUBROUTINE CCPr_SeaSalt_Run
 
    !>
-   !! \brief Finalize the seasalt scheme
+   !! \brief Finalize the sea salt emission process
    !!
-   !! \param [INOUT] SeaSaltState The SeaSaltState object
-   !! \param [OUT] RC Return code
+   !! Cleans up and deallocates memory used by the sea salt emission process.
+   !! Frees arrays and resets state variables.
    !!
-   !! \ingroup CATChem_SeaSalt_Processes
+   !! \param SeaSaltState The sea salt state to be finalized
+   !! \param RC Return code indicating success or failure
+   !!
+   !! \ingroup catchem_seasalt_process
    !!!>
    SUBROUTINE CCPr_SeaSalt_Finalize( SeaSaltState, RC )
 

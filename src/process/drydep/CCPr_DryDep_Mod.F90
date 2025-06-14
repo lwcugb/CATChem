@@ -1,10 +1,15 @@
-!> \brief CCPR drydep state types
-!!
-!! \defgroup catchem_drydep_process
+!> \file CCPr_DryDep_mod.F90
+!! \brief Driver for the CATChem Process: Dry Deposition
+!! \ingroup catchem_drydep_process
 !!
 !! \author Lacey Holland
 !! \date 07/2024
-!!!>
+!!
+!! This module provides the main driver for dry deposition processes in CATChem,
+!! including initialization, execution, and finalization of dry deposition
+!! calculations. The module handles the removal of atmospheric species through
+!! surface deposition processes.
+!!
 MODULE CCPR_DryDep_mod
    USE Precision_mod
    USE Error_Mod
@@ -23,7 +28,7 @@ MODULE CCPR_DryDep_mod
    PUBLIC :: DryDepStateType
 
 
-   !> \brief DryDepStateType
+   ! \brief DryDepStateType
    !!
    !! DryDepStateType is the process-specific derived type.
    !!
@@ -139,13 +144,16 @@ CONTAINS
    end subroutine CCPR_DryDep_Init
 
    !>
-   !! \brief Run the DryDep
+   !! \brief Run the dry deposition process
    !!
-   !! \param [IN] MetState - The MetState object
-   !! \param [INOUT] DiagState - The DiagState object
-   !! \param [INOUT] DryDepState - The DryDepState object
-   !! \param [INOUT] ChemState - The ChemState object
-   !! \param [OUT] RC Return code
+   !! Executes dry deposition calculations for all enabled chemical species
+   !! using the selected dry deposition scheme (currently GOCART).
+   !!
+   !! \param MetState The meteorological state containing atmospheric conditions
+   !! \param DiagState The diagnostic state for storing process outputs
+   !! \param DryDepState The dry deposition state containing process parameters
+   !! \param ChemState The chemical state containing species concentrations
+   !! \param RC Return code indicating success or failure
    !!
    !! \ingroup catchem_drydep_process
    !!!>
@@ -157,12 +165,12 @@ CONTAINS
 
       IMPLICIT NONE
       ! INPUT PARAMETERS
-      TYPE(MetStateType),  INTENT(IN) :: MetState       !< MetState Instance
+      TYPE(MetStateType),  INTENT(IN) :: MetState       ! MetState Instance
 
       ! INPUT/OUTPUT PARAMETERS
-      TYPE(DiagStateType), INTENT(INOUT)      :: DiagState       !< DiagState Instance
-      TYPE(DryDepStateType), INTENT(INOUT)    :: DryDepState     !< DryDepState Instance
-      TYPE(ChemStateType),  INTENT(INOUT)     :: ChemState       !< ChemState Instance
+      TYPE(DiagStateType), INTENT(INOUT)      :: DiagState       ! DiagState Instance
+      TYPE(DryDepStateType), INTENT(INOUT)    :: DryDepState     ! DryDepState Instance
+      TYPE(ChemStateType),  INTENT(INOUT)     :: ChemState       ! ChemState Instance
 
       ! OUTPUT PARAMETERS
       INTEGER, INTENT(OUT) :: RC                                 ! Return Code
@@ -170,7 +178,7 @@ CONTAINS
       ! LOCAL VARIABLES
       CHARACTER(LEN=255) :: ErrMsg, thisLoc
       INTEGER :: km
-      INTEGER :: i !< counter
+      INTEGER :: i ! counter
       real :: radius
       real :: rhop
       real, allocatable, dimension(:) :: tmpu, rhoa, hghte
@@ -259,10 +267,14 @@ CONTAINS
    end subroutine CCPr_DryDep_Run
 
    !>
-   !! \brief Finalize the DryDep
+   !! \brief Finalize the CATChem dry deposition module
    !!
-   !! \param [INOUT] DryDepState
-   !! \param [OUT] RC Return code
+   !! Cleans up and deallocates memory used by the dry deposition process.
+   !!
+   !! \param DryDepState The dry deposition state to be finalized
+   !! \param RC Return code indicating success or failure
+   !!
+   !! \ingroup catchem_drydep_process
    !!!>
    SUBROUTINE CCPr_DryDep_Finalize( DryDepState, RC )
 

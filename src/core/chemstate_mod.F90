@@ -59,21 +59,21 @@ module ChemState_Mod
       !---------------------------------------------------------------------
       ! Integers
       !---------------------------------------------------------------------
-      INTEGER              :: nSpecies          !< Total Number of Species
-      INTEGER              :: nSpeciesGas       !< Number of Gas Species
-      INTEGER              :: nSpeciesAero      !< Number of Aerosol Species
-      INTEGER              :: nSpeciesAeroDryDep !< Number of Aerosol Species for Dry Dep
-      INTEGER              :: nSpeciesTracer    !< Number of Tracer Species
-      INTEGER              :: nSpeciesDust      !< Number of Dust Species
-      INTEGER              :: nSpeciesSeaSalt   !< Number of SeaSalt Species
-      INTEGER, ALLOCATABLE :: SpeciesIndex(:)   !< Total Species Index
-      INTEGER, ALLOCATABLE :: TracerIndex(:)    !< Tracer Species Index
-      INTEGER, ALLOCATABLE :: AeroIndex(:)      !< Aerosol Species Index
-      INTEGER, ALLOCATABLE :: GasIndex(:)       !< Gas Species Index
-      INTEGER, ALLOCATABLE :: DustIndex(:)      !< Dust Species Index
-      INTEGER, ALLOCATABLE :: SeaSaltIndex(:)   !< SeaSalt Species Index
-      INTEGER, ALLOCATABLE :: DryDepIndex(:)   !< SeaSalt Species Index
-      CHARACTER(len=50), ALLOCATABLE :: SpeciesNames(:)  !< Species Names
+      INTEGER              :: nSpecies          ! Total Number of Species
+      INTEGER              :: nSpeciesGas       ! Number of Gas Species
+      INTEGER              :: nSpeciesAero      ! Number of Aerosol Species
+      INTEGER              :: nSpeciesAeroDryDep ! Number of Aerosol Species for Dry Dep
+      INTEGER              :: nSpeciesTracer    ! Number of Tracer Species
+      INTEGER              :: nSpeciesDust      ! Number of Dust Species
+      INTEGER              :: nSpeciesSeaSalt   ! Number of SeaSalt Species
+      INTEGER, ALLOCATABLE :: SpeciesIndex(:)   ! Total Species Index
+      INTEGER, ALLOCATABLE :: TracerIndex(:)    ! Tracer Species Index
+      INTEGER, ALLOCATABLE :: AeroIndex(:)      ! Aerosol Species Index
+      INTEGER, ALLOCATABLE :: GasIndex(:)       ! Gas Species Index
+      INTEGER, ALLOCATABLE :: DustIndex(:)      ! Dust Species Index
+      INTEGER, ALLOCATABLE :: SeaSaltIndex(:)   ! SeaSalt Species Index
+      INTEGER, ALLOCATABLE :: DryDepIndex(:)   ! SeaSalt Species Index
+      CHARACTER(len=50), ALLOCATABLE :: SpeciesNames(:)  ! Species Names
 
       !---------------------------------------------------------------------
       ! Reals

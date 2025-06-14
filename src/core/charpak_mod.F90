@@ -1,10 +1,21 @@
-!> \file
+!> \file charpak_mod.F90
 !! \brief Module for character string manipulation
-!!
-!! Original code from https://github.com/geoschem/geos-chem/blob/20e2402baf56c682cc04af74adb139efdb6ca000/Headers/charpak_mod.F90
-!!
 !! \ingroup core_modules
-!!!>
+!!
+!! \author Original GEOS-Chem Development Team
+!! \author CATChem Development Team
+!! \date 2023
+!!
+!! This module provides utilities for character string manipulation and text
+!! processing operations used throughout the CATChem atmospheric chemistry model.
+!!
+!! Original code from https://github.com/geoschem/geos-chem/
+!!
+!! \details
+!! The character package module provides comprehensive string manipulation
+!! functions including case conversion, text cleaning, splitting, replacement,
+!! and formatted output operations.
+!!
 MODULE Charpak_Mod
     !
     ! !USES:
@@ -45,12 +56,12 @@ MODULE Charpak_Mod
 
     CONTAINS
 
-    !> \brief Count the number of times a character appears in a string
+    ! \brief Count the number of times a character appears in a string
     !!
-    !! \param[in]  str1  String to search
-    !! \param[in]  str2  Character to search for
-    !! \param[out] imat  Number of matches
-    !! \param[out] locations  Positions of matches
+    !! \param  str1  String to search
+    !! \param  str2  Character to search for
+    !! \param imat  Number of matches
+    !! \param locations  Positions of matches
     !!
     !! \ingroup core_modules
     !!!>
@@ -102,11 +113,11 @@ MODULE Charpak_Mod
 
       END SUBROUTINE CntMat
 
-      !> \brief Copy characters from one string to another
+      ! \brief Copy characters from one string to another
       !!
-      !! \param[in]  col  Starting column
-      !! \param[in]  str1  String to copy from
-      !! \param[out] str2  String to copy to
+      !! \param  col  Starting column
+      !! \param  str1  String to copy from
+      !! \param str2  String to copy to
       !!
       !! \ingroup core_modules
       !!!>
@@ -142,10 +153,10 @@ MODULE Charpak_Mod
 
       END SUBROUTINE CopyTxt
 
-    !> \brief Strip leading and trailing spaces from a string
+    ! \brief Strip leading and trailing spaces from a string
     !!
-    !! \param[inout] text        String to be modified
-    !! \param[in]    KeepSpaces  If =T, then keep spaces
+    !! \param text        String to be modified
+    !! \param    KeepSpaces  If =T, then keep spaces
     !!
     !! \ingroup core_modules
     !!!>
@@ -196,9 +207,9 @@ MODULE Charpak_Mod
 
       END SUBROUTINE CStrip
 
-    !> \brief Check if a character is a digit
+    ! \brief Check if a character is a digit
     !!
-    !! \param[in]  ch  Character to check
+    !! \param  ch  Character to check
     !!
     !! \ingroup core_modules
     !!!>
@@ -223,11 +234,11 @@ MODULE Charpak_Mod
         ENDIF
 
       END FUNCTION IsDigit
-    !> \brief Replace text in a string
+    ! \brief Replace text in a string
     !!
-    !! \param[inout] str  String to be modified
-    !! \param[in]    Pattern  Pattern to search for
-    !! \param[in]    ReplTxt  Text to replace
+    !! \param str  String to be modified
+    !! \param    Pattern  Pattern to search for
+    !! \param    ReplTxt  Text to replace
     !!
     !! \ingroup core_modules
     !!!>
@@ -265,12 +276,12 @@ MODULE Charpak_Mod
         ENDDO
 
       END SUBROUTINE StrRepl
-    !> \brief Split a string into substrings
+    ! \brief Split a string into substrings
     !!
-    !! \param[in]  Str  String to be searched
-    !! \param[in]  Sep  Separator character
-    !! \param[out] Result  Substrings
-    !! \param[out] N_SubStrs  # of substrings
+    !! \param  Str  String to be searched
+    !! \param  Sep  Separator character
+    !! \param Result  Substrings
+    !! \param N_SubStrs  # of substrings
     !!
     !! \ingroup core_modules
     !!!>
@@ -317,9 +328,9 @@ MODULE Charpak_Mod
         IF ( PRESENT( N_SUBSTRS ) ) N_SUBSTRS = I
 
       END SUBROUTINE StrSplit
-    !> \brief Remove leading and trailing blanks from a string
+    ! \brief Remove leading and trailing blanks from a string
     !!
-    !! \param[inout]  Str  String to be manipulated
+    !! \param  Str  String to be manipulated
     !!
     !! \ingroup core_modules
     !!!>
@@ -336,9 +347,11 @@ MODULE Charpak_Mod
         Str = ADJUSTL( TRIM( Str ) )
 
       END SUBROUTINE StrSqueeze
-    !> \brief Translate a character variable to all lower case letters.
+    ! \brief Translate a character variable to all lower case letters.
     !!
-    !! \param[inout]  text  String to be manipulated
+    !! \param  text  String to be manipulated
+    !!
+    !! \ingroup core_modules
     !!!>
       SUBROUTINE TranLc( text )
     !
@@ -359,9 +372,9 @@ MODULE Charpak_Mod
         ENDDO
 
       END SUBROUTINE TRANLC
-    !> \brief Translate a character variable to all upper case letters.
+    ! \brief Translate a character variable to all upper case letters.
     !!
-    !! \param[inout]  text  String to be manipulated
+    !! \param  text  String to be manipulated
     !!
     !! \ingroup core_modules
     !!!>
@@ -384,13 +397,13 @@ MODULE Charpak_Mod
         ENDDO
 
       END SUBROUTINE TRANUC
-    !> \brief Extract text from a string
+    ! \brief Extract text from a string
     !!
-    !! \param[in]  ch  Character string
-    !! \param[in]  text  String to be manipulated
-    !! \param[inout]  col  Column position
-    !! \param[out]  word  Extracted text
-    !! \param[out]  iflg  0: normal termination; 1: text not found
+    !! \param  ch  Character string
+    !! \param  text  String to be manipulated
+    !! \param  col  Column position
+    !! \param  word  Extracted text
+    !! \param  iflg  0: normal termination; 1: text not found
     !!
     !! \ingroup core_modules
     !!!>
@@ -499,10 +512,10 @@ MODULE Charpak_Mod
         ENDIF
 
       END SUBROUTINE TxtExt
-    !> \brief Convert a string to uppercase
+    ! \brief Convert a string to uppercase
     !!
-    !! \param[in]  Text  String to be manipulated
-    !! \param[out]  UpCaseText  Uppercase string
+    !! \param  Text  String to be converted to uppercase
+    !! \return  UpCaseText  Uppercase version of the input string
     !!
     !! \ingroup core_modules
     !!!>
@@ -541,12 +554,12 @@ MODULE Charpak_Mod
         ENDDO
 
       END FUNCTION To_UpperCase
-    !> \brief Read one line from a file
+    ! \brief Read one line from a file
     !!
-    !! \param[in]  fId    File unit number
-    !! \param[out] EndOfFile  Denotes EOF condition
-    !! \param[out] IoStatus   I/O status code
-    !! \param[in]  Squeeze    Call Strsqueeze?
+    !! \param  fId    File unit number
+    !! \param EndOfFile  Denotes EOF condition
+    !! \param IoStatus   I/O status code
+    !! \param  Squeeze    Call Strsqueeze?
     !!
     !! \ingroup core_modules
     !! \return Line read from file
@@ -595,9 +608,9 @@ MODULE Charpak_Mod
         ENDIF
 
       END FUNCTION ReadOneLine
-    !> \brief Clean up a string
+    ! \brief Clean up a string
     !!
-    !! \param[in]  Str  Original string
+    !! \param  Str  Original string
     !! \return Cleaned-up string
     !!
     !! \ingroup core_modules
@@ -626,11 +639,11 @@ MODULE Charpak_Mod
         CALL StrSqueeze( CleanStr           )
 
       END FUNCTION CleanText
-    !> \brief Print a string in multiple lines
+    ! \brief Print a string in multiple lines
     !!
-    !! \param[in]  Text        String to print
-    !! \param[in]  LineWidth   Width (characters) of lines
-    !! \param[in]  Delimiter   Delimiter between words
+    !! \param  Text        String to print
+    !! \param  LineWidth   Width (characters) of lines
+    !! \param  Delimiter   Delimiter between words
     !!
     !! \ingroup core_modules
     !!!>
@@ -711,10 +724,10 @@ MODULE Charpak_Mod
         ENDDO
 
       END SUBROUTINE WordWrapPrint
-    !> \brief Find unique elements in an array
+    ! \brief Find unique elements in an array
     !!
-    !! \param[in]  vec  Input array
-    !! \param[out] vec_unique  Unique elements
+    !! \param  vec  Input array
+    !! \param vec_unique  Unique elements
     !!
     !! \ingroup core_modules
     !!!>
@@ -771,10 +784,10 @@ MODULE Charpak_Mod
         !call ISORT (vec_unique, [0], size(vec_unique), 1)
 
       END SUBROUTINE Unique
-    !> \brief Convert a character array to a string
+    ! \brief Convert a character array to a string
     !!
-    !! \param[in]  charArray  Character array
-    !! \param[in]  N          Dimension of charArray
+    !! \param  charArray  Character array
+    !! \param  N          Dimension of charArray
     !! \result     string     Output string
     !! \ingroup core_modules
     !!!>
@@ -809,10 +822,10 @@ MODULE Charpak_Mod
         ENDDO
 
       END FUNCTION charArr2Str
-    !> \brief Convert a string to a character array
+    ! \brief Convert a string to a character array
     !!
-    !! \param[in]  string  String
-    !! \param[in]  N       Length of string
+    !! \param  string  String
+    !! \param  N       Length of string
     !! \result     charArray  Character array
     !! \ingroup core_modules
     !!!>

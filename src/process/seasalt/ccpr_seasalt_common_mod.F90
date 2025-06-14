@@ -1,12 +1,15 @@
-!>
-!! \file ccpr_SeaSalt_common_mod.F90
-!! \brief Contains module ccpr_SeaSalt_common_mod
+!> \file ccpr_seasalt_common_mod.F90
+!! \brief Common utilities and data types for sea salt emission processes
+!! \ingroup catchem_seasalt_process
 !!
 !! \author Barry Baker
 !! \date 05/2024
 !!
-!! \ingroup catchem_seasalt_process
-!!!>
+!! This module provides common utilities, data types, and shared functions
+!! for sea salt emission calculations in the CATChem atmospheric chemistry model.
+!! It includes wind speed parameterizations, size distribution functions,
+!! and temperature correction factors used by various sea salt emission schemes.
+!!
 module CCPr_SeaSalt_Common_Mod
    use precision_mod, Only : fp, ZERO, rae
    implicit none
@@ -17,7 +20,7 @@ module CCPr_SeaSalt_Common_Mod
    PUBLIC :: weibullDistribution
    PUBLIC :: jeagleSSTcorrection
 
-   !> \brief Type for CATCHem SeaSalt Process
+   ! \brief Type for CATCHem SeaSalt Process
    !!
    !! \details Contains all the information needed to run the CATChem SeaSalt Process
    !!
@@ -45,26 +48,26 @@ module CCPr_SeaSalt_Common_Mod
    !!!>
    TYPE, PUBLIC :: SeaSaltStateType
       ! Generic Variables for Every Process
-      Logical                         :: Activate               !< Activate Process (True/False)
-      INTEGER                         :: nSeaSaltSpecies        !< Number of SeaSalt processes
-      INTEGER                         :: SchemeOpt              !< Scheme Option
-      INTEGER, ALLOCATABLE            :: SeaSaltSpeciesIndex(:) !< Index of SeaSalt species
-      INTEGER, ALLOCATABLE            :: SpcIDs(:)              !< CATChem species IDs
-      Logical                         :: WeibullFlag            !< Apply Weibull Distribution to 10m wind speeds following Fan and Toon 2011
-      Logical                         :: HoppelFlag             !< Apply Hoppel Flag following Fan and Toon 2011
-      integer                         :: CatIndex                !< Index of emission category in EmisState
+      Logical                         :: Activate               ! Activate Process (True/False)
+      INTEGER                         :: nSeaSaltSpecies        ! Number of SeaSalt processes
+      INTEGER                         :: SchemeOpt              ! Scheme Option
+      INTEGER, ALLOCATABLE            :: SeaSaltSpeciesIndex(:) ! Index of SeaSalt species
+      INTEGER, ALLOCATABLE            :: SpcIDs(:)              ! CATChem species IDs
+      Logical                         :: WeibullFlag            ! Apply Weibull Distribution to 10m wind speeds following Fan and Toon 2011
+      Logical                         :: HoppelFlag             ! Apply Hoppel Flag following Fan and Toon 2011
+      integer                         :: CatIndex                ! Index of emission category in EmisState
 
       ! Process Specific Parameters
-      REAL(fp), ALLOCATABLE           :: LowerBinRadius(:)      !< Lower bin radius        [m]
-      REAL(fp), ALLOCATABLE           :: UpperBinRadius(:)      !< Upper bin radius        [m]
-      REAL(fp), ALLOCATABLE           :: EffectiveRadius(:)     !< Effective radius        [m]
-      REAL(fp), ALLOCATABLE           :: SeaSaltDensity(:)      !< SeaSalt density         [kg m-3]
+      REAL(fp), ALLOCATABLE           :: LowerBinRadius(:)      ! Lower bin radius        [m]
+      REAL(fp), ALLOCATABLE           :: UpperBinRadius(:)      ! Upper bin radius        [m]
+      REAL(fp), ALLOCATABLE           :: EffectiveRadius(:)     ! Effective radius        [m]
+      REAL(fp), ALLOCATABLE           :: SeaSaltDensity(:)      ! SeaSalt density         [kg m-3]
 
-      REAL(fp), ALLOCATABLE           :: EmissionPerSpecies(:)  !< Emission per species    [ug m-2 s-1]
-      REAL(fp), ALLOCATABLE           :: NumberEmissionBin(:)   !< Particle Number emission per species [# m-2 s-1]
-      REAL(fp)                        :: SeaSaltScaleFactor     !< SeaSalt Tuning Parameter [-]
-      REAL(fp)                        :: TotalEmission          !< Total emission          [ug m-2 s-1]
-      REAL(fp)                        :: TotalNumberEmission    !< Total Number Emitted    [# m-2 s-1]
+      REAL(fp), ALLOCATABLE           :: EmissionPerSpecies(:)  ! Emission per species    [ug m-2 s-1]
+      REAL(fp), ALLOCATABLE           :: NumberEmissionBin(:)   ! Particle Number emission per species [# m-2 s-1]
+      REAL(fp)                        :: SeaSaltScaleFactor     ! SeaSalt Tuning Parameter [-]
+      REAL(fp)                        :: TotalEmission          ! Total emission          [ug m-2 s-1]
+      REAL(fp)                        :: TotalNumberEmission    ! Total Number Emitted    [# m-2 s-1]
 
       !=================================================================
       ! Module specific variables/arrays/data pointers come below
@@ -86,10 +89,10 @@ contains
    !!!>
    function SeasaltEmissionGong ( r, dr, w, scalefac, aFac, bFac, rpow, exppow, wpow )
 
-      real(fp), intent(in) :: r         !< Wet particle radius [um]
-      real(fp), intent(in) :: dr        !< Wet particle bin width [um]
-      real(fp), intent(in) :: w         !< Grid box mean wind speed [m s-1] (10-m or ustar wind)
-      real(fp), intent(in) :: scalefac  !< scale factor
+      real(fp), intent(in) :: r         ! Wet particle radius [um]
+      real(fp), intent(in) :: dr        ! Wet particle bin width [um]
+      real(fp), intent(in) :: w         ! Grid box mean wind speed [m s-1] (10-m or ustar wind)
+      real(fp), intent(in) :: scalefac  ! scale factor
       real(fp), intent(in) :: aFac
       real(fp), intent(in) :: bFac
       real(fp), intent(in) :: rpow
@@ -167,10 +170,10 @@ contains
    !! function, hence the utilities pasted below.  The Weibull function and shape
    !! parameters (k, c) assumed are from Justus 1978.
    !!
-   !! \param[inout] gweibull Multiplicative constant
-   !! \param[in]    weibullFlag  Flag for weibull correction
-   !! \param[in]    wm 10m wind speed
-   !! \param[out]   RC Return Code
+   !! \param gweibull Multiplicative constant
+   !! \param    weibullFlag  Flag for weibull correction
+   !! \param    wm 10m wind speed
+   !! \param   RC Return Code
    !!
    !! \ingroup catchem_seasalt_process
    !!!>
@@ -221,11 +224,11 @@ contains
    !! \brief Calculate the incomplete Gamma function
    !!
    !! The incomplete Gamma function is defined as
-   !! \int_x^\infty t^{A-1}\exp(-t) dt
+   !! \\f$\\int_x^\\infty t^{A-1}\\exp(-t) dt\\f$
    !!
-   !! \param[in]    A
-   !! \param[in]    X
-   !! \param[out]   RC
+   !! \param A Parameter A
+   !! \param X Parameter X
+   !! \param RC Return code
    !!
    !! \ingroup catchem_seasalt_process
    !!!>

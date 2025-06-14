@@ -1,13 +1,25 @@
-!> \brief Template for a new process driver
+!> \file Process_driver_template.F90
+!! \brief Template for new process drivers in CATChem
+!! \ingroup process_modules
 !!
-!! To use:
-!! - replace <PROCESS> by an identifier for the process group (e.g. 'Dust')
-!!
-!! More in-depth description here
-!!
-!! \author Barry baker
+!! \author Barry Baker
 !! \date 05/2024
-!!!>
+!!
+!! This file provides a template for creating new atmospheric chemistry
+!! process drivers in the CATChem modeling system.
+!!
+!! \details
+!! To use this template:
+!! - Replace <PROCESS> with an identifier for the process group (e.g., 'Dust', 'SeaSalt')
+!! - Implement the required initialization, run, and finalization routines
+!! - Add process-specific configuration options and state variables
+!! - Update documentation to describe the specific process being implemented
+!!
+!! The template includes standard CATChem interfaces for:
+!! - Process initialization with configuration
+!! - Process execution with meteorological and chemical states
+!! - Process finalization and cleanup
+!!
 MODULE CCPR_<PROCESS>_mod
    USE Precision_mod
    USE Error_Mod
@@ -25,7 +37,7 @@ MODULE CCPR_<PROCESS>_mod
    PUBLIC :: CCPR_<PROCESS>_Final
 
 
-   !> \brief <PROCESS>StateType
+   ! \brief <PROCESS>StateType
    !!
    !! <PROCESS>StateType is the process-specific derived type. It should hold all module
    !! variables and arrays that are required to compute the emissions.
@@ -130,11 +142,11 @@ CONTAINS
    !>
    !! \brief Run the <Process>
    !!
-   !! \param [IN] MetState The MetState object
-   !! \param [INOUT] DiagState The DiagState object
-   !! \param [INOUT] DustState The DustState object
-   !! \param [INOUT] ChemState The ChemState object
-   !! \param [OUT] RC Return code
+   !! \param
+   !! \param
+   !! \param
+   !! \param
+   !! \param
    !!!>
    SUBROUTINE CCPr_Dust_Run( MetState, DiagState, <PROCESS>State, ChemState, RC )
 
@@ -183,8 +195,8 @@ CONTAINS
    !>
    !! \brief Finalize the <Process>
    !!
-   !! \param [INOUT] <Process>State
-   !! \param [OUT] RC Return code
+   !! \param
+   !! \param
    !!!>
    SUBROUTINE CCPr_<PROCESS>_Final( <PROCESS>State, RC )
 

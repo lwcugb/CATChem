@@ -22,7 +22,7 @@ module EmisState_Mod
    PUBLIC :: EmisState_CleanUp
    PUBLIC :: Apply_Emis_to_Chem
 
-   !> \brief Emission Species State
+   ! \brief Emission Species State
    !!
    !! \details The Emission Species States contain information about the emitted species and
    !!          the emitted fluxes, scale factors, and speciation to concentration mappings.
@@ -40,33 +40,33 @@ module EmisState_Mod
    !!!>
    TYPE :: EmisSpeciesType
       ! Character
-      character(len=10)               :: name             !< Name of the species
-      character(len=50)               :: long_name        !< Long name of the species
-      character(len=10)               :: units            !< Units of the species
-      character(len=100), allocatable :: EmisMapName(:)   !< Emission mapping to concentration species
+      character(len=10)               :: name             ! Name of the species
+      character(len=50)               :: long_name        ! Long name of the species
+      character(len=10)               :: units            ! Units of the species
+      character(len=100), allocatable :: EmisMapName(:)   ! Emission mapping to concentration species
 
       ! Integers
-      integer              :: nEmisMap         !< Number of Emission mappings per emitted species
-      integer, ALLOCATABLE :: EmisMapIndex(:)  !< Emission mapping to concentration index
-      integer              :: plumerise        !< Plumerise option (default = 0 for no plumerise) sofiev = 1 briggs = 2 simple linear weighted thickness = 3
-      integer              :: EmisLayer        !< Emission layer
-      integer              :: nPlmSrc         !< Plumerise number of sources
+      integer              :: nEmisMap         ! Number of Emission mappings per emitted species
+      integer, ALLOCATABLE :: EmisMapIndex(:)  ! Emission mapping to concentration index
+      integer              :: plumerise        ! Plumerise option (default = 0 for no plumerise) sofiev = 1 briggs = 2 simple linear weighted thickness = 3
+      integer              :: EmisLayer        ! Emission layer
+      integer              :: nPlmSrc         ! Plumerise number of sources
 
       ! Real
-      real(fp), ALLOCATABLE :: Scale(:)        !< Scale factor
-      real(fp), ALLOCATABLE :: Flux(:)         !< Emission flux
-      real(fp)              :: EmisHeight      !< Emission Height [m] - Simple emission height or -1 for PBLH
-      real(fp), ALLOCATABLE :: PlmSrcFlx(:)    !< Plumerise source emission flux [kg/m2/s]
-      real(fp), ALLOCATABLE :: PlmRiseHgt(:)   !< Height of Plume rise [m]
-      real(fp), ALLOCATABLE :: FRP(:)          !< Fire Radiative Power (W/m^2)
-      real(fp), ALLOCATABLE :: STKDM(:)        !< Briggs stack diameter [m] (array of all point sources in grid cell)
-      real(fp), ALLOCATABLE :: STKHT(:)        !< Briggs stack thickness [m] (array of all point sources in grid cell)
-      real(fp), ALLOCATABLE :: STKTK(:)        !< Briggs stack thickness [m] (array of all point sources in grid cell)
-      real(fp), ALLOCATABLE :: STKVE(:)        !< Briggs stack velocity [m/s] (array of all point sources in grid cell)
+      real(fp), ALLOCATABLE :: Scale(:)        ! Scale factor
+      real(fp), ALLOCATABLE :: Flux(:)         ! Emission flux
+      real(fp)              :: EmisHeight      ! Emission Height [m] - Simple emission height or -1 for PBLH
+      real(fp), ALLOCATABLE :: PlmSrcFlx(:)    ! Plumerise source emission flux [kg/m2/s]
+      real(fp), ALLOCATABLE :: PlmRiseHgt(:)   ! Height of Plume rise [m]
+      real(fp), ALLOCATABLE :: FRP(:)          ! Fire Radiative Power (W/m^2)
+      real(fp), ALLOCATABLE :: STKDM(:)        ! Briggs stack diameter [m] (array of all point sources in grid cell)
+      real(fp), ALLOCATABLE :: STKHT(:)        ! Briggs stack thickness [m] (array of all point sources in grid cell)
+      real(fp), ALLOCATABLE :: STKTK(:)        ! Briggs stack thickness [m] (array of all point sources in grid cell)
+      real(fp), ALLOCATABLE :: STKVE(:)        ! Briggs stack velocity [m/s] (array of all point sources in grid cell)
 
    END TYPE EmisSpeciesType
 
-   !> \brief Emission Category State
+   ! \brief Emission Category State
    !!
    !! \details The Emission Category State contains all the Species types for a given emission
    !!          category. It includes the name of the category, the number of emitted species, and
@@ -81,14 +81,14 @@ module EmisState_Mod
    TYPE :: EmisCategoryType
 
       ! Character
-      character(len=20)    :: name                         !< Name of the species
+      character(len=20)    :: name                         ! Name of the species
 
       ! Integers
-      integer              :: nSpecies                 !< Number of emitted species per process
-      integer              :: nPlumerise               !< Number of Species undergoing a Plumerise
+      integer              :: nSpecies                 ! Number of emitted species per process
+      integer              :: nPlumerise               ! Number of Species undergoing a Plumerise
 
       ! Types
-      type(EmisSpeciesType), ALLOCATABLE :: Species(:) !< Emitted species container
+      type(EmisSpeciesType), ALLOCATABLE :: Species(:) ! Emitted species container
 
    END TYPE EmisCategoryType
 
@@ -108,23 +108,23 @@ module EmisState_Mod
    TYPE, PUBLIC :: EmisStateType
 
       ! Character
-      CHARACTER(LEN=4) :: State = 'Emis' !< Name of this state
-      CHARACTER(LEN=10), ALLOCATABLE :: TotEmisNames(:)         !< Name of the state
+      CHARACTER(LEN=4) :: State = 'Emis' ! Name of this state
+      CHARACTER(LEN=10), ALLOCATABLE :: TotEmisNames(:)         ! Name of the state
 
       ! Integers
-      integer :: nCats         !< Number of emission categories
-      integer :: nEmisTotal              !< Total number of emitted species
-      integer :: nEmisTotalPlumerise     !< Total number of plume rise categories
+      integer :: nCats         ! Number of emission categories
+      integer :: nEmisTotal              ! Total number of emitted species
+      integer :: nEmisTotalPlumerise     ! Total number of plume rise categories
 
       ! Types
-      type(EmisSpeciesType), ALLOCATABLE :: TotSpecies(:) !< Emitted species container
-      type(EmisCategoryType), ALLOCATABLE :: Cats(:) !< Emission categories container
+      type(EmisSpeciesType), ALLOCATABLE :: TotSpecies(:) ! Emitted species container
+      type(EmisCategoryType), ALLOCATABLE :: Cats(:) ! Emission categories container
 
    END TYPE EmisStateType
 
 CONTAINS
 
-   !> \brief Allocate the emission state
+   ! \brief Allocate the emission state
    !!
    !! \details Allocate the emission state.
    !!
@@ -231,7 +231,7 @@ CONTAINS
 
    end subroutine Emis_Allocate
 
-   ! !> \brief Allocate the total emitted species
+   ! ! \brief Allocate the total emitted species
    ! !!
    ! !! \details Allocate the total emitted species
    ! !!
@@ -313,7 +313,7 @@ CONTAINS
 
    ! end subroutine TotEmisSpecies_Allocate
 
-   !> \brief Find the index of the mapped species
+   ! \brief Find the index of the mapped species
    !!
    !! \details Loops through the emitted species and finds the index to all of the mapped emitted species to the chemical species
    !!
@@ -364,14 +364,17 @@ CONTAINS
 
    end subroutine Emis_find_chem_map_index
 
-   !> \brief Apply emissions to the chemical state
+   ! \brief Apply emissions to the chemical state
    !!
-   !! \details TODO: Apply emissions to the chemical state
+   !! \details Apply emissions to the chemical state by adding emitted species
+   !!          to the corresponding chemical species concentrations.
    !! \ingroup core_modules
    !!
-   !! \param EmisState Emission State
-   !! \param ChemState Chemical State
-   !! \param RC Return code
+   !! \param EmisState Emission State containing emission data and fluxes
+   !! \param MetState Meteorological State containing atmospheric conditions
+   !! \param ChemState Chemical State containing species concentrations
+   !! \param RC Return code indicating success or failure
+   !! \param surface_only_flag Optional logical flag to apply emissions only at surface level
    !!
    !!!>
    subroutine Apply_Emis_to_Chem(EmisState, MetState, ChemState, RC, surface_only_flag)
@@ -386,15 +389,15 @@ CONTAINS
       INTEGER, INTENT(OUT) :: RC
 
       ! Local
-      integer :: c !< Loop counter for emission Cats
-      integer :: s !< Loop counter for emitted species
-      integer :: n !< Loop counter for mapped species
-      integer :: k !< Loop counter for height levels
-      real(kind=fp) :: scale  !< scaling factor
-      integer :: index        !< index of the mapped chemical species
-      real(kind=fp) :: cdt    !< time step
-      real(kind=fp) :: dqa    !< change in concentration
-      logical :: surface_only !< flag for surface only
+      integer :: c ! Loop counter for emission Cats
+      integer :: s ! Loop counter for emitted species
+      integer :: n ! Loop counter for mapped species
+      integer :: k ! Loop counter for height levels
+      real(kind=fp) :: scale  ! scaling factor
+      integer :: index        ! index of the mapped chemical species
+      real(kind=fp) :: cdt    ! time step
+      real(kind=fp) :: dqa    ! change in concentration
+      logical :: surface_only ! flag for surface only
 
       ! Error handling
       CHARACTER(LEN=255) :: ErrMsg
@@ -446,7 +449,7 @@ CONTAINS
 
    end subroutine Apply_Emis_to_Chem
 
-   !> \brief Clean up the emission state
+   ! \brief Clean up the emission state
    !!
    !! \ingroup core_modules
    !!

@@ -1,19 +1,18 @@
 !> \file catchem_types.F90
-!> \brief Container module for CATCHEM model data structures
-!>
-!> \details
-!> Defines the core data structures used by CATCHEM chemistry model including
-!> arrays for meteorological states, chemical species concentrations, emissions,
-!> and diagnostic outputs. Provides the fundamental data container types needed
-!> for chemistry calculations.
-!>
-!> \author Barry Baker
-!>
-!> \date 11/2024
-!>
-!> \ingroup catchem_ccpp_group
+!! \brief Container module for CATCHEM model data structures
+!!
+!! \details
+!! Defines the core data structures used by CATCHEM chemistry model including
+!! arrays for meteorological states, chemical species concentrations, emissions,
+!! and diagnostic outputs. Provides the fundamental data container types needed
+!! for chemistry calculations.
+!!
+!! \author Barry Baker
+!!
+!! \date 11/2024
+!!
+!! \ingroup catchem_ccpp_group
 !!!>
-
 module catchem_types
 
   use CATChem, only: GridStateType, MetStateType, ChemStateType, EmisStateType, DiagStateType
@@ -31,7 +30,7 @@ module catchem_types
   !!!>
   type, public :: catchem_container_type
     ! Array dimensions
-    integer :: im = 0  !> Horizontal dimension
+    integer :: im = 0  ! Horizontal dimension
 
     ! State arrays
     type(GridStateType)  :: GridState   !> Grid state (not an array)

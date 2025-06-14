@@ -1,4 +1,4 @@
-!> \file diagstate_mod.F90
+! \file diagstate_mod.F90
 !! \brief Contains the DiagStateType and Diag_Allocate subroutine
 !!
 !! \ingroup core_modules
@@ -18,7 +18,7 @@ module DiagState_Mod
    ! PUBLIC :: Zero_DiagState
    PUBLIC :: Diag_Allocate
 
-   !> \brief Data type for storing diagnostic state variables
+   ! \brief Data type for storing diagnostic state variables
    !!
    !! \ingroup core_modules
    !!
@@ -34,22 +34,22 @@ module DiagState_Mod
    type, public :: DiagStateType
 
       ! Surface or single-level variables
-      REAL(fp) :: dust_total_flux      !< Total flux of dust particles [kg m-2 s-1]
-      REAL(fp) :: sea_salt_total_flux  !< Total flux of sea salt particles [kg m-2 s-1]
+      REAL(fp) :: dust_total_flux      ! Total flux of dust particles [kg m-2 s-1]
+      REAL(fp) :: sea_salt_total_flux  ! Total flux of sea salt particles [kg m-2 s-1]
 
       ! Aerosol properties
       ! TODO: Add support for multiple aerosol types / wavelengths and more aerosol optical properties
-      real(fp), allocatable :: AOD550(:)  !< Total AOD at 550nm [1]
-      real(fp), allocatable :: AOD380(:)  !< Total AOD at 380nm [1]
-      real(fp), allocatable :: TOMSAI(:)  !< TOMS Aerosol Index [1]
+      real(fp), allocatable :: AOD550(:)  ! Total AOD at 550nm [1]
+      real(fp), allocatable :: AOD380(:)  ! Total AOD at 380nm [1]
+      real(fp), allocatable :: TOMSAI(:)  ! TOMS Aerosol Index [1]
 
 
-      real(fp) :: briggs_plumerise_height !< Effective plume rise height from Briggs algorithm [m]
-      real(fp) :: sofiev_plumerise_height !< Effective plume rise height from Sofiev algorithm [m]
+      real(fp) :: briggs_plumerise_height ! Effective plume rise height from Briggs algorithm [m]
+      real(fp) :: sofiev_plumerise_height ! Effective plume rise height from Sofiev algorithm [m]
 
 
-      real(fp), allocatable :: drydep_frequency(:)
-      real(fp), allocatable :: drydep_vel(:)
+      real(fp), allocatable :: drydep_frequency(:)  ! Dry deposition frequency for each species [s^-1]
+      real(fp), allocatable :: drydep_vel(:)        ! Dry deposition velocity for each species [m/s]
 
       ! Species Specific Variables
 
@@ -58,13 +58,13 @@ module DiagState_Mod
 
 CONTAINS
 
-   !> \brief Allocate memory for the diagnostic state variables
+   ! \brief Allocate memory for the diagnostic state variables
    !!
    !! This subroutine allocates memory for the diagnostic state variables.
    !!
    !! \param Config The configuration options
-   !! \param GridState The grid state containing information about the grid
    !! \param DiagState The diagnostic state to be allocated
+   !! \param ChemState The chemical state containing species information
    !! \param RC The return code
    !! \ingroup core_modules
    !!!>

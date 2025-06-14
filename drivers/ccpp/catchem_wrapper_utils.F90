@@ -1,17 +1,36 @@
 !> \file catchem_wrapper_utils.F90
-!> \brief CATCHEM-CCPP interface utilities module
-!>
-!> \details
-!> Provides wrapper utilities for interfacing CATCHEM chemistry model with CCPP
-!> framework. Handles data transformation and management between host model and
-!> CATCHEM chemistry calculations.
-!>
-!> \author Barry Baker and Wei Li
-!>
-!> \date 11/2024
-!>
-!> \ingroup catchem_ccpp_group
-!!!>
+!! \brief CATChem-CCPP interface utilities module
+!!
+!! \defgroup catchem_wrapper_group CATChem Wrapper Utilities
+!! \brief Utility functions for CATChem interface wrappers
+!! \ingroup catchem_ccpp_group
+!!
+!! This group contains utility functions and data transformation routines
+!! used by CATChem interface wrappers, including CCPP and NUOPC interfaces.
+!! Provides common functionality for data conversion, memory management,
+!! and state initialization across different host model interfaces.
+!!
+!! \details
+!! This module provides essential wrapper utilities for interfacing the CATChem
+!! chemistry model with various host modeling frameworks, particularly the
+!! Common Community Physics Package (CCPP). It handles:
+!! - Data transformation between host model and CATChem formats
+!! - Memory allocation and deallocation for CATChem state objects
+!! - Initialization and finalization routines
+!! - Error handling and diagnostic reporting
+!! - Coordinate transformations and unit conversions
+!!
+!! \author Barry Baker and Wei Li, NOAA/OAR/ARL
+!! \date November 2024
+!! \ingroup catchem_ccpp_group
+!!
+!> \brief CATChem wrapper utilities module
+!!
+!! This module contains utility functions and data transformation routines
+!! that support the integration of CATChem with different host modeling
+!! frameworks through standardized interfaces.
+!!
+!! \ingroup catchem_wrapper_group
 module catchem_wrapper_utils
 
     use CATChem, only: ConfigType, MetStateType, ChemStateType, GridStateType, &
@@ -28,8 +47,13 @@ module catchem_wrapper_utils
 
     implicit none
 
+    !> \brief Public interface for data transformation from CCPP to CATChem format
     public :: transform_ccpp_to_catchem
+
+    !> \brief Public interfaces for bidirectional data conversion
     public :: cc_to_ccpp, ccpp_to_cc
+
+    !> \brief Public interfaces for CATChem lifecycle management
     public :: catchem_init, catchem_run, catchem_finalize
 
     ! CCPP data structure
@@ -41,19 +65,33 @@ module catchem_wrapper_utils
 contains
 
 
-    !> Allocates memory for the entire catchem container
+    !> Initialize CATChem model components and state containers
     !!
-    !! \param[in]    config         CATChem configuration
-    !! \param[inout] catchem_states Container for all CATChem states
-    !! \param[in]    im            Number of horizontal points
-    !! \param[in]    kme           Number of vertical levels
-    !! \param[in]    nsoil         Number of soil levels
-    !! \param[out]   errflg        Error flag (0=success, non-zero=failure)
-    !! \param[out]   errmsg        Error message if errflg is non-zero
+    !! This subroutine performs comprehensive initialization of the CATChem model
+    !! including configuration loading, memory allocation, and state object setup
+    !! for all active atmospheric chemistry processes.
     !!
-    !! \ingroup catchem_ccpp_group
-    !!!>
-
+    !! @param config CATChem configuration object to be initialized
+    !! @param catchem_states Main container for all CATChem state variables
+    !! @param im Number of horizontal grid points
+    !! @param config_file Path to CATChem configuration file
+    !! @param errflg Error flag (0=success, non-zero=failure)
+    !! @param errmsg Error message string if errflg is non-zero
+    !! @param DustState Dust emission and transport state object
+    !! @param SeaSaltState Sea salt emission and transport state object
+    !! @param DryDepState Dry deposition process state object
+    !!
+    !! This routine performs the following initialization steps:
+    !! - Reads and validates the CATChem configuration file
+    !! - Allocates memory for all state objects based on grid dimensions
+    !! - Initializes process-specific state containers (dust, sea salt, dry deposition)
+    !! - Sets up the main CATChem container with appropriate linkages
+    !! - Validates configuration consistency and parameter ranges
+    !!
+    !! @note This routine must be called before any CATChem calculations can be performed.
+    !!       The configuration file must exist and be properly formatted.
+    !!
+    !! @warning Proper error checking should be performed on errflg after calling this routine
     subroutine catchem_init(config, catchem_states, im, config_file, errflg, errmsg, &
                             DustState, SeaSaltState, DryDepState)
         use CATChem, only: DustStateType, SeaSaltStateType, DryDepStateType
@@ -146,55 +184,93 @@ contains
     !end subroutine allocate_catchem_container
     end subroutine catchem_init
 
-    !> Transforms CCPP meteorological arrays into CATChem meteorological and chemistry states
+    !> Transform CCPP meteorological data to CATChem format
     !!
-    !! \param[in] im         Number of horizontal grid points
-    !! \param[in] kme        Number of vertical levels
-    !! \param[in] temp       3D temperature field (K)
-    !! \param[in] spechum    3D specific humidity field (kg/kg)
-    !! \param[in] pfull      3D full level pressure (Pa)
-    !! \param[in] phalf      3D half level pressure (Pa)
-    !! \param[in] u          3D zonal wind (m/s)
-    !! \param[in] v          3D meridional wind (m/s)
-    !! \param[in] delp       3D pressure thickness (Pa)
-    !! \param[in] zh         3D geopotential height (m)
-    !! \param[in] kh         3D vertical diffusivity (m2/s)
-    !! \param[in] prsl       3D layer mean pressure (Pa)
-    !! \param[in] prslk      3D Exner function
-    !! \param[in] u10m       10m u wind (m/s)
-    !! \param[in] v10m       10m v wind (m/s)
-    !! \param[in] tskin      Surface skin temperature (K)
-    !! \param[in] ps         Surface pressure (Pa)
-    !! \param[in] precip     Precipitation rate (kg/m2/s)
-    !! \param[in] slmsk      Land-sea mask (1=land,0=sea,2=ice)
-    !! \param[in] snowh      Snow depth (m)
-    !! \param[in] vegtype    Vegetation type
-    !! \param[in] soiltyp    Soil type
-    !! \param[in] hf         Sensible heat flux (W/m2)
-    !! \param[in] ust        Friction velocity (m/s)
-    !! \param[in] zpbl       PBL height (m)
-    !! \param[in] coszen     Cosine of solar zenith angle
-    !! \param[in] albedo     Surface albedo
-    !! \param[in] emis       Surface emissivity
-    !! \param[in] ustar      Friction velocity (m/s)
-    !! \param[in] shflx      Surface sensible heat flux (W/m2)
-    !! \param[in] lhflx      Surface latent heat flux (W/m2)
-    !! \param[in] snowc      Snow cover fraction (0-1)
-    !! \param[in] vegfrac    Green vegetation fraction (0-1)
-    !! \param[in] swdn       Surface downward SW radiation (W/m2)
-    !! \param[in] swup       Surface upward SW radiation (W/m2)
-    !! \param[in] lwdn       Surface downward LW radiation (W/m2)
-    !! \param[in] lwup       Surface upward LW radiation (W/m2)
-    !! \param[in] swdnc      Clear-sky surface downward SW radiation (W/m2)
-    !! \param[in] swupc      Clear-sky surface upward SW radiation (W/m2)
-    !! \param[in] lwdnc      Clear-sky surface downward LW radiation (W/m2)
-    !! \param[in] lwupc      Clear-sky surface upward LW radiation (W/m2)
-    !! \param[inout] MetState   CATChem meteorology state
-    !! \param[inout] ChemState  CATChem chemistry state
-    !! \param[out] errmsg     Error message
-    !! \param[out] errflg     Error flag
+    !! This subroutine transforms meteorological variables from CCPP format
+    !! into CATChem's MetState format, handling coordinate transformations,
+    !! unit conversions, and vertical level indexing differences between
+    !! the two systems.
     !!
-    !! \ingroup catchem_ccpp_group
+    !! @param im Number of horizontal grid points
+    !! @param kme Number of vertical interfaces
+    !! @param kte Number of vertical levels
+    !! @param nsoil Number of soil levels
+    !! @param nlndcat Number of land categories
+    !! @param nsoilcat Number of soil categories
+    !! @param lat Latitude in degrees
+    !! @param lon Longitude in degrees
+    !! @param dt Physics timestep in seconds
+    !! @param jdate Current forecast date and time array
+    !! @param garea Grid cell area (m²)
+    !! @param lwi Land-water-ice flag (0=water, 1=land, 2=ice)
+    !! @param temp 3D temperature field (K)
+    !! @param spechum 3D specific humidity field (kg/kg)
+    !! @param pfull 3D full level pressure of dry air (Pa)
+    !! @param pfull_wet 3D full level pressure of moist air (Pa)
+    !! @param phalf 3D half level pressure of dry air (Pa)
+    !! @param rh 3D relative humidity (fraction)
+    !! @param u 3D zonal wind (m/s)
+    !! @param v 3D meridional wind (m/s)
+    !! @param delp 3D pressure thickness (Pa)
+    !! @param delp_dry 3D dry air pressure thickness (Pa)
+    !! @param zh 3D geopotential height (m)
+    !! @param u10m 10m zonal wind (m/s)
+    !! @param v10m 10m meridional wind (m/s)
+    !! @param tskin Surface skin temperature (K)
+    !! @param ps Surface pressure (Pa)
+    !! @param ts Surface temperature (K)
+    !! @param precip Precipitation rate (kg/m²/s)
+    !! @param snowh Snow depth (m)
+    !! @param vegtype Vegetation type index
+    !! @param soiltyp Soil type index
+    !! @param soilmoist Soil moisture (m³/m³)
+    !! @param zpbl Planetary boundary layer height (m)
+    !! @param coszen Cosine of solar zenith angle
+    !! @param ustar Friction velocity (m/s)
+    !! @param shflx Surface sensible heat flux (W/m²)
+    !! @param lhflx Surface latent heat flux (W/m²)
+    !! @param snowc Snow cover fraction (0-1)
+    !! @param vegfrac Green vegetation fraction (0-1)
+    !! @param lai Leaf area index (m²/m²)
+    !! @param frlanduse Fraction of each land use type
+    !! @param frsoil Fraction of each soil type
+    !! @param pores Maximum soil moisture content by soil type
+    !! @param resid Minimum soil moisture content by soil type
+    !! @param z0 Surface roughness length (m)
+    !! @param landfrac Land fraction
+    !! \param[in] oceanfrac Ocean fraction
+    !! \param[in] lakefrac Lake fraction
+    !! \param[in] seaicefrac Sea ice fraction
+    !! \param[in] swdn Surface downward shortwave radiation (W/m²)
+    !! \param[in] nirbmdi Near-infrared beam radiation (W/m²)
+    !! \param[in] nirdfdi Near-infrared diffuse radiation (W/m²)
+    !! \param[in] visbmdi Visible beam radiation (W/m²)
+    !! \param[in] visdfdi Visible diffuse radiation (W/m²)
+    !! \param[in] sfc_alb_nir_dir Surface near-infrared direct albedo
+    !! \param[in] sfc_alb_nir_dif Surface near-infrared diffuse albedo
+    !! \param[in] sfc_alb_uvvis_dir Surface visible+UV direct albedo
+    !! \param[in] sfc_alb_uvvis_dif Surface visible+UV diffuse albedo
+    !! \param[in] dust_in Dust emission input data (clay, drag, sand, etc.)
+    !! \param[inout] MetState Array of CATChem meteorological state objects
+    !! \param[out] errmsg Error message string
+    !! \param[out] errflg Error flag (0=success, non-zero=failure)
+    !!
+    !! \details
+    !! This routine performs comprehensive data transformation including:
+    !! - Coordinate system conversion between CCPP and CATChem formats
+    !! - Vertical level indexing reversal (CCPP uses top-down, CATChem bottom-up)
+    !! - Unit conversions (e.g., specific humidity kg/kg to g/kg)
+    !! - Surface property calculations (land/water/ice classification)
+    !! - Radiation flux processing and albedo calculations
+    !! - Soil moisture normalization and vegetation parameter setup
+    !! - Monin-Obukhov length calculation for surface layer parameterization
+    !!
+    !! \note This routine assumes specific array indexing conventions and
+    !!       requires careful attention to vertical coordinate transformations.
+    !!
+    !! \warning Vertical level ordering is reversed between CCPP and CATChem
+    !!
+    !! \ingroup catchem_wrapper_group
     !!!>
     subroutine transform_ccpp_to_catchem(im, kme, kte, nsoil, nlndcat, nsoilcat, lat, lon, &      ! Grid Information
                                         dt, jdate, garea, &  ! Grid Information
@@ -219,119 +295,119 @@ contains
       implicit none
 
       !! Transform CCPP meteorological arrays to CATChem states
-      integer,  intent(in)    :: im              !> number of horizontal points
-      integer,  intent(in)    :: kme             !> number of vertical interfaces
-      integer,  intent(in)    :: kte             !> number of vertical levels
-      !integer, intent(in)     :: nVert           !> number of vertical levels
-      !integer, intent(in)     :: nVertInterface  !> number of vertical interfaces
-      integer, intent(in)     :: nsoil           !> number of soil levels
-      integer, intent(in)     :: nlndcat         !> number of land categories
-      integer, intent(in)     :: nsoilcat        !> number of soil categories
-      !real(kind_phys), intent(in) :: rlat(:)     !> latitude (radian)
-      !real(kind_phys), intent(in) :: rlon(:)     !> longitude (radian)
-      real(kind_phys), intent(in) :: lat(:)      !> latitude (degrees)
-      real(kind_phys), intent(in) :: lon(:)      !> longitude (degrees)
-      !integer, intent(in)     :: ktau            !> number of timestep
-      real(kind_phys), intent(in) :: dt          !> physics timestep (s)
-      integer, intent(in)     :: jdate(8)        !> current forecast date and time
-      !integer, intent(in)     :: tile_num        !> index of cubed sphere tile
-      real(kind_phys), intent(in) :: garea(:)    !> grid cell area
-      !integer, intent(in) :: aero_rad_freq_opt   !> catchem aer radiation frequency
-      !integer, intent(in) :: aero_feedback_opt   !> catchem aerosol radiation feedback option
-      !integer, intent(in) :: plmrise_freq_opt    !> catchem plmrise frequency option
-      integer, intent(in) :: lwi(:)               !> sea/land/ice=0/1/2 index
-      !integer, intent(in) :: dluse(:)            !> land use index
-      real(kind_phys), intent(in) :: pores(30)   !> maximum soil moisture content
-      real(kind_phys), intent(in) :: resid(30)   !> minimum soil moisture content
+      integer,  intent(in)    :: im              ! number of horizontal points
+      integer,  intent(in)    :: kme             ! number of vertical interfaces
+      integer,  intent(in)    :: kte             ! number of vertical levels
+      !integer, intent(in)     :: nVert           ! number of vertical levels
+      !integer, intent(in)     :: nVertInterface  ! number of vertical interfaces
+      integer, intent(in)     :: nsoil           ! number of soil levels
+      integer, intent(in)     :: nlndcat         ! number of land categories
+      integer, intent(in)     :: nsoilcat        ! number of soil categories
+      !real(kind_phys), intent(in) :: rlat(:)     ! latitude (radian)
+      !real(kind_phys), intent(in) :: rlon(:)     ! longitude (radian)
+      real(kind_phys), intent(in) :: lat(:)      ! latitude (degrees)
+      real(kind_phys), intent(in) :: lon(:)      ! longitude (degrees)
+      !integer, intent(in)     :: ktau            ! number of timestep
+      real(kind_phys), intent(in) :: dt          ! physics timestep (s)
+      integer, intent(in)     :: jdate(8)        ! current forecast date and time
+      !integer, intent(in)     :: tile_num        ! index of cubed sphere tile
+      real(kind_phys), intent(in) :: garea(:)    ! grid cell area
+      !integer, intent(in) :: aero_rad_freq_opt   ! catchem aer radiation frequency
+      !integer, intent(in) :: aero_feedback_opt   ! catchem aerosol radiation feedback option
+      !integer, intent(in) :: plmrise_freq_opt    ! catchem plmrise frequency option
+      integer, intent(in) :: lwi(:)               ! sea/land/ice=0/1/2 index
+      !integer, intent(in) :: dluse(:)            ! land use index
+      real(kind_phys), intent(in) :: pores(30)   ! maximum soil moisture content
+      real(kind_phys), intent(in) :: resid(30)   ! minimum soil moisture content
 
       ! 3D/Layer Variables (dim(:,:))
-      real(kind_phys), intent(in) :: temp(:,:)       !> temperature (K)
-      real(kind_phys), intent(in) :: spechum(:,:)    !> specific humidity (kg/kg)
-      real(kind_phys), intent(in) :: pfull(:,:)      !> full level pressure of dry air (Pa)
-      real(kind_phys), intent(in) :: pfull_wet(:,:)  !> full level pressure of moist air (Pa)
-      real(kind_phys), intent(in) :: phalf(:,:)      !> half level pressure of dry air(Pa)
-      real(kind_phys), intent(in) :: u(:,:)          !> zonal wind (m/s)
-      real(kind_phys), intent(in) :: v(:,:)          !> meridional wind (m/s)
-      real(kind_phys), intent(in) :: delp(:,:)       !> pressure thickness (Pa)
-      real(kind_phys), intent(in) :: delp_dry(:,:)   !> dry air pressure thickness (Pa)
-      real(kind_phys), intent(in) :: zh(:,:)         !> geopotential (m2/s2)
-      !real(kind_phys), intent(in) :: kh(:,:)         !> vertical diffusivity (m2/s)
-      !real(kind_phys), intent(in) :: prsl(:,:)       !> layer mean pressure (Pa)
-      !real(kind_phys), intent(in) :: prslk(:,:)      !> Exner function
-      real(kind_phys), intent(in) :: rh(:,:)         !> relative humidity [fraction]
-      real(kind_phys), intent(in) :: pfl_lsan(:,:)   !>  liquid flux from large scale precipitation (kg/m2/s)
-      real(kind_phys), intent(in) :: pfl_isan(:,:)   !>  ice flux from large scale precipitation (kg/m2/s)
-      real(kind_phys), intent(in) :: airden(:,:)   !> dry air density [kg/m3]
+      real(kind_phys), intent(in) :: temp(:,:)       ! temperature (K)
+      real(kind_phys), intent(in) :: spechum(:,:)    ! specific humidity (kg/kg)
+      real(kind_phys), intent(in) :: pfull(:,:)      ! full level pressure of dry air (Pa)
+      real(kind_phys), intent(in) :: pfull_wet(:,:)  ! full level pressure of moist air (Pa)
+      real(kind_phys), intent(in) :: phalf(:,:)      ! half level pressure of dry air(Pa)
+      real(kind_phys), intent(in) :: u(:,:)          ! zonal wind (m/s)
+      real(kind_phys), intent(in) :: v(:,:)          ! meridional wind (m/s)
+      real(kind_phys), intent(in) :: delp(:,:)       ! pressure thickness (Pa)
+      real(kind_phys), intent(in) :: delp_dry(:,:)   ! dry air pressure thickness (Pa)
+      real(kind_phys), intent(in) :: zh(:,:)         ! geopotential (m2/s2)
+      !real(kind_phys), intent(in) :: kh(:,:)         ! vertical diffusivity (m2/s)
+      !real(kind_phys), intent(in) :: prsl(:,:)       ! layer mean pressure (Pa)
+      !real(kind_phys), intent(in) :: prslk(:,:)      ! Exner function
+      real(kind_phys), intent(in) :: rh(:,:)         ! relative humidity [fraction]
+      real(kind_phys), intent(in) :: pfl_lsan(:,:)   !  liquid flux from large scale precipitation (kg/m2/s)
+      real(kind_phys), intent(in) :: pfl_isan(:,:)   !  ice flux from large scale precipitation (kg/m2/s)
+      real(kind_phys), intent(in) :: airden(:,:)   ! dry air density [kg/m3]
 
       ! Surface Variables (dim(:))
-      real(kind_phys), intent(in) :: ps(:)           !> surface pressure (Pa)
-      real(kind_phys), intent(in) :: tskin(:)        !> skin temperature (K)
-      real(kind_phys), intent(in) :: ts(:)           !> surface temperature (K)
-      !real(kind_phys), intent(in) :: slmsk(:)        !> land-sea mask (1=land,0=sea,2=ice)
-      real(kind_phys), intent(in) :: snowh(:)        !> snow depth (m)
-      integer,         intent(in) :: vegtype(:)      !> vegetation type
-      real(kind_phys), intent(in) :: lai(:)          !> leaf area index (m2/m2)
-      real(kind_phys), intent(in) :: z0(:)           !> surface roughness length (m)
-      integer,         intent(in) :: soiltyp(:)      !> soil type
-      real(kind_phys), intent(in) :: soilmoist(:,:)    !> soil moisture (m3/m3)
-      real(kind_phys), intent(in) :: snowc(:)        !> snow cover fraction over land (0-1)
-      real(kind_phys), intent(in) :: vegfrac(:)      !> green vegetation fraction (0-1)
-      real(kind_phys), intent(in) :: frlanduse(:,:)  !> fraction of each land type
-      real(kind_phys), intent(in) :: frsoil(:,:)     !> fraction of each soil type
-      real(kind_phys), intent(in) :: landfrac(:)     !> fraction of land
-      real(kind_phys), intent(in) :: oceanfrac(:)    !> fraction of ocean
-      real(kind_phys), intent(in) :: lakefrac(:)     !> fraction of lake
-      !real(kind_phys), intent(in) :: landicefrac(:)  !> fraction of land ice
-      real(kind_phys), intent(in) :: seaicefrac(:)   !> fraction of sea ice
+      real(kind_phys), intent(in) :: ps(:)           ! surface pressure (Pa)
+      real(kind_phys), intent(in) :: tskin(:)        ! skin temperature (K)
+      real(kind_phys), intent(in) :: ts(:)           ! surface temperature (K)
+      !real(kind_phys), intent(in) :: slmsk(:)        ! land-sea mask (1=land,0=sea,2=ice)
+      real(kind_phys), intent(in) :: snowh(:)        ! snow depth (m)
+      integer,         intent(in) :: vegtype(:)      ! vegetation type
+      real(kind_phys), intent(in) :: lai(:)          ! leaf area index (m2/m2)
+      real(kind_phys), intent(in) :: z0(:)           ! surface roughness length (m)
+      integer,         intent(in) :: soiltyp(:)      ! soil type
+      real(kind_phys), intent(in) :: soilmoist(:,:)    ! soil moisture (m3/m3)
+      real(kind_phys), intent(in) :: snowc(:)        ! snow cover fraction over land (0-1)
+      real(kind_phys), intent(in) :: vegfrac(:)      ! green vegetation fraction (0-1)
+      real(kind_phys), intent(in) :: frlanduse(:,:)  ! fraction of each land type
+      real(kind_phys), intent(in) :: frsoil(:,:)     ! fraction of each soil type
+      real(kind_phys), intent(in) :: landfrac(:)     ! fraction of land
+      real(kind_phys), intent(in) :: oceanfrac(:)    ! fraction of ocean
+      real(kind_phys), intent(in) :: lakefrac(:)     ! fraction of lake
+      !real(kind_phys), intent(in) :: landicefrac(:)  ! fraction of land ice
+      real(kind_phys), intent(in) :: seaicefrac(:)   ! fraction of sea ice
 
       ! Near-Surface Meteorology (dim(:))
-      real(kind_phys), intent(in) :: u10m(:)         !> 10m u wind (m/s)
-      real(kind_phys), intent(in) :: v10m(:)         !> 10m v wind (m/s)
-      real(kind_phys), intent(in) :: ustar(:)        !> friction velocity (m/s)
-      real(kind_phys), intent(in) :: zpbl(:)         !> PBL height (m)
+      real(kind_phys), intent(in) :: u10m(:)         ! 10m u wind (m/s)
+      real(kind_phys), intent(in) :: v10m(:)         ! 10m v wind (m/s)
+      real(kind_phys), intent(in) :: ustar(:)        ! friction velocity (m/s)
+      real(kind_phys), intent(in) :: zpbl(:)         ! PBL height (m)
 
       ! Surface Fluxes (dim(:))
-      !real(kind_phys), intent(in) :: hf(:)           !> sensible heat flux (W/m2)
-      real(kind_phys), intent(in) :: shflx(:)        !> surface sensible heat flux (W/m2)
-      real(kind_phys), intent(in) :: lhflx(:)        !> surface latent heat flux (W/m2)
-      real(kind_phys), intent(in) :: precip(:)       !> precipitation rate (kg/m2/s)
+      !real(kind_phys), intent(in) :: hf(:)           ! sensible heat flux (W/m2)
+      real(kind_phys), intent(in) :: shflx(:)        ! surface sensible heat flux (W/m2)
+      real(kind_phys), intent(in) :: lhflx(:)        ! surface latent heat flux (W/m2)
+      real(kind_phys), intent(in) :: precip(:)       ! precipitation rate (kg/m2/s)
 
       ! Radiation Properties (dim(:))
-      real(kind_phys), intent(in) :: coszen(:)            !> cosine of solar zenith angle
-      real(kind_phys), intent(in) :: cldf(:)              !> fraction of grid box area in which updrafts occur
-      real(kind_phys), intent(in) :: sfc_alb_nir_dir(:)   !> surface near-infrared direct albedo
-      real(kind_phys), intent(in) :: sfc_alb_nir_dif(:)   !> surface near-infrared diffuse albedo
-      real(kind_phys), intent(in) :: sfc_alb_uvvis_dir(:) !> surface visible + uv direct albedo
-      real(kind_phys), intent(in) :: sfc_alb_uvvis_dif(:) !> surface visible + uv diffuse albedo
-      !real(kind_phys), intent(in) :: emis(:)              !> surface emissivity
+      real(kind_phys), intent(in) :: coszen(:)            ! cosine of solar zenith angle
+      real(kind_phys), intent(in) :: cldf(:)              ! fraction of grid box area in which updrafts occur
+      real(kind_phys), intent(in) :: sfc_alb_nir_dir(:)   ! surface near-infrared direct albedo
+      real(kind_phys), intent(in) :: sfc_alb_nir_dif(:)   ! surface near-infrared diffuse albedo
+      real(kind_phys), intent(in) :: sfc_alb_uvvis_dir(:) ! surface visible + uv direct albedo
+      real(kind_phys), intent(in) :: sfc_alb_uvvis_dif(:) ! surface visible + uv diffuse albedo
+      !real(kind_phys), intent(in) :: emis(:)              ! surface emissivity
 
       ! Radiation Fluxes (dim(:))
-      real(kind_phys), intent(in) :: swdn(:)         !> downward shortwave radiation at surface (W/m2)
-      !real(kind_phys), intent(in) :: swup(:)         !> upward shortwave radiation at surface (W/m2)
-      !real(kind_phys), intent(in) :: lwdn(:)         !> downward longwave radiation at surface (W/m2)
-      !real(kind_phys), intent(in) :: lwup(:)         !> upward longwave radiation at surface (W/m2)
-      !real(kind_phys), intent(in) :: swdnc(:)        !> clear-sky downward shortwave radiation (W/m2)
-      !real(kind_phys), intent(in) :: swupc(:)        !> clear-sky upward shortwave radiation (W/m2)
-      !real(kind_phys), intent(in) :: lwdnc(:)        !> clear-sky downward longwave radiation (W/m2)2)
-      !real(kind_phys), intent(in) :: lwupc(:)        !> clear-sky upward longwave radiation (W/m2)
-      real(kind_phys), intent(in) :: nirbmdi(:)      !> surface near-infrared beam shortwave radiation (W/m2)
-      real(kind_phys), intent(in) :: nirdfdi(:)      !> surface near-infrared diffuse shortwave radiation (W/m2)
-      real(kind_phys), intent(in) :: visbmdi(:)      !> surface visible + uv beam shortwave radiation (W/m2)
-      real(kind_phys), intent(in) :: visdfdi(:)      !> surface visible + uv diffuse shortwave radiation (W/m2)
+      real(kind_phys), intent(in) :: swdn(:)         ! downward shortwave radiation at surface (W/m2)
+      !real(kind_phys), intent(in) :: swup(:)         ! upward shortwave radiation at surface (W/m2)
+      !real(kind_phys), intent(in) :: lwdn(:)         ! downward longwave radiation at surface (W/m2)
+      !real(kind_phys), intent(in) :: lwup(:)         ! upward longwave radiation at surface (W/m2)
+      !real(kind_phys), intent(in) :: swdnc(:)        ! clear-sky downward shortwave radiation (W/m2)
+      !real(kind_phys), intent(in) :: swupc(:)        ! clear-sky upward shortwave radiation (W/m2)
+      !real(kind_phys), intent(in) :: lwdnc(:)        ! clear-sky downward longwave radiation (W/m2)2)
+      !real(kind_phys), intent(in) :: lwupc(:)        ! clear-sky upward longwave radiation (W/m2)
+      real(kind_phys), intent(in) :: nirbmdi(:)      ! surface near-infrared beam shortwave radiation (W/m2)
+      real(kind_phys), intent(in) :: nirdfdi(:)      ! surface near-infrared diffuse shortwave radiation (W/m2)
+      real(kind_phys), intent(in) :: visbmdi(:)      ! surface visible + uv beam shortwave radiation (W/m2)
+      real(kind_phys), intent(in) :: visdfdi(:)      ! surface visible + uv diffuse shortwave radiation (W/m2)
 
 
       ! Emissions
-      !real(kind_phys), intent(in) :: emi_in(:)         !> emissions
-      real(kind_phys), dimension(im, 12, 5), intent(in) :: dust_in         !> dust emission inputs
+      !real(kind_phys), intent(in) :: emi_in(:)         ! emissions
+      real(kind_phys), dimension(im, 12, 5), intent(in) :: dust_in         ! dust emission inputs
       ! CATChem States
-      type(MetStateType),  intent(inout) :: MetState(:)    !> CATChem meteorology state
-      !type(ChemStateType), intent(inout) :: ChemState(:)   !> CATChem chemistry state
-      !type(EmisStateType), intent(inout) :: EmisState(:)   !> CATChem emission state
-      !type(DiagStateType), intent(inout) :: DiagState(:)   !> CATChem diagnostic state
+      type(MetStateType),  intent(inout) :: MetState(:)    ! CATChem meteorology state
+      !type(ChemStateType), intent(inout) :: ChemState(:)   ! CATChem chemistry state
+      !type(EmisStateType), intent(inout) :: EmisState(:)   ! CATChem emission state
+      !type(DiagStateType), intent(inout) :: DiagState(:)   ! CATChem diagnostic state
 
       ! Error handling
-      character(len=*), intent(out) :: errmsg    !> error message
-      integer,          intent(out) :: errflg    !> error flag
+      character(len=*), intent(out) :: errmsg    ! error message
+      integer,          intent(out) :: errflg    ! error flag
 
       ! Local variables
       integer :: i, k, k_rev, month_now
@@ -382,7 +458,7 @@ contains
             !MetState(i)%kh(k_rev)       = kh(i,k) !TODO: MetState does not have kh defined yet.
             !MetState(i)%prsl(k_rev)    = prsl(i,k) !assume the same as phalf
             !MetState(i)%prslk(k_rev)   = prslk(i,k) !TODO: MetState does not have prslk defined yet.
-            MetState(i)%AIRDEN(k_rev)  = airden(i, k)    !< Dry air density [kg/m3]
+            MetState(i)%AIRDEN(k_rev)  = airden(i, k)    ! Dry air density [kg/m3]
             MetState(i)%RH(k_rev)      = rh(i,k) * 100
             MetState(i)%BXHEIGHT(k_rev)  = delp (i,k) / 9.80665
             k_rev = k_rev - 1
@@ -413,9 +489,9 @@ contains
         MetState(i)%DSOILTYPE = soiltyp(i) !stype
         MetState(i)%FRVEG    = vegfrac(i) !gvf
         MetState(i)%LAI      = lai(i) !lai
-        MetState(i)%FRLANDUSE(:) = frlanduse(i,:) !< Fraction of each land type
-        MetState(i)%FRSOIL(:) = frsoil(i,:) !< Fraction of each soil type
-        MetState(i)%FRLAND = landfrac(i)       !< Fraction of land [1]
+        MetState(i)%FRLANDUSE(:) = frlanduse(i,:) ! Fraction of each land type
+        MetState(i)%FRSOIL(:) = frsoil(i,:) ! Fraction of each soil type
+        MetState(i)%FRLAND = landfrac(i)       ! Fraction of land [1]
         !https://dtcenter.ucar.edu/GMTB/v6.0.0/sci_doc/_c_c_p_psuite_nml_desp.html
         if (nlndcat == 20) then !modified NoahMP 20 categories; only choice for now (ivegsrc = 1)
             MetState%LUCNAME = 'NOAH'
@@ -426,11 +502,11 @@ contains
         endif
         MetState(i)%FRLAI(:) = frlanduse(i,:) * lai(i)
         MetState(i)%FRLAI(15:17) = 0.0 !manually give index 15(snow and ice), 16(barren), 17(water) zeros
-        MetState(i)%FROCEAN = oceanfrac(i)         !< Fraction of ocean [1]
+        MetState(i)%FROCEAN = oceanfrac(i)         ! Fraction of ocean [1]
         MetState(i)%FRSEAICE = seaicefrac(i)  !fice
         !MetState(i)%FRLANDIC = landicefrac(i) !TODO: seems no land ice fraction in CCPP, so give zero for now
         MetState(i)%FRLANDIC = 0.0
-        MetState(i)%FRLAKE = lakefrac(i)          !< Fraction of lake [1]
+        MetState(i)%FRLAKE = lakefrac(i)          ! Fraction of lake [1]
         MetState(i)%FRSNO = snowc(i) !snowfrac
         ! Land without snow or land ice (TODO: here we assume FRLAND is without ice already)
         FRLAND_NOSNO_NOICE = MetState(i)%FRLAND - MetState(i)%FRSNO !- MetState(i)%FRLANDIC
@@ -469,11 +545,11 @@ contains
         end if
 
         !TODO: need to check the order of the five variables in dust_in
-        MetState(i)%CLAYFRAC = dust_in(i, month_now, 1)        !< Fraction of clay [1]
+        MetState(i)%CLAYFRAC = dust_in(i, month_now, 1)        ! Fraction of clay [1]
         MetState(i)%RDRAG = dust_in(i, month_now, 2) !Drag Partition [1]
-        MetState(i)%SANDFRAC = dust_in(i, month_now, 3)       !< Fraction of sand [1]
+        MetState(i)%SANDFRAC = dust_in(i, month_now, 3)       ! Fraction of sand [1]
         MetState(i)%SSM = dust_in(i, month_now, 4) ! Sediment Supply Map [1]
-        MetState(i)%USTAR_THRESHOLD = dust_in(i, month_now, 5) !< Threshold friction velocity [m/s]
+        MetState(i)%USTAR_THRESHOLD = dust_in(i, month_now, 5) ! Threshold friction velocity [m/s]
 
         ! Near-Surface Meteorology
         MetState(i)%U10M     = u10m(i)
@@ -484,7 +560,7 @@ contains
 
         ! Surface Fluxes
         MetState(i)%Z0 = z0(i) !znt
-        MetState(i)%Z0H = z0(i) !< roughness height, for heat (thermal roughness) [m] TODO: give the same value as z0 for now
+        MetState(i)%Z0H = z0(i) ! roughness height, for heat (thermal roughness) [m] TODO: give the same value as z0 for now
         MetState(i)%HFLUX    = shflx(i) !hf2d
         MetState(i)%EFLUX    = lhflx(i) !lf2d
         MetState(i)%PRECLSC  = precip(i) !rain_cplchm
@@ -523,6 +599,38 @@ contains
 
 
 
+    !> \brief Execute CATChem atmospheric chemistry processes
+    !!
+    !! This subroutine runs the main CATChem atmospheric chemistry calculations
+    !! for all horizontal grid points, processing dust emission, sea salt production,
+    !! dry deposition, and other atmospheric chemistry processes.
+    !!
+    !! \param[in] im Number of horizontal grid points
+    !! \param[inout] catchem_states Container holding all CATChem state variables
+    !! \param[inout] DustState Dust emission and transport state object
+    !! \param[inout] SeaSaltState Sea salt emission and transport state object
+    !! \param[inout] DryDepState Dry deposition process state object
+    !! \param[inout] errflg Error flag (0=success, non-zero=failure)
+    !!
+    !! \details
+    !! This routine performs the core CATChem calculations by:
+    !! - Looping through all horizontal grid points
+    !! - Calling the main CATChem process routine for each grid point
+    !! - Processing meteorological inputs and updating chemistry states
+    !! - Handling emissions, transport, and deposition processes
+    !! - Computing diagnostic variables for output
+    !! - Performing error checking and reporting
+    !!
+    !! The routine integrates multiple atmospheric chemistry processes including
+    !! aerosol dynamics, gas-phase chemistry, emissions processing, and
+    !! deposition calculations in a coordinated manner.
+    !!
+    !! \note This routine should be called after successful initialization
+    !!       and meteorological data transformation.
+    !!
+    !! \warning Proper error checking should be performed on errflg after calling
+    !!
+    !! \ingroup catchem_wrapper_group
     subroutine catchem_run (im, catchem_states, DustState, SeaSaltState, DryDepState, errflg)
         use CATChem, only: DustStateType, SeaSaltStateType, DryDepStateType
         implicit none
@@ -556,6 +664,34 @@ contains
     end subroutine catchem_run
 
 
+    !> \brief Finalize and clean up CATChem model components
+    !!
+    !! This subroutine performs cleanup operations for CATChem, including
+    !! finalizing process states and deallocating memory for all state
+    !! containers to prevent memory leaks.
+    !!
+    !! \param[inout] catchem_states Main container for all CATChem state variables
+    !! \param[inout] DustState Dust emission and transport state object
+    !! \param[inout] SeaSaltState Sea salt emission and transport state object
+    !! \param[inout] DryDepState Dry deposition process state object
+    !! \param[inout] errflg Error flag (0=success, non-zero=failure)
+    !!
+    !! \details
+    !! This routine performs comprehensive cleanup including:
+    !! - Finalizing CATChem process states (dust, sea salt, dry deposition)
+    !! - Deallocating MetState arrays and associated memory
+    !! - Deallocating EmisState arrays and emission data structures
+    !! - Deallocating ChemState arrays and chemistry species data
+    !! - Deallocating DiagState arrays and diagnostic variables
+    !! - Performing error checking for each deallocation step
+    !! - Reporting specific errors for debugging purposes
+    !!
+    !! \note This routine should be called at the end of model execution
+    !!       or when CATChem components are no longer needed.
+    !!
+    !! \warning Failure to call this routine may result in memory leaks
+    !!
+    !! \ingroup catchem_wrapper_group
     subroutine catchem_finalize (catchem_states, DustState, SeaSaltState, DryDepState, errflg)
         use CATChem, only: DustStateType, SeaSaltStateType, DryDepStateType
         implicit none
@@ -619,6 +755,34 @@ contains
     end subroutine catchem_finalize
 
 
+    !> \brief Convert CATChem chemistry data to CCPP format
+    !!
+    !! This subroutine transfers chemical species concentration data from
+    !! CATChem's internal format to CCPP's chemistry array format, performing
+    !! necessary unit conversions and coordinate transformations.
+    !!
+    !! \param[in] im Number of horizontal grid points
+    !! \param[in] kte Number of vertical levels
+    !! \param[in] ind_start Starting index for chemical species in CCPP array
+    !! \param[in] ntchm Number of chemical tracers to transfer
+    !! \param[in] ChemState Array of CATChem chemistry state objects
+    !! \param[inout] chemarr CCPP chemistry array to be updated
+    !!
+    !! \details
+    !! This routine performs data conversion including:
+    !! - Extracting species concentrations from CATChem ChemState objects
+    !! - Reversing vertical coordinate indexing (CATChem to CCPP convention)
+    !! - Converting concentration units based on species type:
+    !!   - Gas species: ppm to kg/kg using molecular weight ratios
+    !!   - Aerosol species: μg/kg to kg/kg (factor of 1e-9)
+    !! - Placing converted data into appropriate CCPP array locations
+    !!
+    !! \note The routine assumes consistent ordering of chemical species
+    !!       between CATChem and CCPP arrays.
+    !!
+    !! \warning Vertical coordinate systems are reversed between the two models
+    !!
+    !! \ingroup catchem_wrapper_group
     subroutine cc_to_ccpp(im, kte, ind_start, ntchm, ChemState, chemarr)
         use CATChem, only: ChemStateType
         implicit none
@@ -652,6 +816,34 @@ contains
 
     end subroutine cc_to_ccpp
 
+    !> \brief Convert CCPP chemistry data to CATChem format
+    !!
+    !! This subroutine transfers chemical species concentration data from
+    !! CCPP's chemistry array format to CATChem's internal ChemState format,
+    !! performing necessary unit conversions and coordinate transformations.
+    !!
+    !! \param[in] im Number of horizontal grid points
+    !! \param[in] kte Number of vertical levels
+    !! \param[in] ind_start Starting index for chemical species in CCPP array
+    !! \param[in] ntchm Number of chemical tracers to transfer
+    !! \param[inout] ChemState Array of CATChem chemistry state objects to update
+    !! \param[in] chemarr CCPP chemistry array containing input data
+    !!
+    !! \details
+    !! This routine performs data conversion including:
+    !! - Extracting species concentrations from CCPP chemistry arrays
+    !! - Reversing vertical coordinate indexing (CCPP to CATChem convention)
+    !! - Converting concentration units based on species type:
+    !!   - Gas species: kg/kg to ppm using molecular weight ratios
+    !!   - Aerosol species: kg/kg to μg/kg (factor of 1e+9)
+    !! - Storing converted data in CATChem ChemState objects
+    !!
+    !! \note The routine assumes consistent ordering of chemical species
+    !!       between CCPP arrays and CATChem ChemState objects.
+    !!
+    !! \warning Vertical coordinate systems are reversed between the two models
+    !!
+    !! \ingroup catchem_wrapper_group
     subroutine ccpp_to_cc(im, kte, ind_start, ntchm, ChemState, chemarr)
         use CATChem, only: ChemStateType
         implicit none
@@ -686,14 +878,25 @@ contains
     end subroutine ccpp_to_cc
 
 
-    !> Checks for allocation errors and sets error message
+    !> \brief Check for memory allocation errors and generate error messages
     !!
-    !! \param[in] state_name Name of the state being allocated
-    !! \param[in] errflg     Error flag from allocation
-    !! \param[out] errmsg    Output error message if allocation failed
-    !! \return has_error     True if allocation error occurred
-    !! \ingroup catchem_ccpp_group
-    !!!>
+    !! This utility function checks allocation status and generates standardized
+    !! error messages for memory allocation failures in CATChem state objects.
+    !!
+    !! \param[in] state_name Name of the state object being allocated
+    !! \param[in] errflg Error flag returned from allocation operation
+    !! \param[out] errmsg Error message string (set if allocation failed)
+    !! \return has_error Logical flag indicating if allocation error occurred
+    !!
+    !! \details
+    !! This function provides centralized error checking for memory allocation
+    !! operations throughout the CATChem wrapper utilities. It standardizes
+    !! error reporting and helps with debugging allocation-related issues.
+    !!
+    !! \note This function is typically used immediately after allocate statements
+    !!       to provide consistent error handling.
+    !!
+    !! \ingroup catchem_wrapper_group
     function check_allocation_error(state_name, errflg, errmsg) result(has_error)
         implicit none
 

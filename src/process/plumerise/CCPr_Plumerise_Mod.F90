@@ -1,9 +1,31 @@
-!> \file CCPr_Plumerise_mod.F90
-!! \brief Driver for the CATCHem Process: Plumerise
+! \file CCPr_Plumerise_mod.F90
+!! \brief Plume rise process module for CATChem
 !!
-!! \defgroup catchem_plumerise_process
+!! This module implements plume rise calculations for point source emissions
+!! in the CATChem atmospheric chemistry modeling system. It provides various
+!! schemes for calculating the vertical distribution of emissions from
+!! elevated point sources such as smokestacks and fires.
 !!
-!! The CATChem Plumerise Process group holds all the CATCHem Plumerise processes.
+!! The module includes multiple plume rise schemes:
+!! - Briggs scheme for buoyant plumes
+!! - Sofiev scheme for fire emissions
+!!
+!! \author CATChem Development Team
+!! \date 2023
+!! \version 1.0
+!! \ingroup catchem_plumerise_process
+!!
+!! \defgroup catchem_plumerise_process CATChem Plume Rise Process
+!! \brief Point source emission vertical distribution
+!! \ingroup process_modules
+!!
+!! This group contains modules and functions for calculating the vertical
+!! distribution of point source emissions through plume rise calculations.
+!! Supports multiple schemes for different types of emission sources.
+!!
+!! \par Available Plume Rise Schemes:
+!! - **Briggs Scheme**: Standard buoyant plume calculations
+!! - **Sofiev Scheme**: Specialized for fire and wildfire emissions
 !!!>
 MODULE CCPr_Plumerise_mod
 
@@ -19,7 +41,7 @@ MODULE CCPr_Plumerise_mod
    PUBLIC :: CCPR_Plumerise_Finalize
 
    TYPE, PUBLIC :: PlumeRiseStateType
-      Logical :: activate      !< Activate Plume Rise
+      Logical :: activate      ! Activate Plume Rise
    END TYPE PlumeRiseStateType
 
 CONTAINS
@@ -27,10 +49,8 @@ CONTAINS
    !>
    !! \brief Initialize the CATCHem Plumerise Process
    !!
-   !! \param Config_Opt  CATCHem configuration options
-   !! \param PlumeriseState   CATCHem Plumerise state
-   !! \param ChemState    CATCHem chemical state
-   !! \param RC          Error return code
+   !! \param PlumeriseState CATCHem Plumerise state
+   !! \param RC Error return code
    !!
    !! \ingroup catchem_plumerise_process
    !!!>
@@ -41,7 +61,7 @@ CONTAINS
 
       ! INPUT PARAMETERS
       !-----------------
-      TYPE(PlumeriseStateType), intent(inout) :: PlumeriseState  !< Nullify Plumerise State During INIT
+      TYPE(PlumeriseStateType), intent(inout) :: PlumeriseState  ! Nullify Plumerise State During INIT
 
       ! INPUT/OUTPUT PARAMETERS
       !------------------------
@@ -82,11 +102,9 @@ CONTAINS
    !>
    !! \brief Run the Plumerise scheme
    !!
-   !! \param [IN] MetState The MetState object
-   !! \param [INOUT] DiagState The DiagState object
-   !! \param [INOUT] PlumeriseState The PlumeriseState object
-   !! \param [INOUT] ChemState The ChemState object
-   !! \param [OUT] RC Return code
+   !! \param PlumeriseState The PlumeriseState object
+   !! \param RC Return code
+   !! \param verbose Optional verbose output flag
    !!
    !! \ingroup catchem_plumerise_process
    !!!>
@@ -247,8 +265,7 @@ CONTAINS
    !>
    !! \brief Finalize the Plumerise scheme
    !!
-   !! \param [INOUT] PlumeriseState The PlumeriseState object
-   !! \param [OUT] RC Return code
+   !! \param RC Return code
    !!
    !! \ingroup catchem_plumerise_process
    !!!>

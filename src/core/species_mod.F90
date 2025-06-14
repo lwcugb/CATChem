@@ -1,67 +1,87 @@
-!>
-!! \file species_mod.F90
-!! \brief This file contains the module for catchem species
-!!
+!> \file species_mod.F90
+!! \brief Species definition and management for CATChem
 !! \ingroup core_modules
 !!
-!! This file contains the module for catchem species
+!! \author CATChem Development Team
+!! \date 2023
 !!
-!!!>
+!! This module contains the SpeciesType derived type and related routines
+!! for managing chemical species in the CATChem atmospheric chemistry model.
+!! It handles species properties, concentrations, and classification.
+!!
 
 module species_mod
 
    use precision_mod
    implicit none
 
-   !> \brief Module for catchem species
+   !> Derived type for chemical species
    !!
-   !! This module contains subroutines and functions related to the catchem species
+   !! This type contains all properties and data for a chemical species
+   !! in the CATChem atmospheric chemistry model, including physical
+   !! properties, classification flags, and concentration data.
    !!
-   !! \ingroup core_modules
-   !!
-   !! \param Config The input config object.
-   !! \param Species The Species object to be initialized.
-   !! \param RC The return code.
-   !!
-   !!!>
+   !! @param long_name Long descriptive name for species (NetCDF attribute)
+   !! @param short_name Short identifier name for species
+   !! @param description Detailed description of the species
+   !! @param is_gas Logical flag: true if species is gaseous
+   !! @param is_aerosol Logical flag: true if species is an aerosol
+   !! @param is_tracer Logical flag: true if species is a passive tracer
+   !! @param is_advected Logical flag: true if species undergoes advection
+   !! @param is_drydep Logical flag: true if species undergoes dry deposition
+   !! @param is_photolysis Logical flag: true if species undergoes photolysis
+   !! @param is_gocart_aero Logical flag: true if species is a GOCART aerosol
+   !! @param is_dust Logical flag: true if species is dust
+   !! @param is_seasalt Logical flag: true if species is sea salt
+   !! @param mw_g Gaseous molecular weight [g/mol]
+   !! @param density Particle density [kg/m³]
+   !! @param radius Mean molecular diameter [m]
+   !! @param lower_radius Lower radius bound [m]
+   !! @param upper_radius Upper radius bound [m]
+   !! @param viscosity Kinematic viscosity [m²/s]
+   !! @param BackgroundVV Background concentration [v/v]
+   !! @param species_index Index in species array
+   !! @param drydep_index Index in dry deposition array
+   !! @param photolysis_index Index in photolysis array
+   !! @param gocart_aero_index Index in GOCART aerosol array
+   !! @param conc Species concentration [v/v] or [kg/kg]
    type, public :: SpeciesType
 
       ! Names
-      character(len=30) :: long_name  !< long name for species used for netcdf attribute "long_name"
-      character(len=30) :: short_name !< short name for species
-      character(len=50) :: description !< description of species
+      character(len=30) :: long_name   !< Long name for species used for NetCDF attribute "long_name"
+      character(len=30) :: short_name  !< Short name for species
+      character(len=50) :: description !< Description of species
 
-      ! Logcial switches
-      logical :: is_gas               !< if true, species is a gas and not an aerosol
-      logical :: is_aerosol           !< if true, species is aerosol and not a gas
-      logical :: is_tracer            !< if true, species is a tracer and not an aerosol or gas that undergoes chemistry or photolysis
-      logical :: is_advected          !< if true, species is advected
-      logical :: is_drydep            !< if true, species undergoes dry depotiion
-      logical :: is_photolysis        !< if true, species undergoes photolysis
-      logical :: is_gocart_aero       !< if true, species is a GOCART aerosol species
-      logical :: is_dust              !< if true, species is a dust
-      logical :: is_seasalt           !< if true, species is a seasalt
+      ! Logical switches
+      logical :: is_gas               !< If true, species is a gas and not an aerosol
+      logical :: is_aerosol           !< If true, species is aerosol and not a gas
+      logical :: is_tracer            !< If true, species is a tracer and not an aerosol or gas that undergoes chemistry or photolysis
+      logical :: is_advected          !< If true, species is advected
+      logical :: is_drydep            !< If true, species undergoes dry deposition
+      logical :: is_photolysis        !< If true, species undergoes photolysis
+      logical :: is_gocart_aero       !< If true, species is a GOCART aerosol species
+      logical :: is_dust              !< If true, species is dust
+      logical :: is_seasalt           !< If true, species is sea salt
 
       ! Numerical properties
-      real(kind=fp) :: mw_g                 !< gaseous molecular weight
-      real(kind=fp) :: density              !< particle density (kg/m3)
-      real(kind=fp) :: radius               !< mean molecular diameter in meters
-      real(kind=fp) :: lower_radius         !< lower radius in meters
-      real(kind=fp) :: upper_radius         !< upper radius in meters
-      real(kind=fp) :: viscosity            !< kinematic viscosity (m2/s)
-
+      real(kind=fp) :: mw_g                 !< Gaseous molecular weight [g/mol]
+      real(kind=fp) :: density              !< Particle density [kg/m³]
+      real(kind=fp) :: radius               !< Mean molecular diameter [m]
+      real(kind=fp) :: lower_radius         !< Lower radius [m]
+      real(kind=fp) :: upper_radius         !< Upper radius [m]
+      real(kind=fp) :: viscosity            !< Kinematic viscosity [m²/s]
 
       ! Default background concentration
-      real(kind=fp) :: BackgroundVV        !< Background conc [v/v]
+      real(kind=fp) :: BackgroundVV        !< Background concentration [v/v]
 
       ! Indices
-      integer :: species_index        !< species index in species array
-      integer :: drydep_index         !< drydep index in drydep array
-      integer :: photolysis_index     !< photolysis index in photolysis array
-      integer :: gocart_aero_index    !< gocart_aero index in gocart_aero array
+      integer :: species_index        !< Species index in species array
+      integer :: drydep_index         !< Dry deposition index in drydep array
+      integer :: photolysis_index     !< Photolysis index in photolysis array
+      integer :: gocart_aero_index    !< GOCART aerosol index in gocart_aero array
 
       ! Concentration
-      real(kind=fp), ALLOCATABLE :: conc(:)             !< species concentration [v/v] or kg/kg
+      real(kind=fp), ALLOCATABLE :: conc(:)             !< Species concentration [v/v] or [kg/kg]
 
    end type SpeciesType
 
@@ -72,10 +92,17 @@ module species_mod
    ! Missing species concentration value if not in restart file and special
    ! background value not defined
    !=========================================================================
-   REAL(fp), PARAMETER, PUBLIC :: MISSING_VV  = 1.0e-20_fp ! Missing spc conc
+   REAL(fp), PARAMETER, PUBLIC :: MISSING_VV  = 1.0e-20_fp !< Missing species concentration value
 
 contains
 
+   !> Initialize a species object
+   !!
+   !! This subroutine initializes a SpeciesType object with basic properties.
+   !!
+   !! @param Species_State The species object to initialize
+   !! @param species_name Short name identifier for the species
+   !! @param atomic_num Atomic number or molecular weight
    subroutine init(Species_State, species_name, atomic_num)
       type(SpeciesType), intent(inout) :: Species_State
       character(len=*), intent(in) :: species_name

@@ -1,8 +1,19 @@
-!>
-!! \file
-!! \brief Contains the FENGSHA windblown dust emission scheme
+!> \file ccpr_scheme_fengsha_mod.F90
+!! \brief FENGSHA windblown dust emission scheme
+!! \ingroup catchem_dust_process
 !!
+!! \author Barry Baker
+!! \date 05/2024
 !!
+!! This module implements the FENGSHA dust emission scheme for calculating
+!! windblown dust emissions in the CATChem atmospheric chemistry model.
+!!
+!! \details
+!! The FENGSHA scheme provides an advanced dust emission parameterization
+!! that accounts for detailed surface characteristics, soil properties,
+!! and meteorological conditions to calculate size-resolved dust emissions.
+!!
+!! \section fengsha_reference Reference
 !! Zhang, L., Montuoro, R., McKeen, S. A., Baker, B., Bhattacharjee, P. S., Grell, G. A.,
 !! Henderson, J., Pan, L., Frost, G. J., McQueen, J., Saylor, R., Li, H., Ahmadov, R.,
 !! Wang, J., Stajner, I., Kondragunta, S., Zhang, X., and Li, F.:
@@ -10,10 +21,6 @@
 !! Prediction (NCEP)'s Global Ensemble Forecast System (GEFS-Aerosols v1),
 !! Geosci. Model Dev., 15, 5337–5369, https://doi.org/10.5194/gmd-15-5337-2022, 2022.
 !!
-!! \author Barry baker
-!! \date 05/2024
-!! \ingroup catchem_dust_process
-!!!>
 module CCPr_Scheme_Fengsha_Mod
 
    implicit none
@@ -25,7 +32,7 @@ module CCPr_Scheme_Fengsha_Mod
 contains
 
 
-   !> \brief This is the FENGSHA dust emission scheme developed at NOAA Air Resources Laboratory
+   ! \brief This is the FENGSHA dust emission scheme developed at NOAA Air Resources Laboratory
    !!
    !! This is the FENGSHA dust emission scheme developed at NOAA Air Resources Laboratory.  Originally developed
    !! by Daniel Tong and revised by Barry Baker.  FENGSHA is implemented operationally at the NOAA National
@@ -46,7 +53,7 @@ contains
    !! \param CLAYFRAC Fraction of clay
    !! \param SANDFRAC Fraction of sand
    !! \param AIRDEN Air density [kg/m3]
-   !! \param FRLAND Land fraction
+   !! \param FROCEAN Ocean fraction
    !! \param FRLANDICE Land ice fraction
    !! \param FRSNOW Snow fraction
    !! \param alpha Alpha scaling parameter
@@ -98,54 +105,54 @@ contains
       IMPLICIT NONE
 
       ! Arguments
-      integer,  intent(in) :: nDustSpecies    !< Number of Dust Species
-      integer,  intent(in) :: DSOILTYPE       !< Dominant Soil Type
-      real(fp), intent(in) :: SSM             !< Sediment Supply Map (0-1)
-      real(fp), intent(in) :: RDRAG           !< Drag Partition (0-1)
-      real(fp), intent(in) :: TSKIN           !< Skin Temperature [K]
-      real(fp), intent(in) :: USTAR           !< Friction Velocity [m/s]
-      real(fp), intent(in) :: USTAR_THRESHOLD !< Friction Velocity Threshold [m/s]
-      real(fp), intent(in) :: CLAYFRAC        !< Fraction of clay (0-1)
-      real(fp), intent(in) :: SANDFRAC        !< Fraction of sand (0-1)
-      real(fp), intent(in) :: AIRDEN          !< Air Density [kg/m3]
-      real(fp), intent(in) :: alpha           !< Alpha Parameter
-      real(fp), intent(in) :: gamma           !< Gamma Parameter
-      real(fp), intent(in) :: FROCEAN          !< Fraction of Land
-      real(fp), intent(in) :: FRLANDICE       !< Fraction of Land Ice
-      real(fp), intent(in) :: FRSNOW          !< Fraction of Snow
-      real(fp), intent(in) :: GWETTOP         !< Top soil wetness [m3/m3]
-      real(fp), intent(in) :: z0              !< Surface roughness [m]
+      integer,  intent(in) :: nDustSpecies    ! Number of Dust Species
+      integer,  intent(in) :: DSOILTYPE       ! Dominant Soil Type
+      real(fp), intent(in) :: SSM             ! Sediment Supply Map (0-1)
+      real(fp), intent(in) :: RDRAG           ! Drag Partition (0-1)
+      real(fp), intent(in) :: TSKIN           ! Skin Temperature [K]
+      real(fp), intent(in) :: USTAR           ! Friction Velocity [m/s]
+      real(fp), intent(in) :: USTAR_THRESHOLD ! Friction Velocity Threshold [m/s]
+      real(fp), intent(in) :: CLAYFRAC        ! Fraction of clay (0-1)
+      real(fp), intent(in) :: SANDFRAC        ! Fraction of sand (0-1)
+      real(fp), intent(in) :: AIRDEN          ! Air Density [kg/m3]
+      real(fp), intent(in) :: alpha           ! Alpha Parameter
+      real(fp), intent(in) :: gamma           ! Gamma Parameter
+      real(fp), intent(in) :: FROCEAN          ! Fraction of Land
+      real(fp), intent(in) :: FRLANDICE       ! Fraction of Land Ice
+      real(fp), intent(in) :: FRSNOW          ! Fraction of Snow
+      real(fp), intent(in) :: GWETTOP         ! Top soil wetness [m3/m3]
+      real(fp), intent(in) :: z0              ! Surface roughness [m]
 
-      real(fp), dimension(:), intent(in) :: reff            !< Effective Radius
-      real(fp), dimension(:), intent(in) :: rlower          !< Lower Radius
-      real(fp), dimension(:), intent(in) :: rupper         !< Upper Radius
+      real(fp), dimension(:), intent(in) :: reff            ! Effective Radius
+      real(fp), dimension(:), intent(in) :: rlower          ! Lower Radius
+      real(fp), dimension(:), intent(in) :: rupper         ! Upper Radius
 
-      integer,  intent(in), optional :: MoistOpt        !< Option for moisture
-      integer,  intent(in), optional :: DragOpt         !< Option for drag
-      integer,  intent(in), optional :: HorizFluxOpt    !< Option for horizontal flux
+      integer,  intent(in), optional :: MoistOpt        ! Option for moisture
+      integer,  intent(in), optional :: DragOpt         ! Option for drag
+      integer,  intent(in), optional :: HorizFluxOpt    ! Option for horizontal flux
 
       ! Outputs
-      real(fp), intent(inout) :: TotalEmission  !< Total Emission
-      real(fp), intent(inout) :: EmissionBin(:) !< Emission per Bin
-      integer, intent(out)  :: RC             !< Return Code
+      real(fp), intent(inout) :: TotalEmission  ! Total Emission
+      real(fp), intent(inout) :: EmissionBin(:) ! Emission per Bin
+      integer, intent(out)  :: RC             ! Return Code
 
       ! Local Variables
-      logical :: do_dust                               !< Enable Dust Calculation Flag
-      integer :: n                                     !< Bin index
-      integer :: nbins                                 !< number of dust bins
-      real(fp) :: hflux                                !< Horizontal Flux
-      real(fp) :: R                                    !< Drag Partition [1]
-      real(fp) :: h_to_v_ratio                         !< Horizontal to Vertical Mass Flux Ratio
-      real(fp) :: airmass                              !< Air Mass at lowest model level
-      real(fp) :: H                                    !< Soil Moisture Attenuation Factor
-      real(fp) :: distribution(nDustSpecies)           !< Distribution Weights
-      real(fp) :: EmissBins(nDustSpecies)              !< Emission Rate per Bin
-      real(fp) :: SEP                                  !< Soil Erosion Potential
-      real(fp) :: alpha_grav                           !< Alpha Parameter over Gravity
-      real(fp) :: HorizFlux                            !< Horizontal Mass Flux
-      real(fp) :: FengshaScaling                       !< Total Scaling Factor
+      logical :: do_dust                               ! Enable Dust Calculation Flag
+      integer :: n                                     ! Bin index
+      integer :: nbins                                 ! number of dust bins
+      real(fp) :: hflux                                ! Horizontal Flux
+      real(fp) :: R                                    ! Drag Partition [1]
+      real(fp) :: h_to_v_ratio                         ! Horizontal to Vertical Mass Flux Ratio
+      real(fp) :: airmass                              ! Air Mass at lowest model level
+      real(fp) :: H                                    ! Soil Moisture Attenuation Factor
+      real(fp) :: distribution(nDustSpecies)           ! Distribution Weights
+      real(fp) :: EmissBins(nDustSpecies)              ! Emission Rate per Bin
+      real(fp) :: SEP                                  ! Soil Erosion Potential
+      real(fp) :: alpha_grav                           ! Alpha Parameter over Gravity
+      real(fp) :: HorizFlux                            ! Horizontal Mass Flux
+      real(fp) :: FengshaScaling                       ! Total Scaling Factor
       real(fp), parameter :: clay_thresh = 0.2
-      real(fp), parameter :: kvhmax = 2.0e-4 !< Max. Vertical to Horizontal Mass Flux Ratio
+      real(fp), parameter :: kvhmax = 2.0e-4 ! Max. Vertical to Horizontal Mass Flux Ratio
       integer :: MoistOpt_
       integer :: DragOpt_
       integer :: HorizFluxOpt_

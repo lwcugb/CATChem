@@ -1,4 +1,20 @@
-!> \brief This module contains the routines for the BRIGGS plumerise scheme
+!> \file CCPr_Scheme_Briggs_mod.F90
+!! \brief Briggs plume rise scheme for point source emissions
+!! \ingroup catchem_plumerise_process
+!!
+!! \author Original CMAQ Development Team
+!! \author CATChem Development Team
+!! \date 2023
+!!
+!! This module implements the Briggs plume rise scheme for calculating
+!! the vertical distribution of point source emissions in the CATChem
+!! atmospheric chemistry model.
+!!
+!! \details
+!! The Briggs scheme calculates plume rise based on buoyancy and momentum
+!! effects, accounting for atmospheric stability and meteorological conditions.
+!! It provides realistic vertical distribution of emissions from elevated
+!! point sources such as smokestacks.
 !!
 !! Original Code adapted from the EPA CMAQ Model
 !!

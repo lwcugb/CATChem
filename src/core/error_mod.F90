@@ -1,12 +1,31 @@
-!<
-!! \file error_mod.F90
-!! \brief This file contains error handling routines for CATChem
-!! \author Barry Baker
+! \file error_mod.F90
+!! \brief Error handling and diagnostic routines for CATChem
 !!
+!! This module provides standardized error handling, warning messages,
+!! and variable checking routines for the CATChem atmospheric chemistry model.
+!!
+!! \author Barry Baker
+!! \author CATChem Development Team
+!! \date 2023
+!! \version 1.0
 !! \ingroup core_modules
 !!
-!! This file contains error handling routines for CATChem
-!!!>
+!! \details
+!! The error handling module provides consistent error reporting across
+!! CATChem with standardized return codes and message formatting.
+!! It includes routines for error messages, warnings, and variable validation.
+!!
+!! \section error_usage Usage Example
+!! \code{.f90}
+!! use error_mod
+!! integer :: rc
+!! call CC_Error('Invalid input parameter', rc, 'my_subroutine')
+!! if (rc /= CC_SUCCESS) return
+!! \endcode
+!!
+! \brief Error handling and diagnostic routines
+!!
+!! This module provides error handling, warnings, and validation routines
 MODULE Error_Mod
    !
    ! !USES:
@@ -22,21 +41,31 @@ MODULE Error_Mod
    !
    ! !DEFINED PARAMETERS:
    !
-   INTEGER, PUBLIC, PARAMETER :: CC_SUCCESS =  0   !< Routine returns success
-   INTEGER, PUBLIC, PARAMETER :: CC_FAILURE = -1   !< Routine returns failure
+   ! \name Return Codes
+   !! \brief Standard return codes for CATChem routines
+   !! \{
+   INTEGER, PUBLIC, PARAMETER :: CC_SUCCESS =  0   ! Routine completed successfully
+   INTEGER, PUBLIC, PARAMETER :: CC_FAILURE = -1   ! Routine failed to complete
+   ! \}
 
 CONTAINS
-   !>
-   !! \brief CC_Error
+
+   ! \brief Display error message and set failure return code
    !!
-   !! This subroutine prints an error message and sets RC to CC_FAILURE.
+   !! This subroutine prints a formatted error message to standard output
+   !! and sets the return code to indicate failure. The message includes
+   !! optional location and instruction information.
    !!
-   !! \param ErrMsg The error message
-   !! \param RC The return code
-   !! \param ThisLoc The location of the error
-   !! \param Instr Other instructions
-   !! \ingroup core_modules
-   !!!>
+   !! \param ErrMsg Error message to display
+   !! \param RC Return code (set to CC_FAILURE)
+   !! \param ThisLoc Optional location where error occurred
+   !! \param Instr Optional additional instructions for user
+   !!
+   !! \par Example:
+   !! \code{.f90}
+   !! call CC_Error('Invalid temperature value', rc, 'temperature_check', &
+   !!               'Check input data file')
+   !! \endcode
    SUBROUTINE CC_Error( ErrMsg, RC, ThisLoc, Instr )
       !
       ! !USES:
@@ -45,13 +74,13 @@ CONTAINS
       !
       ! !INPUT PARAMETERS:
       !
-      CHARACTER(LEN=*), INTENT(IN)            :: ErrMsg  !< Message to display
-      CHARACTER(LEN=*), INTENT(IN), OPTIONAL  :: ThisLoc !< Location of error
-      CHARACTER(LEN=*), INTENT(IN), OPTIONAL  :: Instr   !< Other instructions
+      CHARACTER(LEN=*), INTENT(IN)            :: ErrMsg  ! Message to display
+      CHARACTER(LEN=*), INTENT(IN), OPTIONAL  :: ThisLoc ! Location of error
+      CHARACTER(LEN=*), INTENT(IN), OPTIONAL  :: Instr   ! Other instructions
       !
       ! !INPUT/OUTPUT PARAMETERS:
       !
-      INTEGER,          INTENT(INOUT)            :: RC      !< Error code
+      INTEGER,          INTENT(INOUT)            :: RC      ! Error code
 
       CHARACTER(LEN=1000) :: Message
       !=======================================================================
@@ -114,13 +143,13 @@ CONTAINS
       !!
       ! !INPUT PARAMETERS:
       !
-      CHARACTER(LEN=*), INTENT(IN   )            :: WarnMsg !< Message to display
-      CHARACTER(LEN=*), INTENT(IN   ), OPTIONAL  :: ThisLoc !< Location of warning
-      CHARACTER(LEN=*), INTENT(IN   ), OPTIONAL  :: Instr   !< Other instructions
+      CHARACTER(LEN=*), INTENT(IN   )            :: WarnMsg
+      CHARACTER(LEN=*), INTENT(IN   ), OPTIONAL  :: ThisLoc
+      CHARACTER(LEN=*), INTENT(IN   ), OPTIONAL  :: Instr
       !
       ! !INPUT/OUTPUT PARAMETERS:
       !
-      INTEGER,          INTENT(INOUT)            :: RC !< Error code
+      INTEGER,          INTENT(INOUT)            :: RC
 
       CHARACTER(LEN=1000) :: Message
 

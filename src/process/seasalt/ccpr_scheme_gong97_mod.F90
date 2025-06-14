@@ -1,14 +1,22 @@
-!>
-!! \file
-!! \brief Contains the Gong 1997
+!> \file ccpr_scheme_gong97_mod.F90
+!! \brief Gong 1997 sea salt emission scheme
+!! \ingroup catchem_seasalt_process
 !!
+!! \author Barry Baker
+!! \date 05/2024
+!!
+!! This module implements the Gong 1997 sea salt emission scheme for calculating
+!! sea salt aerosol emissions in the CATChem atmospheric chemistry model.
+!!
+!! \details
+!! The Gong 1997 scheme calculates sea salt emissions based on surface wind speed
+!! and provides size-resolved emission fluxes. It is one of the foundational
+!! parameterizations for sea salt emission modeling.
+!!
+!! \section gong97_reference Reference
 !! Gong, S. L., L. A. Barrie, and J.-P. Blanchet (1997), Modeling sea-salt aerosols in the atmosphere:
 !! 1. Model development, J. Geophys. Res., 102(D3), 3805–3818, doi:10.1029/96JD02953.
 !!
-!! \author Barry baker
-!! \date 05/2024
-!! \ingroup catchem_seasalt_process
-!!!>
 module CCPr_Scheme_Gong97_Mod
 
    implicit none
@@ -19,24 +27,24 @@ module CCPr_Scheme_Gong97_Mod
 
 contains
 
-   !> \brief Run the Gong97 Sea Salt Emission scheme
+   ! \brief Run the Gong97 Sea Salt Emission scheme
    !!
-   !! \param [IN] FROCEAN
-   !! \param [IN] FRSEAICE
-   !! \param [IN] U10M
-   !! \param [IN] V10M
-   !! \param [IN] SST
-   !! \param [IN] WeibullFlag
-   !! \param [IN] SeaSaltScaleFactor
-   !! \param [IN] UpperBinRadius
-   !! \param [IN] LowerBinRadius
-   !! \param [IN] EffectiveRadius
-   !! \param [IN] SeaSaltDensity
-   !! \param [IN] EmissionBin
-   !! \param [IN] NumberEmissionBin
-   !! \param [IN] TotalEmission
-   !! \param [IN] TotalNumberEmission
-   !! \param [OUT] RC
+   !! \param
+   !! \param
+   !! \param
+   !! \param
+   !! \param
+   !! \param
+   !! \param
+   !! \param
+   !! \param
+   !! \param
+   !! \param
+   !! \param
+   !! \param
+   !! \param
+   !! \param
+   !! \param
    !!
    !! \ingroup catchem_seasalt_process
    !!!>
@@ -68,41 +76,41 @@ contains
       ! Arguments
       !----------
       ! Inputs
-      real(fp), intent(in) :: FROCEAN                                  !< Ocean Fraction
-      real(fp), intent(in) :: FRSEAICE                                 !< SeaIce Fraction
-      real(fp), intent(in) :: U10M                                     !< U-Component of 10m wind speed
-      real(fp), intent(in) :: V10M                                     !< V-Component of 10m wind speed
-      real(fp), intent(in) :: SST                                      !< Sea surface temperature
-      logical,  intent(in) :: WeibullFlag                              !< Weibull Flag
-      real(fp), intent(in) :: SeaSaltScaleFactor                       !< SeaSalt Tuning Parameter [-]
-      real(fp), dimension(:), intent(in) :: UpperBinRadius             !< SeaSalt Upper Bin Radius [m]
-      real(fp), dimension(:), intent(in) :: LowerBinRadius             !< SeaSalt Lower Bin Radius [m]
-      real(fp), dimension(:), intent(in) :: EffectiveRadius            !< SeaSalt Effective Radius [m]
-      real(fp), dimension(:), intent(in) :: SeaSaltDensity             !< SeaSalt Density [kg/m^3]
+      real(fp), intent(in) :: FROCEAN                                  ! Ocean Fraction
+      real(fp), intent(in) :: FRSEAICE                                 ! SeaIce Fraction
+      real(fp), intent(in) :: U10M                                     ! U-Component of 10m wind speed
+      real(fp), intent(in) :: V10M                                     ! V-Component of 10m wind speed
+      real(fp), intent(in) :: SST                                      ! Sea surface temperature
+      logical,  intent(in) :: WeibullFlag                              ! Weibull Flag
+      real(fp), intent(in) :: SeaSaltScaleFactor                       ! SeaSalt Tuning Parameter [-]
+      real(fp), dimension(:), intent(in) :: UpperBinRadius             ! SeaSalt Upper Bin Radius [m]
+      real(fp), dimension(:), intent(in) :: LowerBinRadius             ! SeaSalt Lower Bin Radius [m]
+      real(fp), dimension(:), intent(in) :: EffectiveRadius            ! SeaSalt Effective Radius [m]
+      real(fp), dimension(:), intent(in) :: SeaSaltDensity             ! SeaSalt Density [kg/m^3]
 
       ! Inputs/Outputs
-      real(fp), dimension(:), intent(inout) :: EmissionBin             !< Emission Rate per Bin [ug/m2/s]
-      real(fp), dimension(:), intent(inout) :: NumberEmissionBin       !< Number of particles emitted per bin [#/m2/s]
-      real(fp), intent(inout)               :: TotalEmission           !< Total SeaSalt Emission [ug m-2 s-1]
-      real(fp), intent(inout)               :: TotalNumberEmission     !< Total Number Emitted    [# m-2 s-1]
+      real(fp), dimension(:), intent(inout) :: EmissionBin             ! Emission Rate per Bin [ug/m2/s]
+      real(fp), dimension(:), intent(inout) :: NumberEmissionBin       ! Number of particles emitted per bin [#/m2/s]
+      real(fp), intent(inout)               :: TotalEmission           ! Total SeaSalt Emission [ug m-2 s-1]
+      real(fp), intent(inout)               :: TotalNumberEmission     ! Total Number Emitted    [# m-2 s-1]
 
       ! Outputs
-      integer, intent(out) :: RC                                 !< return code
+      integer, intent(out) :: RC                                 ! return code
 
       ! Local Variables
-      logical :: do_seasalt                            !< Enable Dust Calculation Flag
-      integer :: n, ir                                 !< Loop counter
-      integer :: nbins                                 !< number of SeaSalt bins
-      real(fp) :: w10m                                 !< 10m wind speed [m/s]
-      ! real(fp), allocatable :: EmissionBin(:)          !< Emission Rate per Bin [kg/m2/s]
-      ! real(fp), allocatable :: NumberEmissionBin(:)    !< Number of particles emitted per bin [#/m2/s]
-      integer, parameter :: nr = 10                    !< Number of (linear) sub-size bins
-      real, parameter    :: r80fac = 1.65              !< ratio of radius(RH=0.8)/radius(RH=0.) [Gerber]
-      real(fp) :: DryRadius                            !< sub-bin radius         (dry, um)
-      real(fp) :: DeltaDryRadius                       !< sub-bin radius spacing (dry, um)
-      real(fp) :: rwet, drwet                          !< sub-bin radius spacing (rh=80%, um)
-      real(fp) :: NumberEmissions                      !< sub-bin number emission rate [#/m2/s]
-      real(fp) :: MassEmissions                        !< sub-bin number emission rate [kg/m2/s]
+      logical :: do_seasalt                            ! Enable Dust Calculation Flag
+      integer :: n, ir                                 ! Loop counter
+      integer :: nbins                                 ! number of SeaSalt bins
+      real(fp) :: w10m                                 ! 10m wind speed [m/s]
+      ! real(fp), allocatable :: EmissionBin(:)          ! Emission Rate per Bin [kg/m2/s]
+      ! real(fp), allocatable :: NumberEmissionBin(:)    ! Number of particles emitted per bin [#/m2/s]
+      integer, parameter :: nr = 10                    ! Number of (linear) sub-size bins
+      real, parameter    :: r80fac = 1.65              ! ratio of radius(RH=0.8)/radius(RH=0.) [Gerber]
+      real(fp) :: DryRadius                            ! sub-bin radius         (dry, um)
+      real(fp) :: DeltaDryRadius                       ! sub-bin radius spacing (dry, um)
+      real(fp) :: rwet, drwet                          ! sub-bin radius spacing (rh=80%, um)
+      real(fp) :: NumberEmissions                      ! sub-bin number emission rate [#/m2/s]
+      real(fp) :: MassEmissions                        ! sub-bin number emission rate [kg/m2/s]
       real(fp) :: aFac
       real(fp) :: bFac
       real(fp) :: scalefac

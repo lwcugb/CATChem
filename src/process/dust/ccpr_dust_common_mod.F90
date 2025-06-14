@@ -1,12 +1,15 @@
-!>
-!! \file ccpr_dust_common_mod.F90
-!! \brief Contains module ccpr_dust_common_mod
-!!
+!> \file ccpr_dust_common_mod.F90
+!! \brief Common utilities and data types for dust emission processes
 !! \ingroup catchem_dust_process
 !!
 !! \author Barry Baker
 !! \date 05/2024
-!!!>
+!!
+!! This module provides common utilities, data types, and shared functions
+!! for dust emission calculations in the CATChem atmospheric chemistry model.
+!! It includes soil moisture parameterizations, size distribution functions,
+!! and horizontal flux calculations used by various dust emission schemes.
+!!
 module CCPr_Dust_Common_Mod
    use precision_mod, only: fp, ZERO
    implicit none
@@ -22,7 +25,7 @@ module CCPr_Dust_Common_Mod
    public :: MB97_threshold_velocity
    public :: DustStateType
 
-   !> \brief Type for CATCHem Dust Process
+   ! \brief Type for CATCHem Dust Process
    !!
    !! \details Contains all the information needed to run the CATChem Dust Process
    !!
@@ -48,27 +51,27 @@ module CCPr_Dust_Common_Mod
    !!!>
    TYPE :: DustStateType
       ! Generic Variables for Every Process
-      Logical                         :: Activate                !< Activate Process (True/False)
-      INTEGER                         :: nDustSpecies            !< Number of dust processes
-      INTEGER                         :: SchemeOpt               !< Scheme Option
-      INTEGER, ALLOCATABLE            :: DustSpeciesIndex(:)     !< Index of dust species
-      INTEGER, ALLOCATABLE            :: SpcIDs(:)               !< CATChem species IDs
-      integer                         :: CatIndex                !< Index of emission category in EmisState
+      Logical                         :: Activate                ! Activate Process (True/False)
+      INTEGER                         :: nDustSpecies            ! Number of dust processes
+      INTEGER                         :: SchemeOpt               ! Scheme Option
+      INTEGER, ALLOCATABLE            :: DustSpeciesIndex(:)     ! Index of dust species
+      INTEGER, ALLOCATABLE            :: SpcIDs(:)               ! CATChem species IDs
+      integer                         :: CatIndex                ! Index of emission category in EmisState
 
       ! Process Specific Parameters
-      REAL(fp), ALLOCATABLE           :: LowerBinRadius(:)       !< Lower bin radius        [m]
-      REAL(fp), ALLOCATABLE           :: UpperBinRadius(:)       !< Upper bin radius        [m]
-      REAL(fp), ALLOCATABLE           :: EffectiveRadius(:)      !< Effective radius        [m]
-      REAL(fp), ALLOCATABLE           :: DustDensity(:)          !< Dust density            [kg/m^3]
-      REAL(fp)                        :: BetaScaleFactor         !< Gamma Scaling Parameter  [1]
-      REAL(fp)                        :: AlphaScaleFactor        !< Alpha Scaling Parameter [1]
-      REAL(fp)                        :: TotalEmission           !< Total emission          [kg/m^2/s]
-      REAL(fp), ALLOCATABLE           :: EmissionPerSpecies(:)   !< Emission per species    [kg/m^2/s]
+      REAL(fp), ALLOCATABLE           :: LowerBinRadius(:)       ! Lower bin radius        [m]
+      REAL(fp), ALLOCATABLE           :: UpperBinRadius(:)       ! Upper bin radius        [m]
+      REAL(fp), ALLOCATABLE           :: EffectiveRadius(:)      ! Effective radius        [m]
+      REAL(fp), ALLOCATABLE           :: DustDensity(:)          ! Dust density            [kg/m^3]
+      REAL(fp)                        :: BetaScaleFactor         ! Gamma Scaling Parameter  [1]
+      REAL(fp)                        :: AlphaScaleFactor        ! Alpha Scaling Parameter [1]
+      REAL(fp)                        :: TotalEmission           ! Total emission          [kg/m^2/s]
+      REAL(fp), ALLOCATABLE           :: EmissionPerSpecies(:)   ! Emission per species    [kg/m^2/s]
 
       ! Scheme Options
-      INTEGER                         :: MoistOpt                !< Fengsha-Moisture Calculation Option
-      INTEGER                         :: DragOpt                 !< Fengsha-Drag Calculation Option
-      INTEGER                         :: HorizFluxOpt            !< Horizontal Flux Calculation Option
+      INTEGER                         :: MoistOpt                ! Fengsha-Moisture Calculation Option
+      INTEGER                         :: DragOpt                 ! Fengsha-Drag Calculation Option
+      INTEGER                         :: HorizFluxOpt            ! Horizontal Flux Calculation Option
 
 
       !=================================================================
@@ -96,17 +99,17 @@ contains
       IMPLICIT NONE
       ! Parameters
       !-----------
-      real(fp), intent(in)  :: clay                      !< Fractional Clay Content
-      real(fp), intent(in)  :: sand                      !< Fractional Sand Content
-      real(fp), intent(in)  :: volumetric_soil_moisture  !< Volumetric soil moisture [m3 m-3]
-      real(fp), intent(out) :: H                         !< Soil Moisture attenuation factor for dust emission [1]
+      real(fp), intent(in)  :: clay                      ! Fractional Clay Content
+      real(fp), intent(in)  :: sand                      ! Fractional Sand Content
+      real(fp), intent(in)  :: volumetric_soil_moisture  ! Volumetric soil moisture [m3 m-3]
+      real(fp), intent(out) :: H                         ! Soil Moisture attenuation factor for dust emission [1]
 
       ! Local Variables
       !----------------
-      real(fp) :: vsat                      !< Saturated volumetric water content (sand-dependent) [m3 m-3]
+      real(fp) :: vsat                      ! Saturated volumetric water content (sand-dependent) [m3 m-3]
 
-      real(fp) :: gravimetric_soil_moisture !< Gravimetric soil moisture [kg/kg]
-      real(fp) :: DryLimit                  !< Dry limit of the soil moisture [kg/kg]
+      real(fp) :: gravimetric_soil_moisture ! Gravimetric soil moisture [kg/kg]
+      real(fp) :: DryLimit                  ! Dry limit of the soil moisture [kg/kg]
 
       ! Initialize
       !-----------
@@ -150,8 +153,8 @@ contains
    subroutine Shao_SoilMoisture( volumetric_soil_moisture, H)
       IMPLICIT NONE
       ! Parameters
-      real(fp), intent(in)  :: volumetric_soil_moisture  !< Volumetric soil moisture [m3 m-3]
-      real(fp), intent(out) :: H                         !< Soil Moisture attenuation factor for dust emission [1]
+      real(fp), intent(in)  :: volumetric_soil_moisture  ! Volumetric soil moisture [m3 m-3]
+      real(fp), intent(out) :: H                         ! Soil Moisture attenuation factor for dust emission [1]
 
       ! Initialize
       H = ZERO
@@ -194,17 +197,17 @@ contains
       real(fp), dimension(:), intent(out) :: dist
 
       ! Local Variables
-      integer :: n          !< looping variable
-      integer :: nbins      !< number of bins
-      real(fp) :: diameter  !< effective diameter of particle
-      real(fp) :: dlam      !< diameter / lambda
-      real(fp) :: dvol      !< volume of particle
+      integer :: n          ! looping variable
+      integer :: nbins      ! number of bins
+      real(fp) :: diameter  ! effective diameter of particle
+      real(fp) :: dlam      ! diameter / lambda
+      real(fp) :: dvol      ! volume of particle
 
       ! Constants
-      real(fp), parameter :: mmd = 3.4                               !< median mass diameter [microns]
-      real(fp), parameter :: stddev = 3.0                            !< standard deviation [microns]
-      real(fp), parameter :: lambda = 12.0                           !< crack propagation length [um]
-      real(fp), parameter :: factor = 1. / ( sqrt(2.) * log(stddev)) !< auxiliary constant for the distribution
+      real(fp), parameter :: mmd = 3.4                               ! median mass diameter [microns]
+      real(fp), parameter :: stddev = 3.0                            ! standard deviation [microns]
+      real(fp), parameter :: lambda = 12.0                           ! crack propagation length [um]
+      real(fp), parameter :: factor = 1. / ( sqrt(2.) * log(stddev)) ! auxiliary constant for the distribution
 
       ! Initialize
       dvol = ZERO
@@ -241,9 +244,9 @@ contains
 
       IMPLICIT NONE
       ! Parameters
-      real(fp), intent(in)    :: clayfrac !< Fractional Clay Content (0-1)
-      real(fp), intent(in)    :: sandfrac !< Fractional Sand Content (0-1)
-      real(fp), intent(inout) :: SEP      !< Soil Erosion Potential (0-1)
+      real(fp), intent(in)    :: clayfrac ! Fractional Clay Content (0-1)
+      real(fp), intent(in)    :: sandfrac ! Fractional Sand Content (0-1)
+      real(fp), intent(inout) :: SEP      ! Soil Erosion Potential (0-1)
 
 
       ! Initialize
@@ -280,15 +283,15 @@ contains
    subroutine Draxler_HorizFlux(ustar, ustar_threshold, R, H, HorizFlux)
       IMPLICIT NONE
       ! Parameters
-      real(fp), intent(in)  :: ustar            !< friction velocity [m/s]
-      real(fp), intent(in)  :: ustar_threshold  !< dry threshold friction velocity [m/s]
-      real(fp), intent(in)  :: R                !< Drag partition (0-1)
-      real(fp), intent(in)  :: H                !< Soil Moisture Attenuation Factor
-      real(fp), intent(inout) :: HorizFlux      !< Horizontal Mass Flux [kg/m2/s]
+      real(fp), intent(in)  :: ustar            ! friction velocity [m/s]
+      real(fp), intent(in)  :: ustar_threshold  ! dry threshold friction velocity [m/s]
+      real(fp), intent(in)  :: R                ! Drag partition (0-1)
+      real(fp), intent(in)  :: H                ! Soil Moisture Attenuation Factor
+      real(fp), intent(inout) :: HorizFlux      ! Horizontal Mass Flux [kg/m2/s]
 
       ! Local Variables
       !----------------
-      real(fp) :: u_ts    !< Modified threshold friction velocity
+      real(fp) :: u_ts    ! Modified threshold friction velocity
 
       ! Initialize
       !-----------
@@ -327,14 +330,14 @@ contains
    subroutine Kawamura_HorizFlux(ustar, ustar_threshold, R, H, HorizFlux)
       IMPLICIT NONE
       ! Parameters
-      real(fp), intent(in)  :: ustar           !< friction velocity [m/s]
-      real(fp), intent(in)  :: ustar_threshold !< dry threshold friction velocity [m/s]
-      real(fp), intent(in)  :: R               !< Drag partition (0-1)
-      real(fp), intent(in)  :: H               !< Soil Moisture Attenuation Factor
+      real(fp), intent(in)  :: ustar           ! friction velocity [m/s]
+      real(fp), intent(in)  :: ustar_threshold ! dry threshold friction velocity [m/s]
+      real(fp), intent(in)  :: R               ! Drag partition (0-1)
+      real(fp), intent(in)  :: H               ! Soil Moisture Attenuation Factor
       real(fp), intent(inout) :: HorizFlux     !<
 
       ! Local Variables
-      real(fp) :: u_ts !< Modified threshold friction velocity
+      real(fp) :: u_ts ! Modified threshold friction velocity
 
       ! Initialize
       HorizFlux = ZERO
@@ -364,11 +367,11 @@ contains
    subroutine MB95_DragPartition(z0, R)
       IMPLICIT NONE
       ! Parameters
-      real(fp), intent(in)  :: z0   !< roughness length [m]
-      real(fp), intent(out) :: R    !< Drag partition (0-1)
+      real(fp), intent(in)  :: z0   ! roughness length [m]
+      real(fp), intent(out) :: R    ! Drag partition (0-1)
 
       ! Local Variables
-      real(fp), parameter :: z0s = 0.0008467 !< ideal roughness length of soil
+      real(fp), parameter :: z0s = 0.0008467 ! ideal roughness length of soil
 
       ! Initialize
       R = ZERO
@@ -402,18 +405,18 @@ contains
 
       ! Input Parameters
       !-----------------
-      real(fp), intent(in) :: radius       !< particle radius
-      real(fp), intent(in) :: soil_density !< soil density
-      real(fp), intent(in) :: air_density  !< air density
+      real(fp), intent(in) :: radius       ! particle radius
+      real(fp), intent(in) :: soil_density ! soil density
+      real(fp), intent(in) :: air_density  ! air density
 
       ! Output Parameters
       !------------------
-      real(fp), intent(out) :: ustar_threshold !< threshold friction velocity
+      real(fp), intent(out) :: ustar_threshold ! threshold friction velocity
 
 
       ! Local Variables
       !-----------------
-      real(fp) :: diameter !< diameter of particle [m]
+      real(fp) :: diameter ! diameter of particle [m]
 
       diameter = 2.0_fp * radius
       ustar_threshold = 0.13_fp * sqrt(soil_density*g0*diameter/air_density) &

@@ -1,4 +1,4 @@
-!> \file init_mod.F90
+! \file init_mod.F90
 !! \brief Initialization module for the program.
 !!
 !! This module contains subroutines and functions related to the initialization of the program.
@@ -16,7 +16,7 @@ module init_mod
 
 contains
 
-   !> \brief Initialize the met state
+   ! \brief Initialize the met state
    !!
    !! This subroutine allocates the met state.
    !!
@@ -54,13 +54,14 @@ contains
 
    end subroutine Init_Met
 
-   !> \brief Initialize the emission state
+   ! \brief Initialize the emission state
    !!
    !! This subroutine allocates the emission state.
    !!
-   !! \param GridState The grid state containing information about the grid.
-   !! \param EmisState The emission state to be initialized.
-   !! \param RC The return code.
+   !! \param GridState The grid state containing information about the grid
+   !! \param EmisState The emission state to be initialized
+   !! \param ChemState The chemical state containing species information
+   !! \param RC The return code
    !!
    !! \ingroup core_modules
    !!!>
@@ -101,14 +102,14 @@ contains
 
    end subroutine Init_Emis
 
-   !> \brief Initialize the diag state
+   ! \brief Initialize the diag state
    !!
    !! This subroutine allocates the diag state.
    !!
-   !! \param Config_Opt The config.
-   !! \param GridState The grid state containing information about the grid.
-   !! \param DiagState The diag state to be initialized.
-   !! \param RC The return code.
+   !! \param Config The configuration options
+   !! \param DiagState The diag state to be initialized
+   !! \param ChemState The chemical state containing species information
+   !! \param RC The return code
    !!
    !! \ingroup core_modules
    !!!>

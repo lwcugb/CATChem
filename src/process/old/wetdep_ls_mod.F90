@@ -376,7 +376,7 @@ contains
        F  = F0_ls / (1. + F0_ls*B0_ls*XL_ls/(qls(k)*cdt/Td_ls))
        B  = B0_ls/F0_ls +1./(F0_ls*XL_ls/qls(k))
        BT = B * Td_ls
-       if (BT.gt.10.) BT = 10.               !< Avoid overflow >
+       if (BT.gt.10.) BT = 10.               ! Avoid overflow >
 !      Adjust du level:
        do n = 1, nbins
         effRemoval = alpha(nv)
@@ -457,7 +457,7 @@ contains
        F  = F0_cv / (1. + F0_cv*B0_cv*XL_cv/(Qcv(k)*cdt/Td_cv))
        B  = B0_cv
        BT = B * Td_cv
-       if (BT.gt.10.) BT = 10.               !< Avoid overflow >
+       if (BT.gt.10.) BT = 10.               ! Avoid overflow >
 
 !      Adjust du level:
        do n = 1, nbins
