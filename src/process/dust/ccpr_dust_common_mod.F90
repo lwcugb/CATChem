@@ -214,8 +214,8 @@ contains
       do n = 1, nbins
          diameter = radius(n) * 2.0_fp
          dlam = diameter / lambda
-         dvol = 4._fp / 3._fp * pi * diameter**3.0_fp
-         diameter = (1._fp + erf(factor * log(diameter/mmd))) * exp(-dlam * dlam * dlam) * log(rUp(n)/rLow(n))
+         !dvol = 4._fp / 3._fp * pi * diameter**3.0_fp
+         dist(n) = diameter * (1._fp + erf(factor * log(diameter/mmd))) * exp(-dlam * dlam * dlam) * log(rUp(n)/rLow(n))
          dvol = dvol + dist(n)
       end do
 

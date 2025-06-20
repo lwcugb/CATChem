@@ -170,23 +170,29 @@ contains
       thisLoc = ' -> at Finalize_Process (in core/run_mod.F90)'
 
       !finalize all the emission processes
-      call CCPr_Dust_Finalize(DustState, RC)
-      if (RC /= CC_SUCCESS) then
-         errMsg = 'Error finalizing dust emissions.'
-         call CC_Error(errMsg, RC , thisLoc)
-      endif
-      call CCPr_SeaSalt_Finalize(SeaSaltState, RC)
-      if (RC /= CC_SUCCESS) then
-         errMsg = 'Error finalizing sea salt emissions.'
-         call CC_Error(errMsg, RC , thisLoc)
-      endif
+      if (DustState%Activate) then
+         call CCPr_Dust_Finalize(DustState, RC)
+         if (RC /= CC_SUCCESS) then
+            errMsg = 'Error finalizing dust emissions.'
+            call CC_Error(errMsg, RC , thisLoc)
+         endif
+      end if
+      if (SeaSaltState%Activate) then
+         call CCPr_SeaSalt_Finalize(SeaSaltState, RC)
+         if (RC /= CC_SUCCESS) then
+            errMsg = 'Error finalizing sea salt emissions.'
+            call CC_Error(errMsg, RC , thisLoc)
+         endif
+      end if
 
       !finalize dry deposition
-      call CCPr_DryDep_Finalize(DryDepState, RC)
-      if (RC /= CC_SUCCESS) then
-         errMsg = 'Error finalizing dry deposition.'
-         call CC_Error(errMsg, RC , thisLoc)
-      endif
+      if (DryDepState%Activate) then
+         call CCPr_DryDep_Finalize(DryDepState, RC)
+         if (RC /= CC_SUCCESS) then
+            errMsg = 'Error finalizing dry deposition.'
+            call CC_Error(errMsg, RC , thisLoc)
+         endif
+      end if
 
       !finalize wet deposition
 

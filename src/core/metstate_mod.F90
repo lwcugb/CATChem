@@ -268,7 +268,9 @@ CONTAINS
       ! Initialize fields
       !--------------------------------------------------
       MetState%nSOIL = GridState%number_of_soil_layers
+      MetState%NLEVS = GridState%number_of_levels
       print*, 'MetState%nSOIL = ', MetState%nSOIL
+      print*, 'MetState%NLEVS = ', MetState%NLEVS
 
       ! Visible Surface Albedo
       !-----------------------
@@ -519,7 +521,7 @@ CONTAINS
       if (.not. allocated(MetState%QV)) then
          allocate(MetState%QV(GridState%number_of_levels), stat=RC)
          if (RC /= CC_SUCCESS) then
-            errMsg = 'Error allocating MetState%InStratosphere'
+            errMsg = 'Error allocating MetState%QV'
             call CC_Error(errMsg, RC, thisLoc)
             return
          endif
@@ -555,7 +557,7 @@ CONTAINS
       if (.not. allocated(MetState%U)) then
          allocate(MetState%U(GridState%number_of_levels), stat=RC)
          if (RC /= CC_SUCCESS) then
-            errMsg = 'Error allocating MetState%InStratosphere'
+            errMsg = 'Error allocating MetState%U'
             call CC_Error(errMsg, RC, thisLoc)
             return
          endif
@@ -564,7 +566,7 @@ CONTAINS
       if (.not. allocated(MetState%V)) then
          allocate(MetState%V(GridState%number_of_levels), stat=RC)
          if (RC /= CC_SUCCESS) then
-            errMsg = 'Error allocating MetState%InStratosphere'
+            errMsg = 'Error allocating MetState%V'
             call CC_Error(errMsg, RC, thisLoc)
             return
          endif
@@ -582,7 +584,7 @@ CONTAINS
       if (.not. allocated(MetState%RH)) then
          allocate(MetState%RH(GridState%number_of_levels), stat=RC)
          if (RC /= CC_SUCCESS) then
-            errMsg = 'Error allocating MetState%InStratosphere'
+            errMsg = 'Error allocating MetState%RH'
             call CC_Error(errMsg, RC, thisLoc)
             return
          endif
@@ -591,7 +593,7 @@ CONTAINS
       if (.not. allocated(MetState%SPHU)) then
          allocate(MetState%SPHU(GridState%number_of_levels), stat=RC)
          if (RC /= CC_SUCCESS) then
-            errMsg = 'Error allocating MetState%InStratosphere'
+            errMsg = 'Error allocating MetState%SPHU'
             call CC_Error(errMsg, RC, thisLoc)
             return
          endif
@@ -600,7 +602,7 @@ CONTAINS
       if (.not. allocated(MetState%AIRDEN)) then
          allocate(MetState%AIRDEN(GridState%number_of_levels), stat=RC)
          if (RC /= CC_SUCCESS) then
-            errMsg = 'Error allocating MetState%InStratosphere'
+            errMsg = 'Error allocating MetState%AIRDEN'
             call CC_Error(errMsg, RC, thisLoc)
             return
          endif
@@ -609,7 +611,7 @@ CONTAINS
       if (.not. allocated(MetState%AIRNUMDEN)) then
          allocate(MetState%AIRNUMDEN(GridState%number_of_levels), stat=RC)
          if (RC /= CC_SUCCESS) then
-            errMsg = 'Error allocating MetState%InStratosphere'
+            errMsg = 'Error allocating MetState%AIRNUMDEN'
             call CC_Error(errMsg, RC, thisLoc)
             return
          endif
@@ -618,7 +620,7 @@ CONTAINS
       if (.not. allocated(MetState%MAIRDEN)) then
          allocate(MetState%MAIRDEN(GridState%number_of_levels), stat=RC)
          if (RC /= CC_SUCCESS) then
-            errMsg = 'Error allocating MetState%InStratosphere'
+            errMsg = 'Error allocating MetState%MAIRDEN'
             call CC_Error(errMsg, RC, thisLoc)
             return
          endif
@@ -627,7 +629,7 @@ CONTAINS
       if (.not. allocated(MetState%AVGW)) then
          allocate(MetState%AVGW(GridState%number_of_levels), stat=RC)
          if (RC /= CC_SUCCESS) then
-            errMsg = 'Error allocating MetState%InStratosphere'
+            errMsg = 'Error allocating MetState%AVGW'
             call CC_Error(errMsg, RC, thisLoc)
             return
          endif
@@ -636,7 +638,7 @@ CONTAINS
       if (.not. allocated(MetState%DELP)) then
          allocate(MetState%DELP(GridState%number_of_levels), stat=RC)
          if (RC /= CC_SUCCESS) then
-            errMsg = 'Error allocating MetState%InStratosphere'
+            errMsg = 'Error allocating MetState%DELP'
             call CC_Error(errMsg, RC, thisLoc)
             return
          endif
@@ -645,7 +647,7 @@ CONTAINS
       if (.not. allocated(MetState%DELP_DRY)) then
          allocate(MetState%DELP_DRY(GridState%number_of_levels), stat=RC)
          if (RC /= CC_SUCCESS) then
-            errMsg = 'Error allocating MetState%InStratosphere'
+            errMsg = 'Error allocating MetState%DELP_DRY'
             call CC_Error(errMsg, RC, thisLoc)
             return
          endif
@@ -654,7 +656,7 @@ CONTAINS
       if (.not. allocated(MetState%DAIRMASS)) then
          allocate(MetState%DAIRMASS(GridState%number_of_levels), stat=RC)
          if (RC /= CC_SUCCESS) then
-            errMsg = 'Error allocating MetState%InStratosphere'
+            errMsg = 'Error allocating MetState%DAIRMASS'
             call CC_Error(errMsg, RC, thisLoc)
             return
          endif
@@ -663,7 +665,7 @@ CONTAINS
       if (.not. allocated(MetState%AIRVOL)) then
          allocate(MetState%AIRVOL(GridState%number_of_levels), stat=RC)
          if (RC /= CC_SUCCESS) then
-            errMsg = 'Error allocating MetState%InStratosphere'
+            errMsg = 'Error allocating MetState%AIRVOL'
             call CC_Error(errMsg, RC, thisLoc)
             return
          endif
@@ -672,7 +674,7 @@ CONTAINS
       if (.not. allocated(MetState%PMID)) then
          allocate(MetState%PMID(GridState%number_of_levels), stat=RC)
          if (RC /= CC_SUCCESS) then
-            errMsg = 'Error allocating MetState%InStratosphere'
+            errMsg = 'Error allocating MetState%PMID'
             call CC_Error(errMsg, RC, thisLoc)
             return
          endif
@@ -681,7 +683,7 @@ CONTAINS
       if (.not. allocated(MetState%PMID_DRY)) then
          allocate(MetState%PMID_DRY(GridState%number_of_levels), stat=RC)
          if (RC /= CC_SUCCESS) then
-            errMsg = 'Error allocating MetState%InStratosphere'
+            errMsg = 'Error allocating MetState%PMID_DRY'
             call CC_Error(errMsg, RC, thisLoc)
             return
          endif
@@ -690,7 +692,16 @@ CONTAINS
       if (.not. allocated(MetState%PEDGE_DRY)) then
          allocate(MetState%PEDGE_DRY(GridState%number_of_levels+1), stat=RC)
          if (RC /= CC_SUCCESS) then
-            errMsg = 'Error allocating MetState%InStratosphere'
+            errMsg = 'Error allocating MetState%PEDGE_DRY'
+            call CC_Error(errMsg, RC, thisLoc)
+            return
+         endif
+      end if
+
+      if (.not. allocated(MetState%PEDGE)) then
+         allocate(MetState%PEDGE(GridState%number_of_levels+1), stat=RC)
+         if (RC /= CC_SUCCESS) then
+            errMsg = 'Error allocating MetState%PEDGE'
             call CC_Error(errMsg, RC, thisLoc)
             return
          endif
@@ -699,7 +710,7 @@ CONTAINS
       if (.not. allocated(MetState%SOILM)) then
          allocate(MetState%SOILM(MetState%nSOIL), stat=RC)
          if (RC /= CC_SUCCESS) then
-            errMsg = 'Error allocating MetState%InStratosphere'
+            errMsg = 'Error allocating MetState%SOILM'
             call CC_Error(errMsg, RC, thisLoc)
             return
          endif

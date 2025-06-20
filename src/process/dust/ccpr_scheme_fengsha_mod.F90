@@ -226,7 +226,7 @@ contains
 
          ! get distribution of dust
          !--------------------------------
-         if (nDustSpecies == 1) then
+         if (nDustSpecies > 0) then
             call KokDistribution(reff, rlower, rupper, distribution)
          endif
 

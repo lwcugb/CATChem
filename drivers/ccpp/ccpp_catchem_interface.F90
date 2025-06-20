@@ -353,6 +353,10 @@ contains
                                         dust_in, & !Emissions
                                         CATChemStates%MetState, & ! CATChem States
                                         errmsg, errflg)
+      if (errflg /= CC_SUCCESS) then
+         call cc_emit_error(ErrMsg, errflg, ThisLoc ) !TODO: consider rename the subroutine
+         return
+      end if
 
      ! Run CATChem
      call catchem_run(im, CATChemStates, DustState, SeaSaltState, DryDepState, errflg)

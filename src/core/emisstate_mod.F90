@@ -179,6 +179,8 @@ CONTAINS
                   call CC_Error(ErrMsg, RC, ThisLoc)
                   return
                endif
+               !initialize the flux to zero
+               EmisState%Cats(c)%Species(s)%Flux = 0.0_fp
                print*, 'Flux allocated for ', EmisState%Cats(c)%Species(s)%name
 
                ALLOCATE(EmisState%Cats(c)%Species(s)%EmisMapIndex(EmisState%Cats(c)%Species(s)%nEmisMap), STAT=RC)

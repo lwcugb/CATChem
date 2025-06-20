@@ -229,6 +229,7 @@ CONTAINS
                   if (RC /= 0) then
                      errMsg = 'Error in GOCART DryDeposition'
                      CALL CC_Error( errMsg, RC, thisLoc )
+                     return
                   endif  !if (RC /= CC_SUCCESS)
 
                   ! Fill Diagnostic Variables
@@ -246,12 +247,14 @@ CONTAINS
 
                end do ! do i = 1, ChemState%nSpeciesAeroDryDep
 
+               !deaccloate arrays
+               if (allocated(tmpu)) deallocate(tmpu)
+               if (allocated(rhoa)) deallocate(rhoa)
+               if (allocated(hghte)) deallocate(hghte)
+
             endif  ! if (ChemState%nSpeciesAeroDryDep > 0)
 
          endif  ! if (DryDepState%SchemeOpt == 1)
-
-         ! TO DO:  apply dry dep velocities/freq to chem species
-         write(*,*) 'TODO: Need to figure out how to add back to the chemical species state '
 
       endif   !  if (DryDepState%Activate)
 

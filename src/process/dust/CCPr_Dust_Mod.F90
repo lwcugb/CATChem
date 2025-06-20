@@ -314,6 +314,7 @@ CONTAINS
             if (RC /= CC_SUCCESS) then
                errMsg = 'Error in CCPr_Scheme_Fengsha'
                CALL CC_Error( errMsg, RC, thisLoc )
+               return
             endif
          else if (DustState%SchemeOpt == 2) then ! GINOUX
             call CCPr_Scheme_Ginoux(MetState%DSOILTYPE,            &
@@ -334,6 +335,7 @@ CONTAINS
             if (RC /= CC_SUCCESS) then
                errMsg = 'Error in CCPr_Scheme_Ginoux'
                CALL CC_Error( errMsg, RC, thisLoc )
+               return
             endif
          else
             errMsg =  'ERROR: Unknown dust scheme option'

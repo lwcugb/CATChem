@@ -144,22 +144,24 @@ contains
             GOCART_PBLH, GOCART_HFLUX, von_karman, cp, g0, GOCART_Z0H, DRYDEPF, RC, &
             radius, rhop, GOCART_U10, GOCART_V10, GOCART_FRACLAKE, GOCART_GWETTOP)
       else
-         nullify(GOCART_U10, GOCART_V10, GOCART_FRACLAKE, GOCART_GWETTOP)
          call DryDeposition(km, GOCART_TMPU, GOCART_RHOA, GOCART_HGHTE, GOCART_LWI, GOCART_USTAR, &
             GOCART_PBLH, GOCART_HFLUX, von_karman, cp, g0, GOCART_Z0H, DRYDEPF, RC)
       endif
 
-      if (associated(GOCART_TMPU)) nullify(GOCART_TMPU)
-      if (associated(GOCART_RHOA)) nullify(GOCART_RHOA)
-      if (associated(GOCART_HGHTE)) nullify(GOCART_HGHTE)
-      if (associated(GOCART_U10)) nullify(GOCART_U10)
-      if (associated(GOCART_FRACLAKE)) nullify(GOCART_FRACLAKE)
-      if (associated(GOCART_GWETTOP)) nullify(GOCART_GWETTOP)
-      if (associated(GOCART_LWI)) nullify(GOCART_LWI)
-      if (associated(GOCART_USTAR)) nullify(GOCART_USTAR)
-      if (associated(GOCART_LWI)) nullify(GOCART_LWI)
-      if (associated(GOCART_HFLUX)) nullify(GOCART_HFLUX)
-      if (associated(GOCART_Z0H)) nullify(GOCART_Z0H)
+      !TODO: Here we need to use deallocate instead of nullify
+      !       to avoid memory leaks.
+      if (associated(GOCART_TMPU)) deallocate(GOCART_TMPU)
+      if (associated(GOCART_RHOA)) deallocate(GOCART_RHOA)
+      if (associated(GOCART_HGHTE)) deallocate(GOCART_HGHTE)
+      if (associated(GOCART_U10)) deallocate(GOCART_U10)
+      if (associated(GOCART_V10)) deallocate(GOCART_V10)
+      if (associated(GOCART_FRACLAKE)) deallocate(GOCART_FRACLAKE)
+      if (associated(GOCART_GWETTOP)) deallocate(GOCART_GWETTOP)
+      if (associated(GOCART_LWI)) deallocate(GOCART_LWI)
+      if (associated(GOCART_USTAR)) deallocate(GOCART_USTAR)
+      if (associated(GOCART_LWI)) deallocate(GOCART_LWI)
+      if (associated(GOCART_HFLUX)) deallocate(GOCART_HFLUX)
+      if (associated(GOCART_Z0H)) deallocate(GOCART_Z0H)
 
 ! End GOCART Code
 
@@ -264,9 +266,9 @@ contains
       allocate(GOCART_HFLUX(1, 1))
       allocate(GOCART_Z0H(1, 1))
 
-      GOCART_TMPU(1,1,:) = tmpu ! temperature [K]
-      GOCART_RHOA = reshape(rhoa, (/1, 1, km/)) ! air density [kg/m^3]
-      GOCART_HGHTE = reshape(hghte, (/1, 1, km/))    ! top of layer geopotential height [m]
+      GOCART_TMPU(1,1,:) = tmpu(size(tmpu):1:-1) ! temperature [K]
+      GOCART_RHOA(1,1,:) = rhoa(size(rhoa):1:-1) ! air density [kg/m^3]
+      GOCART_HGHTE(1,1,:) = hghte(size(hghte):1:-1)    ! top of layer geopotential height [m]
       GOCART_LWI = real(LWI)     ! orography flag; Land, ocean, ice mask
       GOCART_USTAR  = ustar     ! friction speed [m/sec]
       GOCART_PBLH   = pblh      ! PBL height [m]
