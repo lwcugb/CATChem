@@ -83,9 +83,9 @@ program test_drydep
    gridstate%number_of_levels = MetState%NLEVS
 
    do i = 1, MetState%NLEVS
-      MetState%T(i)=273.15 + I        ! K, roughly adiabatic
+      MetState%T(i)=273.15 + MetState%NLEVS - I        ! K, roughly adiabatic
       MetState%AIRDEN(i) = 1.2   ! kg/m3
-      MetState%ZMID(i) = (MetState%NLEVS*100 - I*100)   ! m
+      MetState%ZMID(i) =  I*100    ! m
    end do
 
    DryDepState%SchemeOpt = 1

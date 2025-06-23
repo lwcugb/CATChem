@@ -415,7 +415,7 @@ contains
       !-----------------
       real(fp) :: diameter !< diameter of particle [m]
 
-      diameter = 2.0_fp * radius
+      diameter = 2.0_fp * radius * 1.0e-6_fp !< convert radius to meters
       ustar_threshold = 0.13_fp * sqrt(soil_density*g0*diameter/air_density) &
          * sqrt(1.0_fp + 6.e-7_fp/(soil_density*g0*diameter**2.5_fp)) &
          / sqrt(1.928_fp*(1331.0_fp*(100._fp*diameter)**1.56_fp+0.38_fp)**0.092_fp - 1.0_fp)

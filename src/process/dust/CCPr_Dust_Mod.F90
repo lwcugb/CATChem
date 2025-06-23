@@ -213,9 +213,9 @@ CONTAINS
             mask(1:DustState%nDustSpecies) = .TRUE.
             do k = 1, DustState%nDustSpecies
                min_ind = MINLOC(radius_temp, mask)  ! Find the index of the minimum radius in the mask
-               DustState%LowerBinRadius(k) = ChemState%ChemSpecies(ChemState%DustIndex(min_ind(1)))%lower_radius * 1.0e-6_fp !um convert to m
-               DustState%UpperBinRadius(k) = ChemState%ChemSpecies(ChemState%DustIndex(min_ind(1)))%upper_radius * 1.0e-6_fp
-               DustState%EffectiveRadius(k) = ChemState%ChemSpecies(ChemState%DustIndex(min_ind(1)))%radius * 1.0e-6_fp
+               DustState%LowerBinRadius(k) = ChemState%ChemSpecies(ChemState%DustIndex(min_ind(1)))%lower_radius !* 1.0e-6_fp !um convert to m
+               DustState%UpperBinRadius(k) = ChemState%ChemSpecies(ChemState%DustIndex(min_ind(1)))%upper_radius !* 1.0e-6_fp
+               DustState%EffectiveRadius(k) = ChemState%ChemSpecies(ChemState%DustIndex(min_ind(1)))%radius !* 1.0e-6_fp
                DustState%DustDensity(k) = ChemState%ChemSpecies(ChemState%DustIndex(min_ind(1)))%density
                mask(min_ind) = .FALSE. ! Set the minimum to false so it won't be selected again
                DustState%EmissionPerSpecies(k) = 0.0_fp ! Initialize to zero
