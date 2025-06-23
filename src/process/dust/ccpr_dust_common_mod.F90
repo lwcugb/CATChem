@@ -185,7 +185,7 @@ contains
    !! \ingroup catchem_dust_process
    !!!>
    subroutine KokDistribution(radius, rLow, rUp, dist)
-      use constants, only: pi
+      !use constants, only: pi
       IMPLICIT NONE
       ! Parameters
       real(fp), dimension(:), intent(in)  :: radius
