@@ -272,9 +272,9 @@ contains
             return
          endif
 
-         ! Compute the Total Dust Flux (ug/m2/s)
+         ! Compute the Total Dust Flux (kg/m2/s)
          !--------------------------------------
-         FengshaScaling = (1. - FRLANDICE) * (1. - FRSNOW) * (1 - FROCEAN) * alpha_grav * (SSM ** gamma) * AIRDEN*1.0e9_fp
+         FengshaScaling = (1. - FRLANDICE) * (1. - FRSNOW) * (1 - FROCEAN) * alpha_grav * (SSM ** gamma) * AIRDEN !*1.0e-9_fp
 
          TotalEmission = FengshaScaling * HorizFlux * h_to_v_ratio
 

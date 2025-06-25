@@ -66,44 +66,7 @@ contains
    !!
    !! \ingroup catchem_ccpp_group
    !!!>
-   subroutine ccpp_catchem_interface_init(im, do_catchem, catchem_configfile_in,  &
-                                  errmsg, errflg)
-      implicit none
-      ! Input parameters
-      character(len=*), intent(in) :: catchem_configfile_in
-      logical,          intent(in) :: do_catchem
-      !logical,          intent(in) :: export_catchem_diags_in
-      !integer,          intent(in) :: n_dbg_lines_in
-      integer,          intent(in) :: im
-      !integer,          intent(in) :: kme
-      !integer,          intent(in) :: nsoil
-      !integer,          intent(in) :: nLandType
-
-      ! Output parameters
-      character(len=*), intent(out) :: errmsg
-      integer,          intent(out) :: errflg
-      ! Local variables
-      CHARACTER(LEN=255)    :: ThisLoc
-
-      errmsg = ''
-      errflg = 0
-      ThisLoc = ' -> at catchem_interface_init (in drivers/ccpp/ccpp_catchem_inerface.F90)'
-
-      if (.not. do_catchem) return
-
-      ! Set global parameters
-      !export_catchem_diags = export_catchem_diags_in
-      !n_dbg_lines = n_dbg_lines_in
-
-
-      call catchem_init(Config, CATChemStates, im, catchem_configfile_in, errflg, errmsg, &
-      DustState, SeaSaltState, DryDepState)
-      if (errflg /= CC_SUCCESS) then
-         ErrMsg = 'Error in catchem_init'
-         call cc_emit_error(ErrMsg, errflg, ThisLoc ) !TODO: consider rename the subroutine
-         return
-     end if
-
+   subroutine ccpp_catchem_interface_init
 
    end subroutine ccpp_catchem_interface_init
 
@@ -149,12 +112,12 @@ contains
   !>
   subroutine ccpp_catchem_interface_run(im, kte, kme, garea, nsoil, nlndcat, nsoilcat, &
      lat, lon, & ! Grid information
-     do_catchem, & ! CATChem Flag on
+     do_catchem, catchem_configfile_in, & ! CATChem Flag on
      dt, jdate, & ! Time information
      xcosz, &
      lwi, frlanduse, gvf, seaicefrac, oceanfrac, lakefrac, landfrac, & ! land water specific variables
      stype, vtype, snowdepth, frsnow, lai, frsoil, pores, resid, & ! land surface variables
-     ustar, u10m, v10m, tskin, ts, hf2d, lf2d, znt, prsfc, pblh, & !surface variables
+     ustar, u10m, v10m, tskin, tsfco, ts, hf2d, lf2d, znt, prsfc, pblh, & !surface variables
      dswsfc, nirbmdi, nirdfdi, visbmdi, visdfdi, &  ! Radiation Fluxes
      sfc_alb_nir_dir, sfc_alb_nir_dif, sfc_alb_uvvis_dir, sfc_alb_uvvis_dif, & ! surface albedo
      soilmoist, pr3d, phl3d, prl3d, tk3d, q3d, us3d, vs3d, rh, & ! 3D Variables
@@ -200,6 +163,7 @@ contains
 
      ! Logicals
      logical, intent(in) :: do_catchem
+     character(len=*), intent(in) :: catchem_configfile_in
 
      ! tracer information
      integer, intent(in) :: ntrac    ! total number of tracers
@@ -268,6 +232,7 @@ contains
      !real(kind_phys), dimension(im), intent(in)        :: psim          !> Monin-Obukhov similarity parameter for momentum at 10m
      !real(kind_phys), dimension(im), intent(in)        :: psih          !> Monin-Obukhov similarity parameter for heat at 10m
      real(kind_phys), dimension(im), intent(in)        :: tskin         !> skin temperature (K)
+     real(kind_phys), dimension(im), intent(in)        :: tsfco         !> sea surface temperature (K)
      !real(kind_phys), dimension(im), intent(in)        :: t2m           !> 2 m temperature (K)
      real(kind_phys), dimension(im), intent(in)        :: ts            !> surface temperature (K)
      !real(kind_phys), dimension(im), intent(in)        :: dpt2m         !> 2 m dew point temperature (K)
@@ -319,17 +284,30 @@ contains
      !-------
      character(len=*), intent(out) :: errmsg
      integer, intent(out) :: errflg
+     ! Local
+     !------
      CHARACTER(LEN=255)    :: ThisLoc
+     logical, save :: firsttime = .true. !> first time flag
 
      errmsg = ''
      errflg = 0
      ThisLoc = ' -> at catchem_interface_run (in drivers/ccpp/ccpp_catchem_interface.F90)'
 
-     ! Local
-     !------
-     !integer :: mpiid
 
      if (.not. do_catchem) return
+
+     if (firsttime) then
+        firsttime = .false.
+        !Initialize CATChem container
+        !It is not put in ccpp_catchem_interface_init because horizontal_loop_extent cannot be used in interface init
+        call catchem_init(Config, CATChemStates, im, catchem_configfile_in, errflg, errmsg, &
+        DustState, SeaSaltState, DryDepState)
+        if (errflg /= CC_SUCCESS) then
+          ErrMsg = 'Error in catchem_init'
+          call cc_emit_error(ErrMsg, errflg, ThisLoc )
+          return
+        end if
+     end if
 
      !give tracer from CCPP to CATChem
      call ccpp_to_cc(im, kte, ntchs, ntchm, CATChemStates%ChemState, chemarr_phys)
@@ -340,7 +318,7 @@ contains
                                         lwi, &  ! Model Options
                                         tk3d, q3d, pr3d, pr3d, prl3d, rh, &  ! Meteorological Variables; TODO: not using dry air pressre and delp for now
                                         us3d, vs3d, delp, phl3d, &  ! Meteorological Variables
-                                        u10m, v10m, tskin, prsfc, ts, rain_cpl, &  ! Meteorological Variables
+                                        u10m, v10m, tskin, tsfco, prsfc, ts, rain_cpl, &  ! Meteorological Variables
                                         cldf, airden, delp, &
                                         pfl_lsan, pfl_isan, &  ! precipitation variables
                                         snowdepth, vtype, stype, soilmoist, &  ! Surface Variables
@@ -354,7 +332,7 @@ contains
                                         CATChemStates%MetState, & ! CATChem States
                                         errmsg, errflg)
       if (errflg /= CC_SUCCESS) then
-         call cc_emit_error(ErrMsg, errflg, ThisLoc ) !TODO: consider rename the subroutine
+         call cc_emit_error(ErrMsg, errflg, ThisLoc )
          return
       end if
 

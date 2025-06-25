@@ -134,7 +134,7 @@ contains
       ! Don't do Sea Salt over land
       !----------------------------------------------------------------
       scale = FROCEAN - FRSEAICE
-      if (rae(scale, 0.0_fp)) then
+      if (scale <= 0.0_fp) then
          do_seasalt = .False.
       endif
 
@@ -206,7 +206,7 @@ contains
 
             enddo
 
-            EmissionBin(n) = MassEmissions * scale * 1.0e9_fp ! Convert to kg/m2/s from ug/m2/s
+            EmissionBin(n) = MassEmissions * scale !* 1.0e9_fp ! Convert to ug/m2/s from kg/m2/s
             NumberEmissionBin(n) = NumberEmissions * scale
 
             MassEmissions = ZERO

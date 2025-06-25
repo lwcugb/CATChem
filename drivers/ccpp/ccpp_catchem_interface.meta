@@ -7,43 +7,7 @@
 [ccpp-arg-table]
   name = ccpp_catchem_interface_init
   type = scheme
-[im]
-  standard_name = horizontal_dimension
-  long_name = horizontal dimension
-  units = count
-  dimensions = ()
-  type = integer
-  intent = in
-[do_catchem]
-  standard_name = do_catchem_coupling
-  long_name = flag controlling catchem collection (default off)
-  units = flag
-  dimensions = ()
-  type = logical
-  intent = in
-[catchem_configfile_in]
-  standard_name = catchem_configfile
-  long_name = catchem configuration file name
-  units = none
-  dimensions = ()
-  type = character
-  kind = len=*
-  intent = in
-[errmsg]
-  standard_name = ccpp_error_message
-  long_name = error message for error handling in CCPP
-  units = none
-  dimensions = ()
-  type = character
-  kind = len=*
-  intent = out
-[errflg]
-  standard_name = ccpp_error_code
-  long_name = error code for error handling in CCPP
-  units = 1
-  dimensions = ()
-  type = integer
-  intent = out
+
 ########################################################################
 [ccpp-arg-table]
   name = ccpp_catchem_interface_finalize
@@ -147,6 +111,14 @@
   units = flag
   dimensions = ()
   type = logical
+  intent = in
+[catchem_configfile_in]
+  standard_name = catchem_configfile
+  long_name = catchem configuration file name
+  units = none
+  dimensions = ()
+  type = character
+  kind = len=*
   intent = in
 # TIME VARIABLES <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 [dt]
@@ -318,6 +290,14 @@
 [tskin]
   standard_name = surface_skin_temperature
   long_name = surface skin temperature
+  units = K
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  intent = in
+[tsfco]
+  standard_name = sea_surface_temperature
+  long_name = sea surface temperature
   units = K
   dimensions = (horizontal_loop_extent)
   type = real

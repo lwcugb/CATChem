@@ -126,7 +126,7 @@ contains
                u_thresh = amax1(0., u_thresh0 * (1.2_fp + 0.2_fp*alog10(max(1.e-3_fp, GWETTOP))) )
 
                if (w10m .gt. u_thresh) then
-                  EmissionPerSpecies(n) = ginoux_scaling * w10m ** 2 * max(0.,(w10m - u_thresh) )
+                  EmissionPerSpecies(n) = ginoux_scaling * w10m ** 2 * max(0.,(w10m - u_thresh) ) *1.0e-9_fp !ug/m2/s to kg/m2/s
                endif
 
             endif ! GWETTOP < 0.5

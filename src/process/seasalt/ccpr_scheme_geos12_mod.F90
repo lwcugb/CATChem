@@ -125,7 +125,7 @@ contains
       !----------------------------------------------------------------
       scale = FROCEAN - FRSEAICE
 
-      if (rae(scale, 0.0_fp)) then
+      if (scale <= 0.0_fp) then
          do_seasalt = .False.
       endif
 
@@ -185,7 +185,7 @@ contains
 
             enddo
 
-            EmissionBin(n) = MassEmissions * scale * 1.0e9_fp ! convert to kg m-2 s-1 from ug m-2 s-1
+            EmissionBin(n) = MassEmissions * scale !* 1.0e9_fp ! convert to ug m-2 s-1 from kg m-2 s-1
             NumberEmissionBin(n) = NumberEmissions * scale
 
             MassEmissions = ZERO

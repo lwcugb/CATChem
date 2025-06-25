@@ -164,6 +164,7 @@ contains
     !! \param[in] u10m       10m u wind (m/s)
     !! \param[in] v10m       10m v wind (m/s)
     !! \param[in] tskin      Surface skin temperature (K)
+    !! \param[in] tsfco      Sea surface temperature (K)
     !! \param[in] ps         Surface pressure (Pa)
     !! \param[in] precip     Precipitation rate (kg/m2/s)
     !! \param[in] slmsk      Land-sea mask (1=land,0=sea,2=ice)
@@ -201,7 +202,7 @@ contains
                                         lwi, &  ! Model Options
                                         temp, spechum, pfull,pfull_wet, phalf, rh, &  ! Meteorological Variables
                                         u, v, delp, zh, &  ! Meteorological Variables
-                                        u10m, v10m, tskin, ps, ts, precip, &  ! Meteorological Variables
+                                        u10m, v10m, tskin, tsfco, ps, ts, precip, &  ! Meteorological Variables
                                         cldf, airden, delp_dry, &
                                         pfl_lsan, pfl_isan, &  ! precipitation variables
                                         snowh, vegtype, soiltyp, soilmoist, &  ! Surface Variables
@@ -266,12 +267,13 @@ contains
       ! Surface Variables (dim(:))
       real(kind_phys), intent(in) :: ps(:)           !> surface pressure (Pa)
       real(kind_phys), intent(in) :: tskin(:)        !> skin temperature (K)
+      real(kind_phys), intent(in) :: tsfco(:)        !> sea surface temperature (K)
       real(kind_phys), intent(in) :: ts(:)           !> surface temperature (K)
       !real(kind_phys), intent(in) :: slmsk(:)        !> land-sea mask (1=land,0=sea,2=ice)
       real(kind_phys), intent(in) :: snowh(:)        !> snow depth (m)
       integer,         intent(in) :: vegtype(:)      !> vegetation type
       real(kind_phys), intent(in) :: lai(:)          !> leaf area index (m2/m2)
-      real(kind_phys), intent(in) :: z0(:)           !> surface roughness length (m)
+      real(kind_phys), intent(in) :: z0(:)           !> surface roughness length (cm)
       integer,         intent(in) :: soiltyp(:)      !> soil type
       real(kind_phys), intent(in) :: soilmoist(:,:)    !> soil moisture (m3/m3)
       real(kind_phys), intent(in) :: snowc(:)        !> snow cover fraction over land (0-1)
@@ -342,11 +344,11 @@ contains
       errflg = 0
 
       ! Check dimensions
-    !   if (size(MetState) /= im) then
-    !     errmsg = 'MetState dimension mismatch'
-    !     errflg = 1
-    !     return
-    !   endif
+      if (size(MetState) /= im) then
+        errmsg = 'MetState dimension mismatch'
+        errflg = 1
+        return
+      endif
       
       ! Transform data for each horizontal point
       horiz: do i = 1, im
@@ -368,9 +370,9 @@ contains
         MetState(i)%HMS = jdate(4) * 10000 + jdate(5) * 100 + jdate(6) !HHMMSS
         month_now = jdate(2)
 
-        ! 3D/Layer center Variables; reverse vertical index for CATChem
+        ! 3D/Layer center Variables; no need to reverse vertical index for CATChem
         !TODO: make sure layer index starts from 1 not 0
-        k_rev = kte
+        k_rev = 1 !kte
         vert1: do k = 1, kte
             MetState(i)%T(k_rev)        = temp(i,k)   !tk3d
             MetState(i)%SPHU(k_rev)     = spechum(i,k) /1000.0 !q3d (kg/kg in CC --> g/kg in MetState)
@@ -386,22 +388,29 @@ contains
             MetState(i)%AIRDEN(k_rev)  = phalf(i,k)/(287.04*temp(i,k)*(1.+.608*spechum(i,k)))   !< Dry air density [kg/m3]
             MetState(i)%RH(k_rev)      = 50.0 !rh(i,k) * 100 !TODO: not found
             MetState(i)%BXHEIGHT(k_rev)  = delp (i,k) / 9.80665
-            k_rev = k_rev - 1
+
+            k_rev = k_rev + 1
+            
         end do vert1
 
-        ! 3D/Layer interface Variables; reverse vertical index for CATChem
-        k_rev = kme
+        ! 3D/Layer interface Variables; no need to reverse vertical index for CATChem
+        k_rev = 1 !kme
         vert2: do k = 1, kme
             MetState(i)%PEDGE_DRY(k_rev) = pfull(i,k) !pr3d
             MetState(i)%PEDGE(k_rev)     = pfull_wet(i,k) !pfull_wet(i,k) !pr3d TODO: not found
-            if ( k == kme ) then
-                MetState(i)%PFLLSAN(k_rev)   = 0.0 !TODO: vertical_layer_dimension not found vertical_interface_dimension
-                MetState(i)%PFILSAN(k_rev)   = 0.0       ! so giving zero for the first layer for now
-            else
-                MetState(i)%PFLLSAN(k_rev)   = 0.0 !pfl_lsan(i,k)  !TODO: not found (need to put after mp_thomson)
-                MetState(i)%PFILSAN(k_rev)   = 0.0 !pfl_isan(i,k)
-            end if
-            k_rev = k_rev - 1
+            ! if ( k == kme ) then
+            !     MetState(i)%PFLLSAN(k_rev)   = 0.0 !TODO: vertical_layer_dimension not found vertical_interface_dimension
+            !     MetState(i)%PFILSAN(k_rev)   = 0.0       ! so giving zero for the first layer for now
+            ! else
+            !     MetState(i)%PFLLSAN(k_rev)   = 0.0 !pfl_lsan(i,k)  !TODO: not found (need to put after mp_thomson)
+            !     MetState(i)%PFILSAN(k_rev)   = 0.0 !pfl_isan(i,k)
+            ! end if
+
+            !!TODO: seems no need to use if else above
+            MetState(i)%PFLLSAN(k_rev)   = 0.0 !pfl_lsan(i,k)  !TODO: not found (need to put after mp_thomson)
+            MetState(i)%PFILSAN(k_rev)   = 0.0 !pfl_isan(i,k)
+
+            k_rev = k_rev + 1
         end do vert2
 
         ! Surface Variables
@@ -453,7 +462,7 @@ contains
         MetState(i)%SOILM = soilmoist(i, :)
         MetState(i)%GWETROOT = 0.0
         MetState(i)%GWETTOP  = 0.0
-        if ( nsoilcat == 16) then ! 16 STATSGO soil type (isot = 1); only choice for now
+        if ( (nsoilcat == 16) .or. (nsoilcat == 19) ) then ! 16 or 19 STATSGO soil type; only choices for now
             do k =1, nsoilcat
                 if ( soiltyp(i) == k .and. (pores(k) - resid(k)) > 0.0 ) then
                     !here we asume nsoil is the lowest layer and index=1 is the top layer
@@ -464,7 +473,7 @@ contains
                 end if
             end do
         else
-            errmsg = 'number of soil category is not 16 and not supported'
+            errmsg = 'number of soil category is not 16 or 19 and not supported'
             errflg = 1
             return
         end if
@@ -482,11 +491,11 @@ contains
         MetState(i)%PBLH     = zpbl(i) !pblh
         MetState(i)%USTAR    = ustar(i)
         MetState(i)%CLDFRC   = cldf(i)
-        MetState(i)%SST      = 300.0 !TODO: need to get it from ccpp 
+        MetState(i)%SST      = tsfco(i) 
 
         ! Surface Fluxes
-        MetState(i)%Z0 = z0(i) !znt
-        MetState(i)%Z0H = z0(i) !< roughness height, for heat (thermal roughness) [m] TODO: give the same value as z0 for now
+        MetState(i)%Z0 = z0(i) *1.0e-2 !cm --> m
+        MetState(i)%Z0H = z0(i) *1.0e-2 !< roughness height, for heat (thermal roughness) [m] TODO: give the same value as z0 for now
         MetState(i)%HFLUX    = 0.5 !shflx(i) !hf2d !TODO: need to turn on cplflx in GFS to make it work
         MetState(i)%EFLUX    = 0.0 !lhflx(i) !lf2d
         MetState(i)%PRECLSC  = 0.0 !precip(i) !rain_cplchm
@@ -494,22 +503,22 @@ contains
         !in the ESMF/GOCART_GridComp/O3_GridComp/O3_GridCompMod.F90 file
         ! check MAPL/Python/MAPL/constants.py for MAPL_CP and MAPL_GRAV values
         if (abs(MetState(i)%HFLUX) > 1.00e-32) then
-            !MetState(i)%OBK  = - MetState(i)%AIRDEN(1)  * 1004.68307 * temp(i,kte) * ustar(i)**3. / (0.40 * 9.80665 * shflx(i))
+            MetState(i)%OBK  = - MetState(i)%AIRDEN(1)  * 1004.68307 * temp(i,kte) * ustar(i)**3. / (0.40 * 9.80665 * MetState(i)%HFLUX)
         else
             MetState(i)%OBK = 1.00e+05
         end if
 
         ! Radiation Properties
         MetState(i)%SUNCOS   = coszen(i) !xcosz
-        !frac_temp = visbmdi(i) / (visbmdi(i) + visdfdi(i))
-        !MetState(i)%ALBD_VIS   = frac_temp * sfc_alb_uvvis_dir(i) + (1.0 - frac_temp) * sfc_alb_uvvis_dif(i) !albedo_vis TODO: should be vis and uv
-        !frac_temp = nirbmdi(i) / (nirbmdi(i) + nirdfdi(i))
-        !MetState(i)%ALBD_NIR   = frac_temp * sfc_alb_nir_dir(i) + (1.0 - frac_temp) * sfc_alb_nir_dif(i) !albedo_nir
+        frac_temp = visbmdi(i) / (visbmdi(i) + visdfdi(i))
+        MetState(i)%ALBD_VIS   = frac_temp * sfc_alb_uvvis_dir(i) + (1.0 - frac_temp) * sfc_alb_uvvis_dif(i) !albedo_vis TODO: should be vis and uv
+        frac_temp = nirbmdi(i) / (nirbmdi(i) + nirdfdi(i))
+        MetState(i)%ALBD_NIR   = frac_temp * sfc_alb_nir_dir(i) + (1.0 - frac_temp) * sfc_alb_nir_dif(i) !albedo_nir
 
         ! Radiation Fluxes
-        !MetState(i)%PARDR = 0.47 * ( nirbmdi(i) + visbmdi(i) ) !TODO: empirical factor from papers
-        !MetState(i)%PARDF = 0.57 * ( nirdfdi(i) + visdfdi(i) )
-        !MetState(i)%SWGDN     = swdn(i) !dswsfc
+        MetState(i)%PARDR = 0.47 * ( nirbmdi(i) + visbmdi(i) ) !TODO: empirical factor from papers
+        MetState(i)%PARDF = 0.57 * ( nirdfdi(i) + visdfdi(i) )
+        MetState(i)%SWGDN     = swdn(i) !dswsfc
 
         !MetState(i)%swup     = swup(i) !not definded in MetState
         !MetState(i)%lwdn     = lwdn(i)
@@ -634,21 +643,21 @@ contains
 
         !local variables
         integer :: i, n
-        real(kind_phys) :: con(kte), con_rev(kte), unit_conv
+        real(kind_phys) :: con(kte), unit_conv !, con_rev(kte)
 
         !TODO: here we assume the order of the chemical tracers in ChemState is the same as in chemarr
         do i = 1, im
             do n = 1, ntchm
                 con = ChemState(i)%ChemSpecies(n)%conc
-                !TODO: assume ccpp and catchem have reversed vertical layer inddex
-                con_rev = con(size(con):1:-1)
+                !seems non eed to reverse the vertical index for CATChem
+                !con_rev = con(size(con):1:-1)
                 !unite conversion
                 if(ChemState(i)%ChemSpecies(n)%is_gas) then
-                    unit_conv = 1.0e-6 * ChemState(i)%ChemSpecies(n)%mw_g / 28.9644  ! convert from ppm to kg/kg for gases
+                    unit_conv = 1.0e3 * ChemState(i)%ChemSpecies(n)%mw_g / 28.9644  ! convert from ppm to ug/kg for gases
                 else
-                    unit_conv = 1.0e-9 ! convert from ug/kg to kg/kg for aerosols
+                    unit_conv = 1.00 ! convert from ug/kg to ug/kg for aerosols
                 end if
-                chemarr(i,:,n+ind_start-1) = con_rev * unit_conv
+                chemarr(i,:,n+ind_start-1) = con * unit_conv
             end do
             !write(*,*) 'cc_to_ccpp i=:', i, n, any(con_rev > 0.0), unit_conv
         end do
@@ -668,22 +677,21 @@ contains
 
         !local variables
         integer :: i, n
-        real(kind_phys) :: con(kte), con_rev(kte), unit_conv
+        real(kind_phys) :: con(kte),  unit_conv !, con_rev(kte)
 
         !TODO: here we assume the order of the chemical tracers in ChemState is the same as in chemarr
         do i = 1, im
             do n = 1, ntchm
                 con = chemarr(i,:,n+ind_start-1)
-                !TODO: assume ccpp and catchem have reversed vertical layer inddex
-                con_rev = con(size(con):1:-1)
+                !seems non eed to reverse the vertical index for CATChem
+                !con_rev = con(size(con):1:-1)
                 !unite conversion
                 if(ChemState(i)%ChemSpecies(n)%is_gas) then
-                    unit_conv = 28.9644  / ChemState(i)%ChemSpecies(n)%mw_g * 1.0e6  ! convert from kg/kg to ppm for gases
+                    unit_conv = 28.9644  / ChemState(i)%ChemSpecies(n)%mw_g * 1.0e-3  ! convert from ug/kg to ppm for gases
                 else
-                    unit_conv = 1.0e9 ! convert from kg/kg to ug/kg for aerosols
+                    unit_conv = 1.00 ! convert from ug/kg to ug/kg for aerosols
                 end if
-                ChemState(i)%ChemSpecies(n)%conc = con_rev * unit_conv
-                !write(*,*) 'ccpp_to_cc i=:', i, n, any(con_rev > 0.0), unit_conv
+                ChemState(i)%ChemSpecies(n)%conc = con * unit_conv
             end do
         end do
 

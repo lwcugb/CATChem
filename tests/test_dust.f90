@@ -76,6 +76,8 @@ program test_dust
    MetState%GWETTOP = 0.01_fp
    MetState%USTAR = 0.5_fp
    MetState%USTAR_THRESHOLD = 0.1_fp
+   allocate(MetState%SOILM(1))
+   MetState%SOILM = 0.01_fp
    allocate(MetState%AIRDEN(1))
    MetState%AIRDEN = 1.2_fp  ! kg/m3
 
@@ -96,7 +98,7 @@ program test_dust
    end if
 
    call print_info(Config, DustState, MetState, title)
-   call assert(DiagState%dust_total_flux > 1000.0_fp, "Test Fengsha Dust Scheme")
+   call assert(DiagState%dust_total_flux > 1000.0e-9_fp, "Test Fengsha Dust Scheme")
 
 
    !----------------------------
@@ -134,7 +136,7 @@ program test_dust
    end if
 
    call print_info(Config, DustState, MetState, title)
-   call assert(DiagState%dust_total_flux >500.0_fp, "Test different horizontal flux")
+   call assert(DiagState%dust_total_flux >500.0e-9_fp, "Test different horizontal flux")
 
    call cc_dust_finalize(DustState, rc)
    if (rc /= CC_SUCCESS) then
@@ -171,7 +173,7 @@ program test_dust
    end if
 
    call print_info(Config, DustState, MetState, title)
-   call assert(DiagState%dust_total_flux > 700.0_fp, "Test Ginoux Dust Scheme Success")
+   call assert(DiagState%dust_total_flux > 700.0e-9_fp, "Test Ginoux Dust Scheme Success")
 
 contains
 

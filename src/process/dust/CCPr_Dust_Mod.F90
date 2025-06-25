@@ -291,7 +291,7 @@ CONTAINS
                MetState%TSKIN,                  &
                MetState%USTAR,                  &
                MetState%USTAR_THRESHOLD,        &
-               MetState%GWETTOP,                &
+               MetState%SOILM(1),               &
                MetState%z0,                     &
                MetState%CLAYFRAC,               &
                MetSTate%SANDFRAC,               &
@@ -322,10 +322,10 @@ CONTAINS
                MetState%TSKIN,                &
                MetState%FROCEAN,              &
                MetState%FRSNO,                &
-               MetState%AIRDEN,            &
+               MetState%AIRDEN,               &
                MetState%U10M,                 &
                MetState%V10M,                 &
-               MetState%GWETTOP,              &
+               MetState%SOILM(1),             &
                DustState%AlphaScaleFactor,    &
                DustState%EffectiveRadius,     &
                DustState%DustDensity,         &
@@ -344,7 +344,7 @@ CONTAINS
             return
          endif
 
-         !Fill Emission State. Note only works for the default 5 bins in the Ginoux scheme; EmissionPerSpecies is zero for Fengsha
+         !Fill Emission State.
          do i = 1, EmisState%Cats(DustState%CatIndex)%nSpecies
             EmisState%Cats(DustState%CatIndex)%Species(i)%Flux(1) = DustState%EmissionPerSpecies(i)
          end do
