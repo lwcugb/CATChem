@@ -10,8 +10,8 @@ simulation:
   name: test
   start_date: 20240501 0000
   end_date: 20240501 0100
-  species_filename: /scratch1/RDARCH/rda-arl-gpu/Wei.Li/ufs-weather-model/CATCHEM/tests/Configs/Default/CATChem_species.yml
-  emission_filename: /scratch1/RDARCH/rda-arl-gpu/Wei.Li/ufs-weather-model/CATCHEM/tests/Configs/Default/CATChem_emission.yml
+  species_filename: ./INPUT/CATChem_species.yml
+  emission_filename: ./INPUT/CATChem_emission.yml
   verbose:
     activate: true
 #============================================================================
