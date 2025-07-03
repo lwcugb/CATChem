@@ -205,7 +205,7 @@ contains
       if (weibullFlag) then
          gweibull = 0.0_fp
 
-         if (wm > 0.01_fp) then
+         if (wm > 0.012_fp) then
             k = 0.94_fp * sqrt(wm)
             c = wm / gamma(1.0_fp + 1.0_fp / k)
             x = (wt / c) ** k
