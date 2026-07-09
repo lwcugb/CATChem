@@ -51,6 +51,7 @@ module CATChem_API
    use SettlingProcessCreator_Mod, only: register_settling_process
    use so4ChemProcessCreator_Mod, only: register_so4chem_process
    use CarbChemProcessCreator_Mod, only: register_carbchem_process
+   use TransportProcessCreator_Mod, only: register_transport_process
 
    implicit none
    private
@@ -394,13 +395,20 @@ contains
             call this%error_manager%report_error(1014, 'Failed to register carbchem process', rc)
             call this%error_manager%pop_context()
          endif
+       case ('transport')
+         call register_transport_process(process_mgr, rc)
+         if (rc /= CC_SUCCESS) then
+            call this%error_manager%push_context('model_register_process', 'registering transport process')
+            call this%error_manager%report_error(1014, 'Failed to register transport process', rc)
+            call this%error_manager%pop_context()
+         endif
          ! case ('chemistry')
          !    call register_chemistry_process(process_mgr, rc)
 
        case default
          call this%error_manager%push_context('model_register_process', 'validating process type')
          call this%error_manager%report_error(1016, 'Unknown process type: ' // trim(process_name) // &
-            '. Supported processes: seasalt, dust, drydep, wetdep, settling, so4chem, carbchem', rc)
+            '. Supported processes: seasalt, dust, drydep, wetdep, settling, so4chem, carbchem, transport', rc)
          call this%error_manager%pop_context()
       end select
 

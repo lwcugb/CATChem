@@ -176,6 +176,13 @@ MODULE MetState_Mod
       REAL(fp), ALLOCATABLE        :: SST(:,:)          !< Sea surface temperature [K]
       REAL(fp), ALLOCATABLE        :: SLP(:,:)          !< Sea level pressure [Pa]
       REAL(fp), ALLOCATABLE        :: PS(:,:)           !< Surface Pressure [Pa]
+      !> Surface pressure at the END of the current transport step [Pa], i.e.
+      !! PS at (t + dt).  OPTIONAL: left unallocated by default.  When the host
+      !! populates it (e.g. from the next meteorology time slice), the transport
+      !! process activates the PJC/LLNL pressure fixer so the advected
+      !! (Lagrangian) surface pressure closes onto this field.  When it is not
+      !! allocated, transport runs unchanged (no pressure fixer).
+      REAL(fp), ALLOCATABLE        :: PS_NEXT(:,:)      !< Surface Pressure at t+dt [Pa]
       REAL(fp), ALLOCATABLE        :: TO3(:,:)          !< Total overhead O3 column [DU]
       REAL(fp), ALLOCATABLE        :: TROPP(:,:)        !< Tropopause pressure [Pa]
       INTEGER,  ALLOCATABLE        :: TropLev(:,:)      !< Tropopause level [1]

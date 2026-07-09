@@ -70,6 +70,9 @@ MODULE ExtEmisData_Mod
       REAL(fp), ALLOCATABLE         :: emission_data_model(:,:,:,:) !< Model-vertical-grid copy of emission_data(:,:,:,1), pressure-interpolated from the file's native levels to the model nz. Only allocated/used when the parent category has vertical_interp enabled; apply and diagnostics read this instead of emission_data so a deep source grid (e.g. 127 levels) is remapped rather than truncated.
       REAL(fp), ALLOCATABLE         :: interp_data_t1(:,:,:,:) !< Regridded current time slice for temporal blending
       REAL(fp), ALLOCATABLE         :: interp_data_t2(:,:,:,:) !< Regridded next time slice for temporal blending
+      LOGICAL                       :: has_next_slice = .false. !< Whether next_slice_data holds a valid t+dt slice (used only for the PS field feeding the transport pressure fixer)
+      REAL(fp), ALLOCATABLE         :: next_slice_data(:,:)    !< Surface field at the NEXT time slice (irec+1), e.g. PS at t+dt for the pressure fixer. Only populated for the field mapped to MET_PS when a next slice exists.
+      REAL(fp), ALLOCATABLE         :: curr_slice_data(:,:)    !< Raw surface field at the CURRENT time slice (irec), e.g. PS at the current met time. Paired with next_slice_data to form the per-model-step pressure tendency (PS_next - PS_curr)*dt/interval for the fixer, consistent with any linear time interpolation of PS.
       LOGICAL                       :: is_loaded = .false. !< Data loading status
       LOGICAL                       :: is_valid = .false.  !< Data validation status
       CHARACTER(LEN=32)             :: interpolation_method = 'bilinear' !< Spatial interpolation method
@@ -143,6 +146,8 @@ MODULE ExtEmisData_Mod
       LOGICAL                                   :: diurnal_bb = .false. !< Apply diurnal cycle to biomass burning emissions?
       CHARACTER(LEN=16)                         :: apply_method = 'add' !< How to apply data: 'add' (accumulate) or 'replace' (overwrite concentration)
       LOGICAL                                   :: needs_time_blend = .false. !< Per-timestep temporal blending needed
+      INTEGER                                   :: ps_next_field = 0   !< Index (within fields/mappings) of the field mapped to MET_PS; when > 0 the reader also fetches the NEXT time slice (PS at t+dt) into that field's next_slice_data to drive the transport pressure fixer. 0 = none.
+      REAL(fp)                                  :: ps_interval_sec = 0.0_fp !< Seconds between the current PS time slice and the next one (met read cadence). Used to scale (PS_next - PS_curr) to a single model step for the pressure fixer. <= 0 disables the tendency-based PS_NEXT.
 
    CONTAINS
       !> \brief Initialize emission category with metadata
@@ -299,6 +304,9 @@ CONTAINS
 
       if (allocated(this%emission_data)) deallocate(this%emission_data)
       if (allocated(this%emission_data_model)) deallocate(this%emission_data_model)
+      if (allocated(this%next_slice_data)) deallocate(this%next_slice_data)
+      if (allocated(this%curr_slice_data)) deallocate(this%curr_slice_data)
+      this%has_next_slice = .false.
       if (allocated(this%lat)) deallocate(this%lat)
       if (allocated(this%lon)) deallocate(this%lon)
       if (allocated(this%stkdm)) deallocate(this%stkdm)

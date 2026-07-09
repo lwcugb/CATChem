@@ -74,17 +74,22 @@ mie:
 #============================================================================
 # RunPhase settings: define process running order
 #============================================================================
+# Processes run in the listed order (operator splitting). The physically
+# motivated sequence is: emissions -> transport (advection) -> chemistry ->
+# deposition/settling, so tracers emitted this step are advected before they
+# react, and are removed by deposition last.
 run_phases:
   test1:
     description: "Test phase 1"
     processes:
-      - seasalt
-      - dust
-      - carbchem
-      - settling
-      - drydep
-      - so4chem
-      - wetdep
+      - seasalt      # emission
+      - dust         # emission
+      - transport    # advection: after emissions, before chemistry
+      - carbchem     # chemistry
+      - settling     # removal
+      - drydep       # removal
+      - so4chem      # chemistry
+      - wetdep       # removal
   # test2:
   #   description: "Test phase 2"
   #   processes:
@@ -587,3 +592,41 @@ processes:
     scheme: 'gocart'
     gocart:
       time_days_hydrophobic_to_hydrophilic: 2.5  # Rate of conversion of hydrophobic to hydrophilic [days]
+  # Horizontal tracer transport (FV3 finite-volume flux-form / PPM advection).
+  # Uses the vendored GFDL tp_core kernel (the same operator as UFS-ATM/GCHP).
+  # Advection acts on every species flagged as advected (nSpeciesAdvect); it is
+  # mass-conserving to machine precision when the halo policy matches the grid
+  # (see x_periodic below). To run it, also add `- transport` to a run_phases
+  # process list above.
+  transport:
+    activate: true        # master on/off switch. false = process never runs,
+                          #   even if listed in a run_phases block.
+    horizontal: true      # run horizontal (x-y, lon-lat) advection.
+    vertical: true        # vertical transport as the FV3/GCHP vertically-
+                          #   Lagrangian PPM remap (mappm): the horizontally
+                          #   deformed layers are remapped back to the reference
+                          #   hybrid-sigma grid. There is NO separate OMEGA
+                          #   advection. Requires horizontal: true (it is driven
+                          #   by the Lagrangian layer thicknesses). Only enabled
+                          #   for level counts with a built-in hybrid table
+                          #   (nz = 72 or 127); otherwise it is skipped.
+    hord: 8               # FV3 PPM reconstruction/limiter id passed to fv_tp_2d
+                          #   for HORIZONTAL advection.
+                          #   7,8,9,10 = monotone (no new extrema) -> use for
+                          #   tracers; 8 is the FV3 default (Lin monotonicity
+                          #   constraint). 5,6 = linear, less diffusive but can
+                          #   overshoot/undershoot. Keep 8 unless you know why.
+    vord: 8               # FV3 PPM scheme id (mappm kord) for the VERTICAL
+                          #   Lagrangian remap. 8 = monotone constituent remap
+                          #   (the FV3/GCHP default for tracers). Keep 8 unless
+                          #   you know why.
+    halo_width: 3         # ghost-cell ring width of the transport data domain.
+                          #   Must be >= 3 for the PPM stencil; 3 is standard.
+    x_periodic: true      # west-east (longitude) halo closure.
+                          #   true  = wrap the seam (REQUIRED for a global
+                          #           longitude grid so mass is conserved across
+                          #           the 0/360 seam);
+                          #   false = zero-gradient replication (regional grid).
+    y_periodic: false     # south-north (latitude) halo closure. Almost always
+                          #   false: the poles are not periodic. Set true only
+                          #   for a genuinely periodic channel domain.

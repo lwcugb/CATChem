@@ -245,6 +245,7 @@ if(CATCHEM_BUILD_NUOPC)
       $<TARGET_FILE:CATChem_process_settling>
       $<TARGET_FILE:CATChem_process_so4chem>
       $<TARGET_FILE:CATChem_process_carbchem>
+      $<TARGET_FILE:CATChem_process_transport>
       $<TARGET_FILE:CATChem_core>
       $<TARGET_FILE:yaml_interface>
       $<TARGET_FILE:catchem_utilities>

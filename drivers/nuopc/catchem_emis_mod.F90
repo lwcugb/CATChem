@@ -247,6 +247,11 @@ contains
                ext_emis_data%categories(i)%irec = ext_emis_data%categories(i)%irec + 1
             end if
 
+            ! Identify the surface-pressure field (if any) so the reader can also
+            ! fetch the next time slice (PS at t+dt) for the transport pressure
+            ! fixer.  0 when this category provides no MET_PS.
+            ext_emis_data%categories(i)%ps_next_field = emis_ps_next_field(config_manager, i)
+
             call catchem_emis_read(ext_emis_data%categories(i), IO, grid, &
                met_state%NLEVS, current_time, localrc)
             if (localrc /= CC_SUCCESS) then
@@ -367,6 +372,88 @@ contains
          is_met = .true.
       end associate
    end function emis_category_is_met
+
+   !> \brief Return the field index in category `icat` whose mapping targets the
+   !!        meteorology surface pressure (MET_PS), or 0 if none.
+   !!
+   !! Used by the standalone met reader to also fetch the NEXT time slice of
+   !! surface pressure (PS at t+dt) into met%PS_NEXT, which activates the
+   !! transport pressure fixer.  Returns 0 when the mapping is not loaded, the
+   !! category has no MET_PS target, or indices are out of range.
+   integer function emis_ps_next_field(config_manager, icat) result(ifield_ps)
+      type(ConfigManagerType), pointer, intent(in) :: config_manager
+      integer, intent(in) :: icat
+      integer :: ifield, ispec, nmap
+      character(len=64) :: tgt
+
+      ifield_ps = 0
+      if (.not. associated(config_manager)) return
+      if (.not. config_manager%config_data%emission_mapping%is_loaded) return
+      if (icat < 1 .or. icat > config_manager%config_data%emission_mapping%n_categories) return
+
+      associate (cat => config_manager%config_data%emission_mapping%categories(icat))
+         if (cat%n_emission_species <= 0) return
+         do ifield = 1, cat%n_emission_species
+            nmap = cat%species_mappings(ifield)%n_mappings
+            do ispec = 1, nmap
+               tgt = adjustl(cat%species_mappings(ifield)%map(ispec))
+               if (len_trim(tgt) <= 4) cycle
+               if (tgt(1:4) /= 'MET_' .and. tgt(1:4) /= 'met_') cycle
+               if (trim(tgt(5:)) == 'PS' .or. trim(tgt(5:)) == 'ps') then
+                  ifield_ps = ifield
+                  return
+               end if
+            end do
+         end do
+      end associate
+   end function emis_ps_next_field
+
+   !> \brief Seconds between the current PS time slice (irec) and the next one.
+   !!
+   !! Returns the met read cadence used to scale the raw slice-to-slice pressure
+   !! change (PS_next - PS_curr) down to a single model step, so PS_NEXT stays
+   !! consistent with any linear time interpolation of PS.  Uses the exact time
+   !! coordinates when a multi-record file is cached (tc_dates/tc_secs); falls
+   !! back to the category frequency for filename-template categories.  Returns
+   !! 0 when the interval cannot be determined (fixer then skipped).
+   real(fp) function emis_next_interval_sec(category, curr_time) result(sec)
+      type(ExtEmisCategoryType), intent(in) :: category
+      type(ESMF_Time),           intent(in) :: curr_time
+      integer :: localrc, n_hours, d1, d2, s1, s2, cyy, cmm
+      type(ESMF_Time) :: t1, t2
+      type(ESMF_TimeInterval) :: dti
+      real(ESMF_KIND_R8) :: sec_r8
+
+      sec = 0.0_fp
+
+      ! Preferred: exact spacing from the cached time coordinates (same file).
+      if (category%n_times >= 2 .and. category%irec >= 1 .and. &
+          category%irec + 1 <= category%n_times .and. &
+          allocated(category%tc_dates) .and. allocated(category%tc_secs)) then
+         d1 = category%tc_dates(category%irec);     s1 = category%tc_secs(category%irec)
+         d2 = category%tc_dates(category%irec + 1); s2 = category%tc_secs(category%irec + 1)
+         call ESMF_TimeSet(t1, yy=d1/10000, mm=mod(d1/100,100), dd=mod(d1,100), s=s1, rc=localrc)
+         if (localrc /= ESMF_SUCCESS) return
+         call ESMF_TimeSet(t2, yy=d2/10000, mm=mod(d2/100,100), dd=mod(d2,100), s=s2, rc=localrc)
+         if (localrc /= ESMF_SUCCESS) return
+         dti = t2 - t1
+         call ESMF_TimeIntervalGet(dti, s_r8=sec_r8, rc=localrc)
+         if (localrc == ESMF_SUCCESS) sec = real(sec_r8, fp)
+         return
+      end if
+
+      ! Fallback: frequency-based cadence (filename-template categories).
+      select case (trim(category%frequency))
+       case ('hourly'); sec = 3600.0_fp
+       case ('daily');  sec = 86400.0_fp
+       case ('monthly')
+         call ESMF_TimeGet(curr_time, yy=cyy, mm=cmm, rc=localrc)
+         if (localrc == ESMF_SUCCESS) sec = real(days_in_month_func(cyy, cmm), fp) * 86400.0_fp
+       case default
+         n_hours = parse_hourly_interval(category%frequency)
+         if (n_hours > 0) sec = real(n_hours, fp) * 3600.0_fp
+      end select
+   end function emis_next_interval_sec
 
    subroutine catchem_emis_detect_field_ranks(category, filename, rc)
       !> \brief Auto-detect each field's 2D/3D rank from the NetCDF file.
@@ -803,12 +890,172 @@ contains
          field_data_3d => null()
       end do
 
+      ! ---------------------------------------------------------------------
+      ! Pressure fixer support: also read the NEXT time slice of surface
+      ! pressure (PS at t+dt) for the field mapped to MET_PS.  This is stored in
+      ! that field's next_slice_data and applied to met%PS_NEXT, which activates
+      ! the transport PJC/LLNL pressure fixer.  If there is no next slice (final
+      ! record, static file, or single-slice file), has_next_slice is cleared so
+      ! PS_NEXT is not set and the fixer stays off for that step.
+      ! ---------------------------------------------------------------------
+      if (category%ps_next_field > 0 .and. category%ps_next_field <= category%n_fields) then
+         call read_next_ps_slice(category, IO, grid, curr_time, rc)
+         if (rc /= CC_SUCCESS) then
+            ! A failed look-ahead read must not abort the run; just disable the
+            ! fixer for this period.
+            category%fields(category%ps_next_field)%has_next_slice = .false.
+            rc = CC_SUCCESS
+         end if
+      end if
+
       !!not sure why this write will crash the model
       write(msg, '(A,A,A)') trim(pName), ': Successfully read emission data for category ', &
          trim(category_name)
       call ESMF_LogWrite(msg, ESMF_LOGMSG_INFO, rc=localrc)
 
    end subroutine catchem_emis_read
+
+   !> \brief Read the NEXT time slice (t+dt) of the MET_PS field into its
+   !!        next_slice_data buffer, for the transport pressure fixer.
+   !!
+   !! The next-time source is either the next record in the same (already-open)
+   !! file (n_times >= 2) or, for filename-template categories, the first record
+   !! of the next-period file (opened on a throwaway IO component so the caller's
+   !! handle is untouched).  Only the non-regridded 2D surface-pressure field is
+   !! handled.  When no valid next slice exists (final record with no next file,
+   !! static, or single-slice non-template file) has_next_slice is cleared and
+   !! PS_NEXT is left unset so the fixer is skipped.  No wrap-around is used (a
+   !! wrapped climatological slice would be the wrong t+dt pressure).
+   subroutine read_next_ps_slice(category, IO, grid, curr_time, rc)
+      implicit none
+
+      type(ExtEmisCategoryType), intent(inout) :: category
+      type(ESMF_GridComp),       intent(inout) :: IO
+      type(ESMF_Grid),           intent(in)    :: grid
+      type(ESMF_Time),           intent(in)    :: curr_time
+      integer,                   intent(out)   :: rc
+
+      integer :: localrc, ips, inext, n_hours
+      type(ESMF_Field) :: esmf_field
+      real(ESMF_KIND_R4), pointer :: pdata(:,:) => null()
+      logical :: use_temp_file, next_file_exists
+      character(len=EMIS_MAXSTR) :: filename_next
+      type(ESMF_Time) :: next_time
+      type(ESMF_TimeInterval) :: period_step
+      type(ESMF_GridComp) :: IO_next
+      character(len=*), parameter :: pName = 'read_next_ps_slice'
+
+      rc = CC_SUCCESS
+      ips = category%ps_next_field
+      category%fields(ips)%has_next_slice = .false.
+      if (.not. category%fields(ips)%is_2d) return
+
+      ! Resolve the next-time source (no wrap-around for the pressure target).
+      use_temp_file = .false.
+      if (category%n_times >= 2 .and. category%irec + 1 <= category%n_times) then
+         ! Same multi-record file (already open on IO): next record.
+         inext = category%irec + 1
+      else if (index(trim(category%source_file), '%') > 0 .and. &
+               trim(category%frequency) /= 'static') then
+         ! Filename-template category: first record of the next-period file.
+         inext = 1
+         use_temp_file = .true.
+         select case (trim(category%frequency))
+          case ('monthly'); call ESMF_TimeIntervalSet(period_step, mm=1, rc=localrc)
+          case ('daily');   call ESMF_TimeIntervalSet(period_step, d=1, rc=localrc)
+          case ('hourly');  call ESMF_TimeIntervalSet(period_step, h=1, rc=localrc)
+          case default
+            n_hours = parse_hourly_interval(category%frequency)
+            if (n_hours > 0) then
+               call ESMF_TimeIntervalSet(period_step, h=n_hours, rc=localrc)
+            else
+               call ESMF_TimeIntervalSet(period_step, mm=1, rc=localrc)
+            end if
+         end select
+         if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
+            line=__LINE__, file=__FILE__, rcToReturn=rc)) return
+
+         next_time = curr_time + period_step
+         call resolve_filename_template(category%source_file, next_time, filename_next, localrc)
+         if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
+            line=__LINE__, file=__FILE__, rcToReturn=rc)) return
+
+         inquire(file=trim(filename_next), exist=next_file_exists)
+         if (.not. next_file_exists) return   ! no next-period file: fixer off this period
+      else
+         return   ! static / single-slice non-template: no t+dt pressure
+      end if
+
+      esmf_field = ESMF_FieldCreate(grid, name=trim(category%fields(ips)%field_name), &
+         typekind=ESMF_TYPEKIND_R4, rc=localrc)
+      if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
+         line=__LINE__, file=__FILE__, rcToReturn=rc)) return
+
+      if (use_temp_file) then
+         ! Open the next-period file on a throwaway IO component so the caller's
+         ! IO handle (current file) is left untouched.
+         IO_next = AQMIO_Create(grid, rc=localrc)
+         if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
+            line=__LINE__, file=__FILE__, rcToReturn=rc)) then
+            call ESMF_FieldDestroy(esmf_field, rc=localrc)
+            return
+         end if
+         call AQMIO_Open(IO_next, trim(filename_next), iomode="read", &
+            iofmt=AQMIO_FMT_NETCDF, rc=localrc)
+         if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
+            line=__LINE__, file=__FILE__, rcToReturn=rc)) then
+            call ESMF_FieldDestroy(esmf_field, rc=localrc)
+            call AQMIO_Destroy(IO_next, rc=localrc)
+            return
+         end if
+         call AQMIO_Read(IO_next, (/ esmf_field /), &
+            fieldNameList=(/ trim(category%fields(ips)%field_name) /), &
+            timeSlice=inext, iofmt=AQMIO_FMT_NETCDF, rc=localrc)
+         if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
+            line=__LINE__, file=__FILE__, rcToReturn=rc)) then
+            call ESMF_FieldDestroy(esmf_field, rc=localrc)
+            call AQMIO_Close(IO_next, rc=localrc)
+            call AQMIO_Destroy(IO_next, rc=localrc)
+            return
+         end if
+         call AQMIO_Close(IO_next, rc=localrc)
+         call AQMIO_Destroy(IO_next, rc=localrc)
+      else
+         call AQMIO_Read(IO, (/ esmf_field /), &
+            fieldNameList=(/ trim(category%fields(ips)%field_name) /), &
+            timeSlice=inext, iofmt=AQMIO_FMT_NETCDF, rc=localrc)
+         if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
+            line=__LINE__, file=__FILE__, rcToReturn=rc)) then
+            call ESMF_FieldDestroy(esmf_field, rc=localrc)
+            return
+         end if
+      end if
+
+      call ESMF_FieldGet(esmf_field, farrayPtr=pdata, rc=localrc)
+      if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
+         line=__LINE__, file=__FILE__, rcToReturn=rc)) then
+         call ESMF_FieldDestroy(esmf_field, rc=localrc)
+         return
+      end if
+
+      if (allocated(category%fields(ips)%next_slice_data)) then
+         if (size(category%fields(ips)%next_slice_data,1) /= size(pdata,1) .or. &
+             size(category%fields(ips)%next_slice_data,2) /= size(pdata,2)) &
+            deallocate(category%fields(ips)%next_slice_data)
+      end if
+      if (.not. allocated(category%fields(ips)%next_slice_data)) &
+         allocate(category%fields(ips)%next_slice_data(size(pdata,1), size(pdata,2)))
+
+      category%fields(ips)%next_slice_data(:,:) = real(pdata(:,:), fp)
+      category%fields(ips)%has_next_slice = .true.
+
+      ! Capture the raw current PS slice and the met interval so PS_NEXT can be
+      ! formed as a per-model-step tendency (consistent with time interpolation).
+      call store_ps_curr_slice_and_interval(category, curr_time)
+
+      call ESMF_FieldDestroy(esmf_field, rc=localrc)
+      pdata => null()
+   end subroutine read_next_ps_slice
 
    !> \brief Read emission data with runtime regridding from lat-lon to model grid
    !!
@@ -1122,11 +1369,175 @@ contains
          field_data_2d => null()
       end do
 
+      ! Pressure fixer support (regridded path): also regrid the NEXT time slice
+      ! of surface pressure (PS at t+dt) to the model grid so met%PS_NEXT can be
+      ! set and the transport pressure fixer activates.  Regridding is exactly
+      ! where the winds least satisfy continuity, so the fixer matters most here.
+      if (category%ps_next_field > 0 .and. category%ps_next_field <= category%n_fields) then
+         call regrid_next_ps_slice(category, grid, filename, curr_time, rc)
+         if (rc /= CC_SUCCESS) then
+            ! A failed look-ahead regrid must not abort the run; disable the
+            ! fixer for this period.
+            category%fields(category%ps_next_field)%has_next_slice = .false.
+            rc = CC_SUCCESS
+         end if
+      end if
+
       write(msg, '(A,A,A)') trim(pName), &
          ': Successfully read & regridded emission data for category ', trim(category_name)
       call ESMF_LogWrite(msg, ESMF_LOGMSG_INFO, rc=localrc)
 
    end subroutine catchem_emis_read_regrid
+
+   !> \brief Regrid the NEXT time slice (t+dt) of the MET_PS field onto the model
+   !!        grid and store it in next_slice_data, for the transport pressure fixer.
+   !!
+   !! Mirrors read_next_ps_slice but for the regridded path.  The next-time
+   !! source is either the next record in the same file (n_times >= 2) or, for
+   !! filename-template categories, the first record of the next-period file.
+   !! When no valid next slice exists (final record with no next file, static, or
+   !! single-slice non-template file) has_next_slice is cleared so PS_NEXT is left
+   !! unset and the fixer is skipped for that step.  No wrap-around is used (a
+   !! wrapped climatological slice would be the wrong t+dt pressure).
+   subroutine regrid_next_ps_slice(category, grid, filename, curr_time, rc)
+      implicit none
+
+      type(ExtEmisCategoryType), intent(inout) :: category
+      type(ESMF_Grid),           intent(in)    :: grid
+      character(len=*),          intent(in)    :: filename
+      type(ESMF_Time),           intent(in)    :: curr_time
+      integer,                   intent(out)   :: rc
+
+      integer :: localrc, ips, inext, n_hours
+      type(ESMF_Field) :: esmf_field
+      real(ESMF_KIND_R4), pointer :: pdata(:,:) => null()
+      logical :: didRegrid, next_file_exists
+      character(len=EMIS_MAXSTR) :: filename_next
+      type(ESMF_Time) :: next_time
+      type(ESMF_TimeInterval) :: period_step
+      character(len=*), parameter :: pName = 'regrid_next_ps_slice'
+
+      rc = CC_SUCCESS
+      ips = category%ps_next_field
+      category%fields(ips)%has_next_slice = .false.
+      if (.not. category%fields(ips)%is_2d) return
+
+      ! Resolve the next-time source (no wrap-around for the pressure target).
+      if (category%n_times >= 2 .and. category%irec + 1 <= category%n_times) then
+         ! Same multi-record file: next record.
+         inext = category%irec + 1
+         filename_next = trim(filename)
+      else if (index(trim(category%source_file), '%') > 0 .and. &
+               trim(category%frequency) /= 'static') then
+         ! Filename-template category: first record of the next-period file.
+         inext = 1
+         select case (trim(category%frequency))
+          case ('monthly'); call ESMF_TimeIntervalSet(period_step, mm=1, rc=localrc)
+          case ('daily');   call ESMF_TimeIntervalSet(period_step, d=1, rc=localrc)
+          case ('hourly');  call ESMF_TimeIntervalSet(period_step, h=1, rc=localrc)
+          case default
+            n_hours = parse_hourly_interval(category%frequency)
+            if (n_hours > 0) then
+               call ESMF_TimeIntervalSet(period_step, h=n_hours, rc=localrc)
+            else
+               call ESMF_TimeIntervalSet(period_step, mm=1, rc=localrc)
+            end if
+         end select
+         if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
+            line=__LINE__, file=__FILE__, rcToReturn=rc)) return
+
+         next_time = curr_time + period_step
+         call resolve_filename_template(category%source_file, next_time, filename_next, localrc)
+         if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
+            line=__LINE__, file=__FILE__, rcToReturn=rc)) return
+
+         inquire(file=trim(filename_next), exist=next_file_exists)
+         if (.not. next_file_exists) return   ! no next-period file: fixer off this period
+      else
+         return   ! static / single-slice non-template: no t+dt pressure
+      end if
+
+      ! Regrid the next-time PS slice onto the model grid.
+      esmf_field = ESMF_FieldCreate(grid, name=trim(category%fields(ips)%field_name), &
+         typekind=ESMF_TYPEKIND_R4, rc=localrc)
+      if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
+         line=__LINE__, file=__FILE__, rcToReturn=rc)) return
+
+      call catchem_regrid_field( &
+         cache     = emis_regrid_cache, &
+         filename  = trim(filename_next), &
+         varname   = trim(category%fields(ips)%field_name), &
+         dstField  = esmf_field, &
+         latname   = trim(category%latname), &
+         lonname   = trim(category%lonname), &
+         regrid_method_name = trim(category%regrid_method), &
+         timeSlice = inext, &
+         didRegrid = didRegrid, &
+         rc        = localrc)
+      if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
+         line=__LINE__, file=__FILE__, rcToReturn=rc)) then
+         call ESMF_FieldDestroy(esmf_field, rc=localrc)
+         return
+      end if
+
+      call ESMF_FieldGet(esmf_field, farrayPtr=pdata, rc=localrc)
+      if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
+         line=__LINE__, file=__FILE__, rcToReturn=rc)) then
+         call ESMF_FieldDestroy(esmf_field, rc=localrc)
+         return
+      end if
+
+      if (allocated(category%fields(ips)%next_slice_data)) then
+         if (size(category%fields(ips)%next_slice_data,1) /= size(pdata,1) .or. &
+             size(category%fields(ips)%next_slice_data,2) /= size(pdata,2)) &
+            deallocate(category%fields(ips)%next_slice_data)
+      end if
+      if (.not. allocated(category%fields(ips)%next_slice_data)) &
+         allocate(category%fields(ips)%next_slice_data(size(pdata,1), size(pdata,2)))
+
+      category%fields(ips)%next_slice_data(:,:) = real(pdata(:,:), fp)
+      category%fields(ips)%has_next_slice = .true.
+
+      ! Capture the raw current PS slice and the met interval so PS_NEXT can be
+      ! formed as a per-model-step tendency (consistent with time interpolation).
+      call store_ps_curr_slice_and_interval(category, curr_time)
+
+      call ESMF_FieldDestroy(esmf_field, rc=localrc)
+      pdata => null()
+   end subroutine regrid_next_ps_slice
+
+   !> \brief Store the raw current PS slice and the current->next met interval.
+   !!
+   !! Called right after next_slice_data is populated (by either reader).  The
+   !! current PS field's emission_data holds the raw current time slice at this
+   !! point (before any per-timestep blending overwrites it), so it is copied
+   !! into curr_slice_data.  Together with next_slice_data and ps_interval_sec
+   !! this lets catchem_emis_apply build PS_NEXT = PS(t) + (dt/interval)*(PS2-PS1),
+   !! i.e. the surface pressure one model step ahead, matching what the transport
+   !! pressure fixer expects and staying consistent with linear time interpolation.
+   subroutine store_ps_curr_slice_and_interval(category, curr_time)
+      type(ExtEmisCategoryType), intent(inout) :: category
+      type(ESMF_Time),           intent(in)    :: curr_time
+      integer :: ips, sx, sy
+
+      ips = category%ps_next_field
+      if (ips < 1 .or. ips > category%n_fields) return
+      if (.not. category%fields(ips)%has_next_slice) return
+      if (.not. allocated(category%fields(ips)%emission_data)) return
+
+      sx = size(category%fields(ips)%emission_data, 1)
+      sy = size(category%fields(ips)%emission_data, 2)
+      if (allocated(category%fields(ips)%curr_slice_data)) then
+         if (size(category%fields(ips)%curr_slice_data,1) /= sx .or. &
+             size(category%fields(ips)%curr_slice_data,2) /= sy) &
+            deallocate(category%fields(ips)%curr_slice_data)
+      end if
+      if (.not. allocated(category%fields(ips)%curr_slice_data)) &
+         allocate(category%fields(ips)%curr_slice_data(sx, sy))
+
+      category%fields(ips)%curr_slice_data(:,:) = category%fields(ips)%emission_data(:,:,1,1)
+      category%ps_interval_sec = emis_next_interval_sec(category, curr_time)
+   end subroutine store_ps_curr_slice_and_interval
 
    !> \brief Get emission data for a specific field and location
    !!
@@ -1815,6 +2226,39 @@ contains
                      write(msg, '(A,A)') trim(pName), ': Failed to set met_state'
                      call ESMF_LogWrite(msg, ESMF_LOGMSG_ERROR, rc=localrc)
                      rc = CC_FAILURE
+                  end if
+
+                  ! Pressure fixer: when this field is the surface pressure and a
+                  ! next time slice is available, also populate PS_NEXT as the
+                  ! surface pressure ONE MODEL STEP ahead:
+                  !     PS_NEXT = PS(t) + (dt/interval)*(PS_next - PS_curr)
+                  ! This is the pressure tendency the fixer expects over a single
+                  ! step, and stays consistent with any linear time interpolation
+                  ! of PS (matching GEOS-Chem/GCHP, which interpolate PS to both
+                  ! transport-step boundaries).  Using the raw next slice directly
+                  ! would over-drive the fixer by interval/dt.  The interval-length
+                  ! and current raw slice are captured at read time; the same
+                  ! global/category scaling applied to emission_flux is applied to
+                  ! the increment.  If no next slice / interval exists, PS_NEXT is
+                  ! left unset and the fixer stays off.
+                  if ((trim(mapped_species_name(5:)) == 'PS' .or. &
+                       trim(mapped_species_name(5:)) == 'ps') .and. &
+                      category%fields(ifield)%has_next_slice .and. &
+                      allocated(category%fields(ifield)%next_slice_data) .and. &
+                      allocated(category%fields(ifield)%curr_slice_data) .and. &
+                      category%ps_interval_sec > 0.0_fp) then
+                     call met_state%set_field('PS_NEXT', &
+                        ( emission_flux(:,:,1) + &
+                          min(dt / category%ps_interval_sec, 1.0_fp) * &
+                          category%global_scale * global_scale * &
+                          ( category%fields(ifield)%next_slice_data(:,:) - &
+                            category%fields(ifield)%curr_slice_data(:,:) ) &
+                        ) * scale_factor, &
+                        error_manager, localrc)
+                     if (localrc /= CC_SUCCESS) then
+                        write(msg, '(A,A)') trim(pName), ': Failed to set met_state PS_NEXT'
+                        call ESMF_LogWrite(msg, ESMF_LOGMSG_WARNING, rc=localrc)
+                     end if
                   end if
                   cycle !do not move to chemstate below
                end if
