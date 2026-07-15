@@ -25,6 +25,7 @@ module ProcessTransportInterface_Mod
 
    ! Core CATChem infrastructure
    use precision_mod, only: fp
+   use constants, only: MAX_LEN_NAME
    use ProcessInterface_Mod, only: ProcessInterface
    use StateManager_Mod, only: StateManagerType
    use GridManager_Mod, only: GridManagerType
@@ -782,9 +783,9 @@ contains
    end subroutine transport_finalize
 
    !> \brief Meteorological fields required by transport.
-   function transport_get_required_met_fields(this) result(field_names)
+   subroutine transport_get_required_met_fields(this, field_names)
       class(ProcessTransportInterface), intent(in) :: this
-      character(len=32), allocatable :: field_names(:)
+      character(len=MAX_LEN_NAME), allocatable, intent(out) :: field_names(:)
 
       ! Horizontal advection needs the winds and the layer pressure thickness.
       ! Vertical transport is a Lagrangian PPM remap driven by horizontal mass
@@ -794,6 +795,6 @@ contains
       field_names(2) = 'V'
       field_names(3) = 'DELP'
 
-   end function transport_get_required_met_fields
+   end subroutine transport_get_required_met_fields
 
 end module ProcessTransportInterface_Mod
