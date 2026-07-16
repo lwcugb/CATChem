@@ -21,13 +21,16 @@
 !!             and total tracer mass sum(q*dp*area) must be conserved; the
 !!             monotone PPM solution must stay bounded and finite.
 !!
-!!   Phase B - pressure fixer ON (PS_NEXT supplied and marked populated):
-!!             a UNIFORM tracer with a latitude-structured end-of-step surface
-!!             pressure target. The PJC/LLNL correction engages (global periodic
-!!             grid, 72 levels, PS_NEXT populated); a uniform field must remain
-!!             uniform (the correction mass flux and tracer flux telescope
-!!             identically) and stay finite. Constancy is the end-to-end proof
-!!             that the fixer flux is mass-consistent.
+!!   Phase B - vertical reconciliation onto PS_NEXT (PS_NEXT supplied and marked
+!!             populated): a UNIFORM tracer with a latitude-structured end-of-step
+!!             surface pressure target. The vertical Lagrangian remap maps the
+!!             advected column onto the PS_NEXT grid and the unconditional
+!!             per-column mass rescale conserves each column's tracer mass. A
+!!             uniform mixing ratio therefore does NOT stay globally uniform:
+!!             conserving mass while the target air-column mass varies with
+!!             latitude forces the mixing ratio to vary with latitude. Each
+!!             column stays vertically uniform at the mass-conserving value and
+!!             finite (see check_phase_b for the exact expected value).
 !!
 !! The run reuses the shared standalone configuration
 !! (tests/Configs/Default/CATChem_new_config_standalone.yml), which already
@@ -37,8 +40,8 @@
 !! transport process is added to the pipeline, so the emission/chemistry blocks
 !! in that config are never exercised.
 !!
-!! The numeric accuracy of the fixer correction itself is validated to machine
-!! precision by the unit test (pfix Tests 7-8); here we verify the wiring.
+!! The numeric accuracy of the vertical remap itself is validated to machine
+!! precision by the unit test (Tests 4-6); here we verify the end-to-end wiring.
 !!
 !! PRECISION: this test is compiled WITHOUT `-fdefault-real-8`, so bare `real`
 !! is REAL32 and `real(fp)` matches the core state (fp = kind(0.0)). It only
@@ -69,6 +72,7 @@ program test_transport_integration
    real(fp), parameter :: dt = 600.0_fp        !< transport timestep [s]
    real(fp), parameter :: PS0 = 1.0e5_fp       !< reference surface pressure [Pa]
    real(fp), parameter :: U0  = 10.0_fp        !< uniform zonal wind [m s-1]
+   real(fp), parameter :: U0C = 40.0_fp        !< Phase C baroclinic wind amplitude [m s-1]
    real(fp), parameter :: Q0  = 1.0e-6_fp      !< reference tracer mixing ratio
    real(fp), parameter :: TOL = 1.0e-4_fp      !< REAL32-appropriate rel. tol.
    real(fp), parameter :: PI  = 3.14159265358979323846_fp
@@ -85,6 +89,7 @@ program test_transport_integration
 
    real(fp) :: area(nx, ny), latc(nx, ny), lonc(nx, ny)
    real(dp) :: m0_phaseA
+   real(dp) :: m0_phaseC
    logical  :: all_ok
    integer  :: rc, it
 
@@ -178,6 +183,37 @@ program test_transport_integration
    call check_phase_a()
 
    ! ----------------------------------------------------------------------
+   ! Phase C: VERTICAL transport. A surface-loaded tracer under a baroclinic,
+   !          purely-zonal convergent wind (V = 0; U strong near the surface and
+   !          vanishing aloft) on the periodic grid. Low-level horizontal mass
+   !          convergence thickens the surface Lagrangian layers, and the
+   !          vertical Lagrangian remap must then lift tracer mass off the
+   !          surface into the layers above. Because the wind is purely zonal on
+   !          a periodic grid (V = 0), there is no meridional boundary flux and
+   !          global mass is conserved exactly, so we can assert BOTH:
+   !            (1) total 3-D mass conservation through horizontal + vertical;
+   !            (2) above-surface mass becomes non-zero -- direct proof the
+   !                vertical remap redistributes mass, since horizontal
+   !                advection alone can never move mass between levels.
+   !          The pressure fixer stays OFF here (PS_NEXT is not set until Phase
+   !          B, which runs next), so this is pure advective transport.
+   ! ----------------------------------------------------------------------
+   write(output_unit,'(A)') ''
+   write(output_unit,'(A)') 'Phase C: VERTICAL transport (surface tracer + convergent wind)...'
+   call setup_winds_baroclinic()
+   call set_tracer_surface()
+   m0_phaseC = total_tracer_mass()   ! reference 3-D mass BEFORE transport
+   do it = 1, nsteps
+      call core%run_timestep(it, dt, rc)
+      if (rc /= CC_SUCCESS) then
+         write(error_unit,'(A,I0)') 'ERROR: Phase C timestep failed at step ', it
+         all_ok = .false.
+         go to 999
+      end if
+   end do
+   call check_phase_c()
+
+   ! ----------------------------------------------------------------------
    ! Phase B: pressure fixer ON. Uniform tracer, uniform zonal wind, and a
    !          latitude-structured PS_NEXT target -> constancy + finiteness.
    ! ----------------------------------------------------------------------
@@ -263,9 +299,9 @@ contains
       end do
    end subroutine setup_winds
 
-   !> Latitude-structured end-of-step surface pressure so the PJC/LLNL fixer
-   !! produces a non-trivial correction, then mark it populated so the
-   !! transport gate (is_field_set) engages the fixer.
+   !> Latitude-structured end-of-step surface pressure so the vertical remap
+   !! reconciles onto a non-trivial PS_NEXT, then mark it populated so the
+   !! transport gate (is_field_set) engages the reconciliation.
    subroutine setup_ps_next()
       integer  :: i, j
       real(fp) :: latr
@@ -307,6 +343,59 @@ contains
       end do
    end subroutine set_tracer_uniform
 
+   !> Baroclinic, purely-zonal convergent wind used to drive VERTICAL transport.
+   !! V = 0 everywhere (no meridional boundary flux => exact global mass
+   !! conservation on the periodic grid). U = U0C*cos(lon)*wprof(k), with
+   !! wprof = 1 through the lowest third of the (surface-first) column, tapering
+   !! linearly to 0 by two-thirds and 0 above. dU/dx = -U0C*sin(lon)*wprof(k)
+   !! gives low-level horizontal convergence/divergence that vanishes with
+   !! height, so the surface Lagrangian layers deform while the upper layers do
+   !! not -- exactly the structure that forces genuine vertical (Lagrangian
+   !! remap) transport of a surface-confined tracer.
+   subroutine setup_winds_baroclinic()
+      integer  :: i, j, k, kbot
+      real(fp), allocatable :: ap(:), bp(:)
+      real(fp) :: dpk, wprof
+      logical  :: ok
+      call get_hybrid_ab(nz, ap, bp, ok)
+      met%PS(:, :) = PS0
+      kbot = max(1, nz / 3)          ! lowest third of the surface-first column
+      do k = 1, nz
+         if (ok) then
+            dpk = (ap(k) - ap(k+1)) + (bp(k) - bp(k+1)) * PS0
+         else
+            dpk = PS0 / real(nz, fp)
+         end if
+         if (k <= kbot) then
+            wprof = 1.0_fp
+         else if (k < 2 * kbot) then
+            wprof = real(2 * kbot - k, fp) / real(kbot, fp)
+         else
+            wprof = 0.0_fp
+         end if
+         do j = 1, ny
+            do i = 1, nx
+               met%U(i, j, k)    = U0C * cos(lonc(i, j) * PI / 180.0_fp) * wprof
+               met%V(i, j, k)    = 0.0_fp
+               met%DELP(i, j, k) = dpk
+            end do
+         end do
+      end do
+   end subroutine setup_winds_baroclinic
+
+   !> Surface-loaded initial tracer: Q0 in the surface layer (k=1), zero above.
+   !! Mirrors a species with surface-only emissions, so any tracer that appears
+   !! at k>=2 after the run must have been transported there vertically.
+   subroutine set_tracer_surface()
+      integer :: s, isp
+      do s = 1, chem%nSpeciesAdvect
+         isp = chem%AdvectIndex(s)
+         if (.not. associated(chem%ChemSpecies(isp)%conc)) cycle
+         chem%ChemSpecies(isp)%conc(:, :, :) = 0.0_fp
+         chem%ChemSpecies(isp)%conc(:, :, 1) = Q0
+      end do
+   end subroutine set_tracer_surface
+
    !> Total advected-tracer mass sum(conc*DELP*area), summed in double precision.
    function total_tracer_mass() result(m)
       real(dp) :: m
@@ -325,6 +414,27 @@ contains
          end do
       end do
    end function total_tracer_mass
+
+   !> Advected-tracer mass held ABOVE the surface layer (levels k>=2), summed in
+   !! double precision. It is exactly zero unless the vertical remap has moved
+   !! mass off the surface, so it is a sharp on/off signal for vertical transport.
+   function above_surface_mass() result(m)
+      real(dp) :: m
+      integer  :: s, isp, i, j, k
+      m = 0.0_dp
+      do s = 1, chem%nSpeciesAdvect
+         isp = chem%AdvectIndex(s)
+         if (.not. associated(chem%ChemSpecies(isp)%conc)) cycle
+         do k = 2, nz
+            do j = 1, ny
+               do i = 1, nx
+                  m = m + real(chem%ChemSpecies(isp)%conc(i, j, k), dp) * &
+                          real(met%DELP(i, j, k), dp) * real(area(i, j), dp)
+               end do
+            end do
+         end do
+      end do
+   end function above_surface_mass
 
    !> .true. if every advected tracer value is finite.
    logical function tracer_is_finite() result(ok)
@@ -375,24 +485,97 @@ contains
       if (.not. ok) all_ok = .false.
    end subroutine check_phase_a
 
-   !> Phase B checks: a uniform field must stay uniform (the fixer flux
-   !! telescopes) and finite.
+   !> Phase B checks (mass-conserving vertical reconciliation onto PS_NEXT).
+   !! With a uniform initial mixing ratio, a uniform non-divergent wind and a
+   !! latitude-structured PS_NEXT, the unconditional per-column mass rescale
+   !! leaves every column VERTICALLY uniform at the value that conserves the
+   !! column tracer mass. This test holds met%DELP fixed on the PS0 grid across
+   !! all steps (a real run would advance PS -> PS_NEXT each step), so the
+   !! reconciliation ratio (PS0-ptop)/(PS_NEXT-ptop) re-applies every step and
+   !! after `nsteps`:
+   !!     conc = Q0 * ((PS0 - ptop)/(PS_NEXT - ptop))**nsteps,  ptop = model top.
+   !! A uniform field does NOT stay globally uniform here: conserving tracer mass
+   !! while the target air-column mass varies with latitude REQUIRES the mixing
+   !! ratio to vary with latitude (the mass-conserving default, replacing the
+   !! removed mixing-ratio-preserving pfix path).
    subroutine check_phase_b()
-      real(fp) :: dev
-      integer  :: s, isp
-      logical  :: ok
+      real(fp), allocatable :: ap(:), bp(:)
+      real(fp) :: ptop, expect, dev
+      !! Tolerance for the reconciliation target. Looser than the exact-mass
+      !! Phase A tol: the remap fills the enlarged/shrunk PS_NEXT surface region
+      !! by extrapolation and the per-column rescale supplies the mass-conserving
+      !! factor R=(PS0-ptop)/(PS_NEXT-ptop); over nsteps of this fixed-DELP setup
+      !! that leaves an O(1e-3) REAL32 remap residual on the analytic value.
+      real(fp), parameter :: TOL_B = 5.0e-3_fp
+      logical  :: ok, okab
+      integer  :: s, isp, i, j, k
+
+      call get_hybrid_ab(nz, ap, bp, okab)
+      ! Model-top pressure = ap at the edge where bp -> 0 (ordering-agnostic).
+      if (bp(1) <= bp(nz + 1)) then
+         ptop = ap(1)
+      else
+         ptop = ap(nz + 1)
+      end if
+
       dev = 0.0_fp
       do s = 1, chem%nSpeciesAdvect
          isp = chem%AdvectIndex(s)
          if (.not. associated(chem%ChemSpecies(isp)%conc)) cycle
-         dev = max(dev, maxval(abs(chem%ChemSpecies(isp)%conc - Q0)))
+         do k = 1, nz
+            do j = 1, ny
+               do i = 1, nx
+                  expect = Q0 * ((PS0 - ptop) / (met%PS_NEXT(i, j) - ptop))**nsteps
+                  dev = max(dev, &
+                     abs(chem%ChemSpecies(isp)%conc(i, j, k) - expect) / expect)
+               end do
+            end do
+         end do
       end do
+      write(output_unit,'(A,ES12.4)') &
+         '     max rel. deviation from mass-conserving target = ', dev
+
       ok = .true.
-      call report('Phase B: uniform field stays uniform', &
-                  dev <= TOL * Q0, ok)
+      call report('Phase B: hybrid Ap/Bp available', okab, ok)
+      call report('Phase B: per-column mass-conserving rescale', dev <= TOL_B, ok)
       call report('Phase B: solution finite', tracer_is_finite(), ok)
       if (.not. ok) all_ok = .false.
    end subroutine check_phase_b
+
+   !> Phase C checks: total 3-D mass conservation through horizontal + vertical
+   !! transport, proof that the vertical remap redistributes mass off the surface
+   !! (above-surface mass > 0), positivity, and finiteness. If the vertical remap
+   !! were inactive or a no-op, above_surface_mass would be exactly zero, so the
+   !! second check is the direct test that vertical transport is working.
+   subroutine check_phase_c()
+      real(dp) :: m1, rel, m_above, frac
+      real(fp) :: qmin
+      integer  :: s, isp
+      logical  :: ok
+
+      m1      = total_tracer_mass()       ! live post-run 3-D mass
+      m_above = above_surface_mass()      ! mass now residing at k >= 2
+      rel     = abs(m1 - m0_phaseC) / m0_phaseC
+      frac    = m_above / m1
+
+      qmin = huge(1.0_fp)
+      do s = 1, chem%nSpeciesAdvect
+         isp = chem%AdvectIndex(s)
+         if (.not. associated(chem%ChemSpecies(isp)%conc)) cycle
+         qmin = min(qmin, minval(chem%ChemSpecies(isp)%conc))
+      end do
+
+      write(output_unit,'(A,ES12.4)') '     above-surface mass fraction = ', frac
+
+      ok = .true.
+      call report('Phase C: total mass conserved (horizontal + vertical)', &
+                  rel <= real(TOL, dp), ok)
+      call report('Phase C: vertical remap lifted mass off the surface', &
+                  m_above > 1.0e-6_dp * m1, ok)
+      call report('Phase C: positivity preserved', qmin >= -TOL * Q0, ok)
+      call report('Phase C: solution finite', tracer_is_finite(), ok)
+      if (.not. ok) all_ok = .false.
+   end subroutine check_phase_c
 
    !> Print a single pass/fail line and AND it into the running result.
    subroutine report(label, passed, acc)

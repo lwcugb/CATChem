@@ -224,7 +224,6 @@ end module test_transport_unit_mod
 program test_transport_unit
    use test_transport_unit_mod
    use fv3_vremap_mod, only: mappm
-   use fv3_pfix_mod, only: do_pjc_pfix, pfix_correction
    use precision_mod, only: fp
    use error_mod, only: CC_SUCCESS
    use testing_mod, only: assert
@@ -238,11 +237,6 @@ program test_transport_unit
    real(r8), parameter :: ptop = 1.0_r8      !< model top pressure [Pa]
    real(r8), parameter :: psfc = 100000.0_r8 !< surface pressure [Pa]
 
-   ! Pressure-fixer (PJC/LLNL) test grid: regular GLOBAL lon-lat, poles at
-   ! j=1 (south) and j=pny (north), i periodic.
-   integer,  parameter :: pnx = 72, pny = 46, pnz = 4
-   real(r8), parameter :: pRE = 6.371e6_r8   !< Earth radius [m]
-
    real(fp) :: lat_deg(nx, ny), lon_deg(nx, ny)
    real(r8) :: q(nx, ny), q0(nx, ny)
    real(r8) :: mass0, mass1, dt
@@ -254,20 +248,6 @@ program test_transport_unit
    real(r8) :: vq1(vnp, vnz), vq2(vnp, vnz)
    real(r8) :: vm1(vnp), vm2(vnp)
    real(r8) :: frac, rel_err, vq1min, vq1max
-
-   ! Pressure-fixer working arrays.
-   real(r8) :: parea(pnx, pny), pclat(pny), pelat(pny+1), psine(pny+1)
-   real(r8) :: pap(pnz+1), pbp(pnz+1), pdap(pnz), pdbk(pnz)
-   real(r8) :: pp1(pnx, pny), pp2(pnx, pny), pp1a(pnx, pny), pp2a(pnx, pny)
-   real(r8) :: puu(pnx, pny, pnz), pvv(pnx, pny, pnz)
-   real(r8) :: pxmass(pnx, pny, pnz), pymass(pnx, pny, pnz)
-   real(r8) :: pdps_ctm(pnx, pny), prel(pnx, pny), pdps(pnx, pny)
-   real(r8) :: pdpsc(pnx, pny), pddps(pnx, pny), pmodel(pnx, pny)
-   real(r8) :: pxcf(pnx, pny), pmmf(pny), pgeofac(pny)
-   real(r8) :: pdmfx(pnx, pny), pdmfy(pnx, pny)
-   real(r8) :: pdt, pdlat, pdgp, pmeanp, pcn, cdiv, dp2r
-   real(r8) :: e_bridge, e_close, maxerr, denom, amean
-   integer  :: ip1, j1p, j2p
 
    write(*,*) 'Testing horizontal transport (FV3 PPM kernel)...'
    write(*,*) ''
@@ -433,165 +413,6 @@ program test_transport_unit
    call assert(qmin > vq1min - 0.05_r8 * span, "no large undershoot")
    call assert(qmax < vq1max + 0.05_r8 * span, "no large overshoot")
    write(*,*) 'Test 6 passed!'
-   write(*,*) ''
-
-   ! =======================================================================
-   ! Pressure-fixer tests (PJC/LLNL kernel, fv3_pfix_mod).
-   ! =======================================================================
-   ! Build a regular GLOBAL lon-lat grid: centres S->N, poles at j=1 / j=pny,
-   ! area = R^2 * dlon * d(sin lat). This is exactly the geometry the fixer
-   ! assumes, and the geometry the standalone global driver provides.
-   pdt  = 1800.0_r8
-   dp2r = pi / real(pny-1, r8)
-   do j = 1, pny
-      pclat(j) = -0.5_r8*pi + real(j-1, r8)*dp2r
-   end do
-   pelat(1) = -0.5_r8*pi
-   do j = 2, pny
-      pelat(j) = 0.5_r8*(pclat(j-1) + pclat(j))
-   end do
-   pelat(pny+1) = 0.5_r8*pi
-   do j = 1, pny+1
-      psine(j) = sin(pelat(j))
-   end do
-   do j = 1, pny
-      do i = 1, pnx
-         parea(i, j) = pRE*pRE * (2.0_r8*pi/real(pnx, r8)) * (psine(j+1) - psine(j))
-      end do
-   end do
-   prel = parea / sum(parea)
-
-   ! Hybrid edges (surface-first): ap [Pa], bp [-]. dap,dbk > 0.
-   pap = (/ 0.0_r8, 5000.0_r8, 12000.0_r8, 20000.0_r8, 25000.0_r8 /)
-   pbp = (/ 1.0_r8, 0.75_r8, 0.4_r8, 0.1_r8, 0.0_r8 /)
-   do k = 1, pnz
-      pdap(k) = pap(k) - pap(k+1)
-      pdbk(k) = pbp(k) - pbp(k+1)
-   end do
-
-   ! "Before" and "after" surface pressures (a non-trivial tendency).
-   do j = 1, pny
-      do i = 1, pnx
-         pp1(i, j) = 1.0e5_r8 + 2000.0_r8*sin(pclat(j)) &
-                     * cos(2.0_r8*pi*real(i-1, r8)/real(pnx, r8))
-         pp2(i, j) = pp1(i, j) &
-                     + 500.0_r8*cos(pclat(j))*sin(2.0_r8*pi*real(i-1, r8)/real(pnx, r8)) &
-                     + 300.0_r8*sin(3.0_r8*pclat(j))
-      end do
-   end do
-
-   ! A-grid winds.
-   do k = 1, pnz
-      do j = 1, pny
-         do i = 1, pnx
-            puu(i, j, k) = 10.0_r8*cos(pclat(j)) &
-                           + 3.0_r8*sin(2.0_r8*pi*real(i-1, r8)/real(pnx, r8))
-            pvv(i, j, k) = 2.0_r8*sin(2.0_r8*pclat(j)) &
-                           * cos(2.0_r8*pi*real(i-1, r8)/real(pnx, r8))
-         end do
-      end do
-   end do
-
-   ! -----------------------------------------------------------------------
-   ! Test 7: Pressure-fixer closure - the divergence of the FIXED mass fluxes
-   ! must equal the prescribed surface-pressure tendency (P2-P1) to machine
-   ! precision (after the global-mean removal and polar-cap averaging that the
-   ! fixer applies for whole-atmosphere mass conservation).
-   ! -----------------------------------------------------------------------
-   write(*,*) 'Test 7: Pressure-fixer closure (div(fixed) == P2-P1)'
-   call do_pjc_pfix(pnx, pny, pnz, parea, pclat, pdap, pdbk, pdt, &
-                    pp1, pp2, puu, pvv, pxmass, pymass, pdps_ctm)
-
-   ! Reconstruct the target the way the fixer does (Adjust_Press + pole avg).
-   pp1a = pp1
-   pp2a = pp2
-   pdgp = sum((pp2a - pp1a) * prel)
-   pp2a = pp2a - pdgp
-   pmeanp = sum(prel(:,1:2)*pp1a(:,1:2))     / sum(prel(:,1:2));     pp1a(:,1:2)     = pmeanp
-   pmeanp = sum(prel(:,pny-1:pny)*pp1a(:,pny-1:pny)) / sum(prel(:,pny-1:pny)); pp1a(:,pny-1:pny) = pmeanp
-   pmeanp = sum(prel(:,1:2)*pp2a(:,1:2))     / sum(prel(:,1:2));     pp2a(:,1:2)     = pmeanp
-   pmeanp = sum(prel(:,pny-1:pny)*pp2a(:,pny-1:pny)) / sum(prel(:,pny-1:pny)); pp2a(:,pny-1:pny) = pmeanp
-   pdps = pp2a - pp1a
-
-   maxerr = 0.0_r8
-   denom  = 0.0_r8
-   do j = 1, pny
-      do i = 1, pnx
-         maxerr = max(maxerr, abs(pdps_ctm(i, j) - pdps(i, j)))
-         denom  = max(denom, abs(pdps(i, j)))
-      end do
-   end do
-   write(*,'(a,es12.4)') '   relative closure error:  ', maxerr/denom
-   write(*,'(a,es12.4)') '   area-mean div(fixed):    ', sum(pdps_ctm*prel)
-   call assert(maxerr/denom < 1.0e-10_r8, "fixed fluxes must close to P2-P1")
-   call assert(abs(sum(pdps_ctm*prel)) < 1.0e-8_r8, "fixer must conserve global mass")
-   write(*,*) 'Test 7 passed!'
-   write(*,*) ''
-
-   ! -----------------------------------------------------------------------
-   ! Test 8: Pressure-fixer / FV3 coupling terms. The transport driver applies
-   ! the correction to the FV3 mass fluxes as
-   !   dmfx(i,j,k) = xcf(i,j)*dbk(k)*area(j),  dmfy(i,j,k) = mmf(j)*dbk(k)*cn.
-   ! Verify (a) the unit bridge cn/area(j) == geofac(j) exactly, and (b) the
-   ! resulting FV3 correction divergence reproduces the fixer residual, i.e.
-   ! adding it to the model's own divergence closes onto (P2-P1). This is the
-   ! guarantee that sum_k dp_lag == PS_NEXT in transport_horizontal.
-   ! -----------------------------------------------------------------------
-   write(*,*) 'Test 8: Pressure-fixer / FV3 coupling terms'
-   j1p = 3; j2p = pny - 2
-   do j = 1, pny
-      pgeofac(j) = dp2r / (2.0_r8*prel(1,j)*real(pnx, r8))
-   end do
-
-   ! An arbitrary "model" divergence with ~zero global mean (as FV3's fluxes
-   ! integrate to globally).
-   do j = 1, pny
-      do i = 1, pnx
-         pmodel(i, j) = 50.0_r8*cos(pclat(j))*sin(2.0_r8*pi*real(i-1, r8)/real(pnx, r8)) &
-                        + 20.0_r8*sin(2.0_r8*pclat(j))
-      end do
-   end do
-   amean = sum(pmodel*prel)
-   pmodel = pmodel - amean
-
-   call pfix_correction(pnx, pny, parea, pp1a, pp2a, pmodel, pxcf, pmmf, pcn)
-
-   ! (a) unit-bridge identity, checked relative to geofac.
-   e_bridge = 0.0_r8
-   do j = 1, pny
-      e_bridge = max(e_bridge, abs(pcn/parea(1,j) - pgeofac(j)) / pgeofac(j))
-   end do
-
-   ! FV3 correction fluxes (single layer, dbk=1) and their divergence.
-   do j = 1, pny
-      do i = 1, pnx
-         pdmfx(i, j) = pxcf(i, j) * parea(i, j)
-         pdmfy(i, j) = pmmf(j)    * pcn
-      end do
-   end do
-
-   ! Residual the fixer reproduces: ddps - dgpress (pole-averaged model).
-   pdpsc = pmodel
-   amean = sum(prel(:,1:2)*pdpsc(:,1:2)) / sum(prel(:,1:2)); pdpsc(:,1:2) = amean
-   amean = sum(prel(:,pny-1:pny)*pdpsc(:,pny-1:pny)) / sum(prel(:,pny-1:pny)); pdpsc(:,pny-1:pny) = amean
-   pddps = pdps - pdpsc
-   pdgp  = sum(pddps*prel)
-
-   e_close = 0.0_r8
-   denom   = 0.0_r8
-   do j = j1p, j2p
-      do i = 1, pnx
-         ip1 = i + 1; if (ip1 > pnx) ip1 = 1
-         cdiv = (pdmfx(i,j) - pdmfx(ip1,j) + pdmfy(i,j) - pdmfy(i,j+1)) / parea(i,j)
-         e_close = max(e_close, abs(cdiv - (pddps(i,j) - pdgp)))
-         denom   = max(denom, abs(pddps(i,j)))
-      end do
-   end do
-   write(*,'(a,es12.4)') '   max rel |cn/area - geofac|:   ', e_bridge
-   write(*,'(a,es12.4)') '   max rel |FV3 corr - residual|:', e_close/denom
-   call assert(e_bridge < 1.0e-12_r8, "unit bridge cn/area == geofac must hold")
-   call assert(e_close/denom < 1.0e-10_r8, "FV3 correction must reproduce residual")
-   write(*,*) 'Test 8 passed!'
    write(*,*) ''
 
    write(*,*) 'All transport tests passed!'

@@ -10,13 +10,13 @@ set(
   kernels/fv3_grid_types_mod.F90
   kernels/fv3_tp_core_mod.F90
   kernels/fv3_vremap_mod.F90
-  kernels/fv3_pfix_mod.F90
 )
 
 # Process sources (CATChem-owned driver + factory)
 set(
   TRANSPORT_PROCESS_SOURCES
   TransportHalo_Mod.F90
+  TransportHaloMPI_Mod.F90
   TransportGridMetrics_Mod.F90
   TransportMassFlux_Mod.F90
   ProcessTransportInterface_Mod.F90

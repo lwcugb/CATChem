@@ -26,6 +26,7 @@ module ProcessTransportInterface_Mod
    ! Core CATChem infrastructure
    use precision_mod, only: fp
    use constants, only: MAX_LEN_NAME
+   use iso_fortran_env, only: output_unit
    use ProcessInterface_Mod, only: ProcessInterface
    use StateManager_Mod, only: StateManagerType
    use GridManager_Mod, only: GridManagerType
@@ -38,7 +39,6 @@ module ProcessTransportInterface_Mod
    use fv3_grid_types_mod, only: fv_grid_type, fv_grid_bounds_type
    use fv3_tp_core_mod, only: fv_tp_2d
    use fv3_vremap_mod, only: mappm
-   use fv3_pfix_mod, only: pfix_correction
    use met_utilities_mod, only: get_hybrid_ab
    use TransportGridMetrics_Mod, only: build_fv3_grid_metrics
    use TransportHalo_Mod, only: transport_halo_type, halo_update, &
@@ -76,7 +76,7 @@ module ProcessTransportInterface_Mod
       integer :: vord = 8            !< PPM scheme id for the vertical remap (mappm kord; 8 = monotone)
       integer :: ng   = 3            !< halo (ghost) width for the FV3 data domain
       logical :: do_horizontal = .true.  !< enable horizontal advection
-      logical :: do_vertical   = .false. !< enable vertical (Lagrangian PPM remap) advection
+      logical :: do_vertical   = .true.  !< enable vertical (Lagrangian PPM remap) advection
 
    contains
       ! Required ProcessInterface implementations
@@ -140,9 +140,11 @@ contains
    !! defaults are applied when absent, and when no config is attached):
    !!   - `activate`   (logical, .true.) : enable/disable the process entirely.
    !!   - `horizontal` (logical, .true.) : run horizontal advection.
-   !!   - `vertical`   (logical, .false.): run the vertical Lagrangian PPM remap
+   !!   - `vertical`   (logical, .true.) : run the vertical Lagrangian PPM remap
    !!                                      (requires `horizontal`: the remap acts
-   !!                                      on the horizontally-deformed layers).
+   !!                                      on the horizontally-deformed layers and
+   !!                                      reconciles the surface pressure onto
+   !!                                      PS_NEXT).
    !!   - `hord`       (integer, 8)      : FV3 PPM scheme id passed to fv_tp_2d.
    !!   - `vord`       (integer, 8)      : FV3 PPM scheme id (mappm kord) for the
    !!                                      vertical remap.
@@ -165,7 +167,7 @@ contains
       if (associated(config_manager)) then
          call config_manager%get_logical('processes/transport/activate',   activate_flag,      cfg_rc, .true.)
          call config_manager%get_logical('processes/transport/horizontal', this%do_horizontal, cfg_rc, .true.)
-         call config_manager%get_logical('processes/transport/vertical',   this%do_vertical,   cfg_rc, .false.)
+         call config_manager%get_logical('processes/transport/vertical',   this%do_vertical,   cfg_rc, .true.)
          call config_manager%get_integer('processes/transport/hord',       this%hord,          cfg_rc, 8)
          call config_manager%get_integer('processes/transport/vord',       this%vord,          cfg_rc, 8)
          call config_manager%get_integer('processes/transport/halo_width', this%ng,            cfg_rc, 3)
@@ -262,6 +264,7 @@ contains
       integer :: metrics_rc, nz
       real    :: dt
       real, allocatable :: dp_lag(:,:,:)
+      logical :: debug
 
       rc = CC_SUCCESS
       if (.not. this%do_horizontal) return
@@ -292,16 +295,22 @@ contains
       end if
       dt = real(time_state%get_timestep())
 
+      debug = transport_debug_enabled()
+      if (debug) call transport_debug_report(this, 'pre-transport')
+
       if (this%do_vertical .and. allocated(this%met_state%DELP)) then
          ! Capture the Lagrangian layer thicknesses produced by the horizontal
          ! step so they can be remapped back to the reference grid.
          nz = size(this%met_state%DELP, 3)
          allocate(dp_lag(this%bd%is:this%bd%ie, this%bd%js:this%bd%je, nz))
          call transport_horizontal(this, dt, rc, dp_lag=dp_lag)
+         if (debug) call transport_debug_report(this, 'after horizontal advection')
          if (rc == CC_SUCCESS) call transport_vertical(this, dp_lag, rc)
+         if (debug) call transport_debug_report(this, 'after vertical remap')
          deallocate(dp_lag)
       else
          call transport_horizontal(this, dt, rc)
+         if (debug) call transport_debug_report(this, 'after horizontal advection')
       end if
 
    end subroutine transport_run
@@ -344,15 +353,6 @@ contains
       real, allocatable :: dp1(:,:), dp2(:,:)
       real, allocatable :: fx(:,:), fy(:,:)
 
-      ! --- PJC/LLNL pressure fixer (active only when the host supplies
-      !     PS_NEXT and the domain is a single global periodic lon-lat grid) ---
-      logical :: do_fix, ok
-      real    :: cn, qxw, qys
-      real(fp), allocatable :: ap(:), bp(:)
-      real, allocatable :: dbk(:)
-      real, allocatable :: areaC(:,:), dps_ctm(:,:), xcf(:,:), mmf(:)
-      real, allocatable :: cfx(:,:), cfy(:,:), cfxq(:,:), cfyq(:,:)
-
       rc = CC_SUCCESS
 
       is  = this%bd%is;  ie  = this%bd%ie;  js  = this%bd%js;  je  = this%bd%je
@@ -383,88 +383,14 @@ contains
       if (rc /= CC_SUCCESS) return
 
       ! -----------------------------------------------------------------------
-      ! PRESSURE FIXER SET-UP (optional).  When the host supplies the end-of-step
-      ! surface pressure (met%PS_NEXT) on a single global periodic lon-lat grid,
-      ! solve the PJC/LLNL barotropic correction so the advected (Lagrangian)
-      ! surface pressure closes onto PS_NEXT.  The correction is the per-column
-      ! (dbk-weighted) mass-flux adjustment that drives FV3's own vertically
-      ! integrated divergence to (PS_NEXT - PS).  See fv3_pfix_mod.
-      !
-      ! NOTE: PS_NEXT is auto-allocated by the MetState field generator, so
-      ! `allocated(PS_NEXT)` is not a reliable trigger.  The fixer engages only
-      ! when the host has actually populated PS_NEXT this timestep, tracked by
-      ! the per-timestep populated-field registry (is_field_set).  When PS_NEXT
-      ! is not supplied (e.g. the final met slice has no t+dt pressure), the
-      ! fixer is skipped and transport runs its normal conservative path.
+      ! No horizontal pressure fixer.  Following UFS-ATM / GCHP, tracers are
+      ! advected with the wind-derived C-grid mass fluxes and the resulting
+      ! (Lagrangian) surface pressure is reconciled to the met end-of-step
+      ! surface pressure (PS_NEXT) entirely by the vertical remap in
+      ! transport_vertical (its target grid is the reference hybrid coordinate
+      ! at PS_NEXT).  This is fully column-local -> grid-agnostic (lon-lat and
+      ! cubed-sphere) and decomposes naturally across PEs/tiles.
       ! -----------------------------------------------------------------------
-      do_fix = this%met_state%is_field_set('PS_NEXT') .and. &
-               allocated(this%met_state%PS_NEXT) .and. &
-               allocated(this%met_state%PS)      .and. &
-               allocated(this%met_state%AREA_M2) .and. &
-               (this%halo%x_bc == HALO_BC_PERIODIC) .and. &
-               (is == 1 .and. js == 1)
-      if (do_fix) then
-         if (size(this%met_state%PS_NEXT,1) /= nx .or. &
-             size(this%met_state%PS_NEXT,2) /= ny .or. &
-             size(this%met_state%PS,1) /= nx .or. &
-             size(this%met_state%PS,2) /= ny .or. &
-             size(this%met_state%AREA_M2,1) /= nx .or. &
-             size(this%met_state%AREA_M2,2) /= ny) do_fix = .false.
-      end if
-      if (do_fix) then
-         allocate(dbk(nz))
-         call get_hybrid_ab(nz, ap, bp, ok)
-         if (.not. ok) then
-            do_fix = .false.
-            deallocate(dbk)
-         else
-            do k = 1, nz
-               dbk(k) = bp(k) - bp(k+1)
-            end do
-         end if
-      end if
-      if (do_fix) then
-         allocate(areaC(nx,ny), dps_ctm(nx,ny), xcf(nx,ny), mmf(ny))
-         allocate(cfx(is:ie+1, js:je), cfy(is:ie, js:je+1))
-         allocate(cfxq(is:ie+1, js:je), cfyq(is:ie, js:je+1))
-         areaC(:,:)   = real(this%met_state%AREA_M2(:,:))
-         dps_ctm(:,:) = 0.0
-
-         ! Pass 1: accumulate FV3's uncorrected vertically integrated divergence.
-         prepass_loop: do k = 1, nz
-            ua = 0.0; va = 0.0; delp = 0.0
-            ua  (is:ie, js:je) = this%met_state%U   (:,:,k)
-            va  (is:ie, js:je) = this%met_state%V   (:,:,k)
-            delp(is:ie, js:je) = this%met_state%DELP(:,:,k)
-            call halo_update(ua,   this%bd, this%halo, hrc)
-            call halo_update(va,   this%bd, this%halo, hrc)
-            call halo_update(delp, this%bd, this%halo, hrc)
-
-            call build_level_mass_flux(this%gridstruct, this%bd, ua, va, delp, dt, mf, rc)
-            if (rc /= CC_SUCCESS) exit prepass_loop
-            cmax  = courant_max(mf, this%bd)
-            nsplt = int(1.0 + cmax)
-            if (nsplt < 1) nsplt = 1
-            if (nsplt > 1) call scale_mass_flux(mf, this%gridstruct, this%bd, 1.0 / real(nsplt))
-
-            do j = js, je
-               do i = is, ie
-                  dps_ctm(i,j) = dps_ctm(i,j) + real(nsplt) * &
-                     (mf%mfx(i,j) - mf%mfx(i+1,j) + mf%mfy(i,j) - mf%mfy(i,j+1)) &
-                     * this%gridstruct%rarea(i,j)
-               end do
-            end do
-         end do prepass_loop
-
-         if (rc == CC_SUCCESS) then
-            call pfix_correction(nx, ny, areaC, &
-                 real(this%met_state%PS), real(this%met_state%PS_NEXT), &
-                 dps_ctm, xcf, mmf, cn)
-         else
-            do_fix = .false.
-         end if
-      end if
-
       level_loop: do k = 1, nz
 
          ! --- Winds + layer thickness on the data domain (interior + halo) ---
@@ -485,36 +411,12 @@ contains
          if (nsplt < 1) nsplt = 1
          if (nsplt > 1) call scale_mass_flux(mf, this%gridstruct, this%bd, 1.0 / real(nsplt))
 
-         ! --- Pressure-fixer correction fluxes for this level ---------------
-         ! FV3 face fluxes that reproduce the PJC/LLNL barotropic correction:
-         !   cfx(i,j) = xcf(i,j) * dbk(k) * area(j)   (west face of cell i)
-         !   cfy(i,j) = mmf(j)   * dbk(k) * cn        (south face of cell j)
-         ! divided per sub-step so nsplt sub-steps deliver the full correction.
-         ! (cfx-cfx(i+1)+cfy-cfy(j+1))*rarea then equals the pfix cell divergence
-         ! correction; summed over levels it closes FV3's divergence to PS_NEXT.
-         if (do_fix) then
-            do j = js, je
-               do i = is, ie
-                  cfx(i,j) = xcf(i,j) * dbk(k) * areaC(i,j) / real(nsplt)
-               end do
-               ! East face of the last cell wraps periodically to column 1.
-               cfx(ie+1,j) = xcf(1,j) * dbk(k) * areaC(1,j) / real(nsplt)
-            end do
-            do j = js, je
-               do i = is, ie
-                  cfy(i,j) = mmf(j) * dbk(k) * cn / real(nsplt)
-               end do
-            end do
-            ! North face of the northern-most cell carries no correction flux.
-            cfy(is:ie, je+1) = 0.0
-         end if
-
          ! --- Lagrangian layer thickness (species-independent) ---------------
          ! The flux-form evolution is linear in the (per-substep) mass flux, so
          ! after nsplt substeps every species reaches the same evolved dp2:
-         !   dp_lag = delp + nsplt * (mfx-mfx(i+1)+mfy-mfy(j+1)) * rarea,
-         ! plus the (nsplt-summed) pressure-fixer correction when active. With
-         ! the fixer, sum_k dp_lag = PS_NEXT to machine precision.
+         !   dp_lag = delp + nsplt * (mfx-mfx(i+1)+mfy-mfy(j+1)) * rarea.
+         ! Its column sum is the Lagrangian surface pressure produced by the
+         ! winds; the vertical remap later reconciles it onto PS_NEXT.
          if (present(dp_lag)) then
             do j = js, je
                do i = is, ie
@@ -523,15 +425,6 @@ contains
                      * this%gridstruct%rarea(i,j)
                end do
             end do
-            if (do_fix) then
-               do j = js, je
-                  do i = is, ie
-                     dp_lag(i,j,k) = dp_lag(i,j,k) + real(nsplt) * &
-                        (cfx(i,j) - cfx(i+1,j) + cfy(i,j) - cfy(i,j+1)) &
-                        * this%gridstruct%rarea(i,j)
-                  end do
-               end do
-            end if
          end if
 
          ! --- Advect every species on this level -----------------------------
@@ -552,48 +445,16 @@ contains
                              mf%xfx, mf%yfx, this%gridstruct, this%bd, &
                              mf%ra_x, mf%ra_y, LIM_FAC, mfx=mf%mfx, mfy=mf%mfy)
 
-               ! Pressure-fixer tracer flux (upwind on the correction flux).
-               ! Added as an extra flux-form term so the corrected mass flux and
-               ! tracer flux telescope identically: a uniform field stays
-               ! uniform and sum(q*dp) is conserved to machine precision.
-               if (do_fix) then
-                  do j = js, je
-                     do i = is, ie+1
-                        qxw = merge(q(i-1,j), q(i,j), cfx(i,j) > 0.0)
-                        cfxq(i,j) = qxw * cfx(i,j)
-                     end do
+               do j = js, je
+                  do i = is, ie
+                     dp2(i,j) = dp1(i,j) + &
+                        (mf%mfx(i,j) - mf%mfx(i+1,j) + mf%mfy(i,j) - mf%mfy(i,j+1)) &
+                        * this%gridstruct%rarea(i,j)
+                     q(i,j) = (q(i,j) * dp1(i,j) + &
+                        (fx(i,j) - fx(i+1,j) + fy(i,j) - fy(i,j+1)) &
+                        * this%gridstruct%rarea(i,j)) / dp2(i,j)
                   end do
-                  do j = js, je+1
-                     do i = is, ie
-                        qys = merge(q(i,j-1), q(i,j), cfy(i,j) > 0.0)
-                        cfyq(i,j) = qys * cfy(i,j)
-                     end do
-                  end do
-
-                  do j = js, je
-                     do i = is, ie
-                        dp2(i,j) = dp1(i,j) + &
-                           (mf%mfx(i,j) - mf%mfx(i+1,j) + mf%mfy(i,j) - mf%mfy(i,j+1) &
-                          +   cfx(i,j)  -   cfx(i+1,j)  +   cfy(i,j)  -   cfy(i,j+1)) &
-                           * this%gridstruct%rarea(i,j)
-                        q(i,j) = (q(i,j) * dp1(i,j) + &
-                           (fx(i,j)   - fx(i+1,j)   + fy(i,j)   - fy(i,j+1)  &
-                          + cfxq(i,j) - cfxq(i+1,j) + cfyq(i,j) - cfyq(i,j+1)) &
-                           * this%gridstruct%rarea(i,j)) / dp2(i,j)
-                     end do
-                  end do
-               else
-                  do j = js, je
-                     do i = is, ie
-                        dp2(i,j) = dp1(i,j) + &
-                           (mf%mfx(i,j) - mf%mfx(i+1,j) + mf%mfy(i,j) - mf%mfy(i,j+1)) &
-                           * this%gridstruct%rarea(i,j)
-                        q(i,j) = (q(i,j) * dp1(i,j) + &
-                           (fx(i,j) - fx(i+1,j) + fy(i,j) - fy(i,j+1)) &
-                           * this%gridstruct%rarea(i,j)) / dp2(i,j)
-                     end do
-                  end do
-               end if
+               end do
 
                if (it < nsplt) then
                   call halo_update(q, this%bd, this%halo, hrc)
@@ -615,17 +476,6 @@ contains
       if (allocated(dp2))  deallocate(dp2)
       if (allocated(fx))   deallocate(fx)
       if (allocated(fy))   deallocate(fy)
-      if (allocated(ap))      deallocate(ap)
-      if (allocated(bp))      deallocate(bp)
-      if (allocated(dbk))     deallocate(dbk)
-      if (allocated(areaC))   deallocate(areaC)
-      if (allocated(dps_ctm)) deallocate(dps_ctm)
-      if (allocated(xcf))     deallocate(xcf)
-      if (allocated(mmf))     deallocate(mmf)
-      if (allocated(cfx))     deallocate(cfx)
-      if (allocated(cfy))     deallocate(cfy)
-      if (allocated(cfxq))    deallocate(cfxq)
-      if (allocated(cfyq))    deallocate(cfyq)
 
    end subroutine transport_horizontal
 
@@ -643,21 +493,35 @@ contains
    !! exactly in the interior, but its top cell (whose edge coincides with the
    !! model top) takes the top source-cell mean rather than that cell's sub-cell
    !! average, leaving a small residual. The target column pressures are the
-   !! reference hybrid coordinate evaluated at the Lagrangian surface pressure
-   !! \f$p_{s}^{lag}=\sum_k \Delta p^{lag}\f$, with the top/surface edges forced to
-   !! match the source exactly; a GCHP-style per-column mass fixer then rescales
-   !! each column by the ratio of pre- to post-remap tracer mass, so each column's
-   !! tracer mass is conserved to machine precision.
+   !! reference hybrid coordinate evaluated at the end-of-step met surface
+   !! pressure `PS_NEXT` when the host has supplied it, so the remap reconciles
+   !! the wind-driven (Lagrangian) surface pressure onto the met surface pressure
+   !! -- this is the FV3/GCHP way to close pressure and replaces the (removed)
+   !! horizontal PJC pressure fixer. The model top edge matches by construction
+   !! (Bp(top)=0); the surface edge is left at `PS_NEXT` so the target column air
+   !! mass equals the met air mass (`PS = PS_NEXT`, pressure-consistent).
+   !!
+   !! Mass conservation: each positive-definite column is always rescaled by the
+   !! ratio of its pre- to post-remap tracer mass, so the column (hence global)
+   !! tracer mass is conserved to machine precision while the surface still sits
+   !! at `PS_NEXT` (pressure stays consistent). Because wind-derived fluxes and an
+   !! independently specified `PS_NEXT` are not exactly consistent (closing that
+   !! gap exactly needs an elliptic pressure fixer), the small residual is
+   !! absorbed as a uniform per-column mixing-ratio scaling. When the met winds
+   !! and `PS` come from the same source the residual is ~0 and the rescale is a
+   !! no-op (ratio ~= 1), so it is a harmless safety guard; when they are not, it
+   !! keeps mass exact. The fix is purely column-local, so it is grid-agnostic
+   !! (identical on lat-lon and cubed-sphere) and needs no global solve.
+   !!
+   !! When `PS_NEXT` is not populated (e.g. the final met slice), the target
+   !! falls back to the Lagrangian surface pressure \f$p_{s}^{lag}=\sum_k \Delta p^{lag}\f$
+   !! with the surface edge forced to match the source; that self-consistent case
+   !! is rescaled by the same code so each column's tracer mass is conserved to
+   !! machine precision.
    !!
    !! Ordering: CATChem is surface-first (`k=1` is the surface); `mappm` expects
    !! edges from model top to surface (increasing pressure), so columns are flipped
    !! on the way in and out.
-   !!
-   !! \note The target uses the Lagrangian surface pressure, not the prescribed met
-   !!       surface pressure. For offline winds that are not perfectly mass
-   !!       consistent with the met pressure field these differ slightly; a
-   !!       GCHP-style pressure fixer (future milestone) reconciles them. Tracer
-   !!       mass is conserved by construction regardless.
    subroutine transport_vertical(this, dp_lag, rc)
       class(ProcessTransportInterface), intent(inout) :: this
       !> Lagrangian layer thickness [Pa], shape (is:ie, js:je, nz), surface-first.
@@ -665,10 +529,10 @@ contains
       integer, intent(out) :: rc
 
       integer :: is, ie, js, je, nz, np, i, j, k, c, s, isp
-      logical :: ok
+      logical :: ok, use_psn
       real(fp), allocatable :: ap(:), bp(:)
       real,     allocatable :: pe1(:,:), pe2(:,:), q1(:,:), q2(:,:)
-      real                  :: ps_lag, m_src, m_tgt
+      real                  :: ps_lag, ps_tgt, m_src, m_tgt
 
       rc = CC_SUCCESS
 
@@ -685,6 +549,16 @@ contains
       allocate(pe1(np, nz+1), pe2(np, nz+1))
       allocate(q1(np, nz), q2(np, nz))
 
+      ! Reconcile onto the met end-of-step surface pressure when the host has
+      ! populated it this step (tracked by the per-timestep populated-field
+      ! registry); otherwise fall back to the self-consistent Lagrangian PS.
+      use_psn = this%met_state%is_field_set('PS_NEXT') .and. &
+                allocated(this%met_state%PS_NEXT)
+      if (use_psn) then
+         if (size(this%met_state%PS_NEXT,1) /= size(dp_lag,1) .or. &
+             size(this%met_state%PS_NEXT,2) /= size(dp_lag,2)) use_psn = .false.
+      end if
+
       ! --- Column edge pressures (top -> bottom), species-independent ---------
       c = 0
       do j = js, je
@@ -699,14 +573,25 @@ contains
             end do
             ps_lag = pe1(c,nz+1)
 
-            ! Target edges = reference hybrid coordinate at the Lagrangian surface
-            ! pressure. FV3 edge k (top-first) is surface-first edge nz+2-k.
+            ! Target surface pressure: the met end-of-step PS when supplied
+            ! (reconcile), else the Lagrangian PS (self-consistent fallback).
+            if (use_psn) then
+               ps_tgt = real(this%met_state%PS_NEXT(i,j))
+            else
+               ps_tgt = ps_lag
+            end if
+
+            ! Target edges = reference hybrid coordinate at ps_tgt. FV3 edge k
+            ! (top-first) is surface-first edge nz+2-k.
             do k = 1, nz+1
-               pe2(c,k) = real(ap(nz+2-k)) + real(bp(nz+2-k)) * ps_lag
+               pe2(c,k) = real(ap(nz+2-k)) + real(bp(nz+2-k)) * ps_tgt
             end do
-            ! Force exact endpoint match => exact per-column mass conservation.
-            pe2(c,1)    = pe1(c,1)
-            pe2(c,nz+1) = pe1(c,nz+1)
+            ! Model top matches by construction (Bp(top)=0). For the fallback we
+            ! also force the surface edge so each column conserves mass exactly;
+            ! for the PS_NEXT target the surface edge stays at PS_NEXT so the
+            ! remap adds/removes the reconciling surface mass.
+            pe2(c,1) = pe1(c,1)
+            if (.not. use_psn) pe2(c,nz+1) = pe1(c,nz+1)
          end do
       end do
 
@@ -728,13 +613,18 @@ contains
 
          call mappm(nz, pe1, q1, nz, pe2, q2, 1, np, 0, this%vord)
 
-         ! --- Column mass fixer (GCHP-style) -----------------------------------
-         ! mappm conserves the mass-weighted integral in the interior, but its
-         ! top cell (edge at the model top) takes the top source-cell mean rather
-         ! than that cell's sub-cell average, leaving a small residual. Rescale
-         ! each positive-definite column by the ratio of pre- to post-remap tracer
-         ! mass so the column tracer mass is preserved to machine precision (the
-         ! same role as GCHP's pressure/mass fixer).
+         ! --- Column tracer-mass fixer ----------------------------------------
+         ! Rescale each positive-definite column by the ratio of its pre- to
+         ! post-remap tracer mass so the column (hence global) tracer mass is
+         ! conserved to machine precision. On the fallback path (target =
+         ! Lagrangian PS) this also absorbs mappm's small top-cell residual. On
+         ! the PS_NEXT path the surface still sits at PS_NEXT (pressure stays
+         ! consistent) but the tracer mass is held fixed, so the wind/PS
+         ! inconsistency becomes a uniform per-column mixing-ratio scaling instead
+         ! of a burden change. When the met winds and PS come from the same source
+         ! the ratio is ~1 (a no-op, harmless); when they are not, it keeps mass
+         ! exact. Purely column-local, hence grid-agnostic (lat-lon and
+         ! cubed-sphere) with no global solve.
          do c = 1, np
             m_src = 0.0
             m_tgt = 0.0
@@ -796,5 +686,106 @@ contains
       field_names(3) = 'DELP'
 
    end subroutine transport_get_required_met_fields
+
+   !> \brief Whether opt-in transport diagnostics are enabled.
+   !!
+   !! Controlled by the environment variable CATCHEM_TRANSPORT_DEBUG: any value
+   !! other than unset / empty / "0" / "false" / "no" / "off" turns per-call
+   !! reporting on. The result is cached on first query so the environment is
+   !! read only once per run.
+   logical function transport_debug_enabled()
+      logical, save      :: checked = .false.
+      logical, save      :: enabled = .false.
+      character(len=32)  :: val
+      integer            :: length, status
+
+      if (.not. checked) then
+         call get_environment_variable('CATCHEM_TRANSPORT_DEBUG', val, length, status)
+         enabled = (status == 0 .and. length > 0)
+         if (enabled) then
+            select case (trim(adjustl(val)))
+            case ('0', 'false', 'FALSE', 'no', 'NO', 'off', 'OFF')
+               enabled = .false.
+            end select
+         end if
+         checked = .true.
+      end if
+      transport_debug_enabled = enabled
+   end function transport_debug_enabled
+
+   !> \brief Print per-species transport diagnostics on the local compute domain.
+   !!
+   !! For every advected species this reports the tracer min/max, the total
+   !! tracer mass sum(conc*DELP*AREA_M2), and `top_nonzero_level`: the highest
+   !! surface-first level (k=1 is the surface) that still holds tracer. Calling
+   !! it "pre-transport", "after horizontal advection" and "after vertical remap"
+   !! makes both operators observable:
+   !!   * horizontal advection conserves tracer mass, so the "pre-transport" and
+   !!     "after horizontal advection" totals should (near) match. Note the mass
+   !!     here is weighted by the met DELP (built from PS); when the vertical
+   !!     remap reconciles onto `PS_NEXT` (PS_NEXT populated and PS_NEXT /= PS)
+   !!     the tracer burden intentionally changes at the "after vertical remap"
+   !!     stage to follow the met air mass, so a small change there is EXPECTED
+   !!     (it is the pressure reconciliation, not a leak). On the fallback path
+   !!     (no PS_NEXT) the vertical remap conserves column mass, so that stage
+   !!     total should (near) match too;
+   !!   * `top_nonzero_level` can ONLY grow at the "after vertical remap" stage,
+   !!     because horizontal advection never moves mass between levels. If a
+   !!     surface-emitted tracer keeps top_nonzero_level = 1 after the vertical
+   !!     remap, there is simply no horizontal convergence lifting it (expected
+   !!     for pure advection without convection / PBL mixing), not a remap bug.
+   !! Values are local to this MPI rank / compute domain (no cross-rank reduce).
+   subroutine transport_debug_report(this, label)
+      class(ProcessTransportInterface), intent(in) :: this
+      character(len=*), intent(in) :: label
+      integer,  parameter :: dpk = kind(0.0d0)
+      real(fp), parameter :: thr = 1.0e-30_fp
+      integer   :: nxl, nyl, nzl, i, j, k, s, isp, kmax
+      real(dpk) :: mass, cell_area
+      real(fp)  :: qmin, qmax, qlev
+      logical   :: have_area
+
+      if (.not. associated(this%chem_state) .or. &
+          .not. associated(this%met_state)) return
+      if (.not. allocated(this%met_state%DELP)) return
+      have_area = allocated(this%met_state%AREA_M2)
+
+      write(output_unit,'(A)') '  [transport-debug] '//trim(label)// &
+         '  (local compute-domain totals)'
+      do s = 1, this%chem_state%nSpeciesAdvect
+         isp = this%chem_state%AdvectIndex(s)
+         if (isp < 1 .or. isp > size(this%chem_state%ChemSpecies)) cycle
+         if (.not. associated(this%chem_state%ChemSpecies(isp)%conc)) cycle
+         associate (conc => this%chem_state%ChemSpecies(isp)%conc)
+            nxl = size(conc, 1); nyl = size(conc, 2); nzl = size(conc, 3)
+            qmin = conc(1,1,1); qmax = conc(1,1,1)
+            mass = 0.0_dpk
+            kmax = 0
+            do k = 1, nzl
+               qlev = 0.0_fp
+               do j = 1, nyl
+                  do i = 1, nxl
+                     qmin = min(qmin, conc(i,j,k))
+                     qmax = max(qmax, conc(i,j,k))
+                     qlev = max(qlev, abs(conc(i,j,k)))
+                     if (have_area) then
+                        cell_area = real(this%met_state%AREA_M2(i,j), dpk)
+                     else
+                        cell_area = 1.0_dpk
+                     end if
+                     mass = mass + real(conc(i,j,k), dpk) * &
+                            real(this%met_state%DELP(i,j,k), dpk) * cell_area
+                  end do
+               end do
+               if (qlev > thr) kmax = k
+            end do
+            write(output_unit, &
+               '(A,A,A,ES12.4,A,ES12.4,A,ES18.10,A,I0,A,I0)') &
+               '    ', trim(this%chem_state%ChemSpecies(isp)%short_name), &
+               ': min=', qmin, ' max=', qmax, ' mass=', mass, &
+               ' top_nonzero_level=', kmax, '/', nzl
+         end associate
+      end do
+   end subroutine transport_debug_report
 
 end module ProcessTransportInterface_Mod

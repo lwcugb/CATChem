@@ -18,20 +18,28 @@
 !! only conditions here are periodic / replicate, the wind COMPONENTS `ua`,`va`
 !! are filled with the same routine (no sign change is involved).
 !!
-!! ## Distributed / parallel backend (future)
-!! In the current CATChem build each PET holds one local tile and the ESMF
-!! `RouteHandle` used by the NUOPC cap is not reachable from a process, so the
-!! fill is done in-process for the serial / single-tile case. When a
-!! decomposition handle (ESMF VM + `ESMF_FieldHalo` RouteHandle, or an MPI
-!! Cartesian communicator) becomes reachable from a process, it plugs in HERE:
-!! `halo_update` becomes a wrapper that first does the off-PET exchange and then
-!! applies the on-PET periodic / replicate closure below. Callers do not change.
+!! ## Distributed / parallel backend
+!! In a single-PET (serial / single-tile) build the ghost ring is filled in
+!! process by the on-PET periodic / replicate closure below. For a decomposed
+!! run the off-PET neighbour exchange is supplied by a backend that the host
+!! registers with `set_halo_exchange_hook` (e.g. the MPI Cartesian backend in
+!! `TransportHaloMPI_Mod`, or an ESMF `ESMF_FieldHalo` RouteHandle wrapper). A
+!! registered backend owns the COMPLETE data-domain fill -- it exchanges the
+!! interior neighbour rings across PETs AND applies the periodic / replicate
+!! closure on any physical (non-neighbour) boundary -- so `halo_update` simply
+!! delegates to it. When no backend is registered the on-PET closure runs, which
+!! is exact for the serial / single-tile case. Callers never change.
 !!
 !! \note **Polar fold.** A global lat/lon grid whose poles lie on the y-boundary
 !!       needs a cross-pole fold (longitude + 180, with a sign flip for vector
 !!       components) rather than replication. That treatment is grid-orientation
 !!       specific and is deferred; `HALO_BC_REPLICATE` on the y-axis is the
 !!       current, safe placeholder near the poles.
+!!
+!! \note **Cubed-sphere vectors.** Across a cube edge the wind COMPONENTS rotate;
+!!       a scalar exchange (this seam and the MPI backend) is correct for scalars
+!!       and for lat-lon winds, but a cubed-sphere run must register a vector-
+!!       aware backend (ESMF / FMS) for `ua`,`va`.
 !!
 !! \author CATChem Development Team
 !! \version 0.1.0
@@ -47,11 +55,31 @@ module TransportHalo_Mod
    public :: HALO_BC_REPLICATE, HALO_BC_PERIODIC
    public :: halo_fill_scalar
    public :: halo_update
+   public :: halo_exchange_iface
+   public :: set_halo_exchange_hook, clear_halo_exchange_hook, halo_exchange_registered
 
    !> Zero-gradient edge replication (regional boundary / safe default).
    integer, parameter :: HALO_BC_REPLICATE = 0
    !> Wrap-around for a globally periodic axis (global-longitude x-halo).
    integer, parameter :: HALO_BC_PERIODIC  = 1
+
+   !> \brief Off-PET halo-exchange backend signature.
+   !!
+   !! A registered backend fills the ENTIRE ghost ring of `arr` on the data
+   !! domain `(isd:ied, jsd:jed)`: it exchanges the `ng`-wide neighbour rings
+   !! across PETs and applies the `x_bc`/`y_bc` closure on any physical
+   !! (non-neighbour) boundary. The compute domain `(is:ie, js:je)` holds valid
+   !! data on entry.
+   abstract interface
+      subroutine halo_exchange_iface(arr, isd, ied, jsd, jed, is, ie, js, je, x_bc, y_bc, rc)
+         integer, intent(in)    :: isd, ied, jsd, jed, is, ie, js, je, x_bc, y_bc
+         real,    intent(inout) :: arr(isd:ied, jsd:jed)
+         integer, intent(out)   :: rc
+      end subroutine halo_exchange_iface
+   end interface
+
+   !> Registered off-PET exchange backend (null => serial on-PET closure).
+   procedure(halo_exchange_iface), pointer, save :: off_pet_hook => null()
 
    !> \brief Halo policy for the transport data domain.
    type :: transport_halo_type
@@ -75,10 +103,42 @@ contains
       integer,                   intent(out)   :: rc
 
       rc = CC_SUCCESS
+
+      ! A registered distributed backend owns the complete fill (off-PET
+      ! neighbour rings + physical-boundary closure); delegate to it. Otherwise
+      ! run the serial on-PET periodic / replicate closure.
+      if (associated(off_pet_hook)) then
+         call off_pet_hook(arr, bd%isd, bd%ied, bd%jsd, bd%jed, &
+                           bd%is, bd%ie, bd%js, bd%je, halo%x_bc, halo%y_bc, rc)
+         return
+      end if
+
       call halo_fill_scalar(arr, bd%is, bd%ie, bd%js, bd%je, &
                             bd%isd, bd%ied, bd%jsd, bd%jed, halo%x_bc, halo%y_bc)
 
    end subroutine halo_update
+
+   !> \brief Register an off-PET halo-exchange backend (host / driver only).
+   !!
+   !! After registration every `halo_update` call delegates the full data-domain
+   !! fill to `proc`. Pass a backend whose exchange is consistent with the grid
+   !! decomposition (see `TransportHaloMPI_Mod`). Registering is a global,
+   !! process-wide action; call `clear_halo_exchange_hook` to restore the serial
+   !! on-PET closure.
+   subroutine set_halo_exchange_hook(proc)
+      procedure(halo_exchange_iface) :: proc
+      off_pet_hook => proc
+   end subroutine set_halo_exchange_hook
+
+   !> \brief Remove any registered off-PET backend (restore serial closure).
+   subroutine clear_halo_exchange_hook()
+      off_pet_hook => null()
+   end subroutine clear_halo_exchange_hook
+
+   !> \brief Whether an off-PET halo-exchange backend is registered.
+   logical function halo_exchange_registered()
+      halo_exchange_registered = associated(off_pet_hook)
+   end function halo_exchange_registered
 
    !> \brief Fill the halo ring of a data-domain field (explicit bounds).
    !!

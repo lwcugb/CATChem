@@ -20,6 +20,9 @@
 module catchem_standalone_grid_mod
 
    use ESMF
+   use mpi
+   use error_mod,          only: CC_SUCCESS
+   use TransportHaloMPI_Mod, only: transport_halo_mpi_init
 
    implicit none
    private
@@ -268,6 +271,8 @@ contains
       integer :: lbnd(2), ubnd(2)
       integer :: clbnd(2), cubnd(2)
       integer :: localDECount
+      integer :: localPet, mpiComm
+      integer :: haloColor, haloComm, mpierr, hrc, px, py
 
       rc = ESMF_SUCCESS
 
@@ -362,6 +367,59 @@ contains
                latCorner(i, j) = cfg%lat_start + (real(j, ESMF_KIND_R8) - 1.0_ESMF_KIND_R8) * dlat
             end do
          end do
+      end if
+
+      ! --- Activate the distributed transport halo backend --------------------
+      ! The transport process fills its ghost ring from off-PET neighbours
+      ! through an MPI Cartesian backend that the driver must wire up, because
+      ! the CATChem process layer is ESMF-free and cannot query the VM itself.
+      !
+      ! The grid is decomposed into decompX x decompY blocks with ESMF's default
+      ! (identity) DE->PET mapping, so the DE-owning PETs are exactly ranks
+      ! 0..decompX*decompY-1 and DE index d = px + py*decompX (dim-1 fastest)
+      ! equals the PET id. That is precisely the row-major rank = py*decompX + px
+      ! the backend expects. Surplus PETs (petCount > decompX*decompY) own no DE
+      ! and must be excluded from the neighbour Sendrecv, or they would deadlock
+      ! a DE-owning neighbour, so split the VM communicator on DE ownership and
+      ! hand the backend the sub-communicator of DE-owning PETs only.
+      !
+      ! The grid is periodic in x (GridCreate1PeriDim) and non-periodic in y,
+      ! matching x_periodic=.true. / y_periodic=.false. below. Note each local
+      ! block must be at least the halo width (3) wide in both directions for
+      ! the single immediate-neighbour exchange to fill the full ghost ring.
+      call ESMF_VMGet(vm, localPet=localPet, mpiCommunicator=mpiComm, rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+         line=__LINE__, file=__FILE__)) return
+
+      if (localDECount > 0) then
+         haloColor = 0
+      else
+         haloColor = MPI_UNDEFINED
+      end if
+
+      ! MPI_Comm_split is collective over the VM communicator, so every PET
+      ! (including the surplus ones) must call it. Keying on localPet preserves
+      ! the identity ordering, so a DE-owning PET's rank in haloComm equals its
+      ! DE index = px + py*decompX.
+      call MPI_Comm_split(mpiComm, haloColor, localPet, haloComm, mpierr)
+      if (mpierr /= MPI_SUCCESS) then
+         call ESMF_LogSetError(ESMF_RC_INTNRL_BAD, &
+            msg="MPI_Comm_split failed while building the transport halo communicator", &
+            line=__LINE__, file=__FILE__, rcToReturn=rc)
+         return
+      end if
+
+      if (localDECount > 0) then
+         px = mod(localPet, decompX)
+         py = localPet / decompX
+         call transport_halo_mpi_init(haloComm, decompX, decompY, px, py, &
+            x_periodic=.true., y_periodic=.false., rc=hrc)
+         if (hrc /= CC_SUCCESS) then
+            call ESMF_LogSetError(ESMF_RC_INTNRL_BAD, &
+               msg="transport_halo_mpi_init failed to register the halo backend", &
+               line=__LINE__, file=__FILE__, rcToReturn=rc)
+            return
+         end if
       end if
 
    end subroutine create_gridded_grid

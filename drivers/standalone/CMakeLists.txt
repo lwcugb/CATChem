@@ -31,9 +31,16 @@ add_dependencies(catchem_standalone_driver cc_nuopc)
 # real CMake target, CMake restores both usage requirements automatically: it
 # pulls in yaml-cpp and, seeing a C++ library in the link closure, adds the C++
 # standard library to the final (Fortran) link. No library names are hardcoded.
+# The grid module wires the transport MPI halo backend: it calls MPI_Comm_split
+# directly and the transport archive (pulled in via cc_nuopc) now always
+# contains MPI symbols, so the driver must link MPI explicitly.
+if(NOT TARGET MPI::MPI_Fortran)
+  find_package(MPI REQUIRED COMPONENTS Fortran)
+endif()
+
 target_link_libraries(
   catchem_standalone_driver
-  PUBLIC cc_nuopc yaml_interface ${CATCHEM_ESMF_TARGET} NetCDF::NetCDF_Fortran
+  PUBLIC cc_nuopc yaml_interface ${CATCHEM_ESMF_TARGET} NetCDF::NetCDF_Fortran MPI::MPI_Fortran
 )
 
 # cc_nuopc writes its Fortran modules to <repo>/mod; CATChem core modules go
