@@ -25,7 +25,7 @@ module ProcessTransportInterface_Mod
 
    ! Core CATChem infrastructure
    use precision_mod, only: fp
-   use constants, only: MAX_LEN_NAME
+   use constants, only: MAX_LEN_NAME, g0
    use iso_fortran_env, only: output_unit
    use ProcessInterface_Mod, only: ProcessInterface
    use StateManager_Mod, only: StateManagerType
@@ -34,6 +34,11 @@ module ProcessTransportInterface_Mod
    use error_mod, only: CC_SUCCESS, CC_FAILURE, CC_Error, CC_Warning, ErrorManagerType
    use ChemState_Mod, only: ChemStateType
    use MetState_Mod, only: MetStateType
+
+   ! Diagnostic system (transport budget fields written to the output files)
+   use DiagnosticManager_Mod,   only: DiagnosticManagerType
+   use DiagnosticInterface_Mod, only: DiagnosticRegistryType, DiagnosticFieldType, &
+                                      DiagnosticDataType, DIAG_REAL_3D
 
    ! Vendored FV3 transport kernels + trimmed grid metric types
    use fv3_grid_types_mod, only: fv_grid_type, fv_grid_bounds_type
@@ -79,6 +84,13 @@ module ProcessTransportInterface_Mod
       logical :: do_horizontal = .true.  !< enable horizontal advection
       logical :: do_vertical   = .true.  !< enable vertical (Lagrangian PPM remap) advection
 
+      ! Diagnostics: when enabled, register + write per-species, per-level
+      ! transport mixing-ratio and mass tendency fields to the output.
+      ! diag_species selects which advected species to write (empty => all).
+      logical :: diagnostics    = .false. !< write transport budget diagnostics
+      logical :: diag_registered = .false. !< diagnostic fields registered
+      character(len=32), allocatable :: diag_species(:) !< species to write (empty=all)
+
    contains
       ! Required ProcessInterface implementations
       procedure :: init     => transport_init
@@ -87,6 +99,9 @@ module ProcessTransportInterface_Mod
 
       ! Capability registration
       procedure :: get_required_met_fields => transport_get_required_met_fields
+
+      ! Diagnostic registration (overrides the base no-op)
+      procedure :: register_diagnostics => transport_register_diagnostics
    end type ProcessTransportInterface
 
 contains
@@ -133,6 +148,16 @@ contains
       ! Runtime options from configuration; sets active status.
       call transport_load_config(this, container)
 
+      ! Register transport budget diagnostics (per-species, per-level tendency).
+      ! Advected-species metadata and the grid shape are populated on the shared
+      ! ChemState/GridManager before processes initialize, so this is safe here.
+      ! Every PET registers the identical field set, keeping the (collective)
+      ! diagnostic write balanced across ranks.
+      if (this%diagnostics) then
+         call this%register_diagnostics(container, rc)
+         if (rc /= CC_SUCCESS) return
+      end if
+
    end subroutine transport_init
 
    !> \brief Load transport runtime options from the configuration.
@@ -175,6 +200,8 @@ contains
          if (this%ng < 1) this%ng = 3
          call config_manager%get_logical('processes/transport/x_periodic', x_periodic,         cfg_rc, .false.)
          call config_manager%get_logical('processes/transport/y_periodic', y_periodic,         cfg_rc, .false.)
+         call config_manager%get_logical('processes/transport/diagnostics', this%diagnostics,   cfg_rc, .false.)
+         call config_manager%get_array('processes/transport/diag_species', this%diag_species,    cfg_rc)
 
          if (x_periodic) then
             this%halo%x_bc = HALO_BC_PERIODIC
@@ -261,11 +288,15 @@ contains
       type(StateManagerType), intent(inout) :: container
       integer, intent(out) :: rc
 
+      integer, parameter :: dpk = kind(0.0d0)
       type(TimeStateType), pointer :: time_state
-      integer :: metrics_rc, nz
+      integer :: metrics_rc, nz, n_adv
       real    :: dt
       real, allocatable :: dp_lag(:,:,:)
-      logical :: debug
+      logical :: debug, did_vertical, do_diag
+      real(dpk), allocatable :: mass_pre(:), mass_h(:), mass_v(:)
+      real(fp),  allocatable :: gmin(:)
+      real(fp),  allocatable :: conc_pre(:,:,:,:)
 
       rc = CC_SUCCESS
       if (.not. this%do_horizontal) return
@@ -296,22 +327,55 @@ contains
       end if
       dt = real(time_state%get_timestep())
 
-      debug = transport_debug_enabled()
-      if (debug) call transport_debug_report(this, 'pre-transport')
+      ! Vertical remap is active only when enabled AND the met layer thicknesses
+      ! are available; captured once so the debug branch and the run branch agree.
+      did_vertical = (this%do_vertical .and. allocated(this%met_state%DELP))
 
-      if (this%do_vertical .and. allocated(this%met_state%DELP)) then
+      ! Global-mass budget diagnostics. Reductions inside transport_collect_global
+      ! are COLLECTIVE, so every collect is guarded by `debug` only (env-driven,
+      ! identical on all ranks) and never by the per-rank `rc`, keeping the
+      ! collective call count balanced across PETs.
+      debug = transport_debug_enabled()
+      if (debug) then
+         n_adv = this%chem_state%nSpeciesAdvect
+         allocate(mass_pre(n_adv), mass_h(n_adv), mass_v(n_adv), gmin(n_adv))
+         mass_pre = 0.0_dpk; mass_h = 0.0_dpk; mass_v = 0.0_dpk; gmin = 0.0_fp
+         call transport_collect_global(this, mass_pre, gmin)
+      end if
+
+      ! Snapshot the pre-transport concentrations so the net transport tendency
+      ! can be written to the output diagnostics after the step. Purely local
+      ! (no reductions); gated identically on all PETs.
+      do_diag = (this%diagnostics .and. this%diag_registered .and. dt > 0.0)
+      if (do_diag) call transport_snapshot_conc(this, conc_pre)
+
+      if (did_vertical) then
          ! Capture the Lagrangian layer thicknesses produced by the horizontal
          ! step so they can be remapped back to the reference grid.
          nz = size(this%met_state%DELP, 3)
          allocate(dp_lag(this%bd%is:this%bd%ie, this%bd%js:this%bd%je, nz))
          call transport_horizontal(this, dt, rc, dp_lag=dp_lag)
-         if (debug) call transport_debug_report(this, 'after horizontal advection')
+         if (debug) call transport_collect_global(this, mass_h, gmin)
          if (rc == CC_SUCCESS) call transport_vertical(this, dp_lag, rc)
-         if (debug) call transport_debug_report(this, 'after vertical remap')
+         if (debug) call transport_collect_global(this, mass_v, gmin)
          deallocate(dp_lag)
       else
          call transport_horizontal(this, dt, rc)
-         if (debug) call transport_debug_report(this, 'after horizontal advection')
+         if (debug) call transport_collect_global(this, mass_h, gmin)
+      end if
+
+      ! Write the per-species, per-level transport tendency (post - pre)/dt to
+      ! the diagnostic output fields.
+      if (do_diag) then
+         if (allocated(conc_pre)) then
+            call transport_write_diagnostics(this, container, conc_pre, dt)
+            deallocate(conc_pre)
+         end if
+      end if
+
+      if (debug) then
+         call transport_print_budget(this, mass_pre, mass_h, mass_v, gmin, did_vertical)
+         deallocate(mass_pre, mass_h, mass_v, gmin)
       end if
 
    end subroutine transport_run
@@ -470,7 +534,10 @@ contains
                end if
             end do subcycle
 
-            this%chem_state%ChemSpecies(isp)%conc(:,:,k) = real(q(is:ie, js:je), fp)
+            ! Clip any tiny negative concentrations (e.g. from a cold start or
+            ! PPM undershoot) to zero when writing back the tracer field.
+            this%chem_state%ChemSpecies(isp)%conc(:,:,k) = &
+               max(real(q(is:ie, js:je), fp), 0.0_fp)
          end do species_loop
 
       end do level_loop
@@ -621,6 +688,16 @@ contains
 
          call mappm(nz, pe1, q1, nz, pe2, q2, 1, np, 0, this%vord)
 
+         ! Clip any small negative concentrations from the PPM remap to zero
+         ! BEFORE the mass fixer, so the per-column rescale below redistributes
+         ! onto the non-negative profile and column (hence global) tracer mass
+         ! stays both conserved AND non-negative.
+         do c = 1, np
+            do k = 1, nz
+               if (q2(c,k) < 0.0) q2(c,k) = 0.0
+            end do
+         end do
+
          ! --- Column tracer-mass fixer ----------------------------------------
          ! Rescale each positive-definite column by the ratio of its pre- to
          ! post-remap tracer mass so the column (hence global) tracer mass is
@@ -721,97 +798,45 @@ contains
       transport_debug_enabled = enabled
    end function transport_debug_enabled
 
-   !> \brief Print per-species transport diagnostics on the local compute domain.
+   !> \brief Collect the global (all-PET) tracer mass and global minimum per
+   !!        advected species.
    !!
-   !! For every advected species this reports the tracer min/max, the total
-   !! tracer mass sum(conc*DELP*AREA_M2), and `top_nonzero_level`: the highest
-   !! surface-first level (k=1 is the surface) that still holds tracer. Calling
-   !! it "pre-transport", "after horizontal advection" and "after vertical remap"
-   !! makes both operators observable:
-   !!   * horizontal advection conserves tracer mass, so the "pre-transport" and
-   !!     "after horizontal advection" totals should (near) match. Note the mass
-   !!     here is weighted by the met DELP (built from PS); when the vertical
-   !!     remap reconciles onto `PS_NEXT` (PS_NEXT populated and PS_NEXT /= PS)
-   !!     the tracer burden intentionally changes at the "after vertical remap"
-   !!     stage to follow the met air mass, so a small change there is EXPECTED
-   !!     (it is the pressure reconciliation, not a leak). On the fallback path
-   !!     (no PS_NEXT) the vertical remap conserves column mass, so that stage
-   !!     total should (near) match too;
-   !!   * `top_nonzero_level` can ONLY grow at the "after vertical remap" stage,
-   !!     because horizontal advection never moves mass between levels. If a
-   !!     surface-emitted tracer keeps top_nonzero_level = 1 after the vertical
-   !!     remap, there is simply no horizontal convergence lifting it (expected
-   !!     for pure advection without convection / PBL mixing), not a remap bug.
-   !! Values are local to this MPI rank / compute domain (no cross-rank reduce).
-   subroutine transport_debug_report(this, label)
+   !! For each advected species this sums the local tracer mass
+   !! `sum(conc*DELP*AREA_M2)` and reduces it across every PET with
+   !! `halo_global_sum`, and reduces the global minimum concentration with
+   !! `halo_global_max` (min carried as -max so a single collective covers it).
+   !! The per-PET local totals cannot show HORIZONTAL conservation on a
+   !! decomposed run because advection moves mass ACROSS PET boundaries -- only
+   !! the sum over every rank is conserved. Both reductions are the serial
+   !! identity when no MPI backend is registered, so this is safe in every
+   !! configuration. The reductions are COLLECTIVE, so they run for every
+   !! advected species on every PET (mass 0 / min +inf for any locally skipped
+   !! slot) to stay balanced.
+   !!
+   !! \param[in]  this  transport process (needs chem_state, met_state)
+   !! \param[out] gmass global tracer mass per advected species [conc*Pa*m2]
+   !! \param[out] gmin  global minimum concentration per advected species [conc]
+   subroutine transport_collect_global(this, gmass, gmin)
       class(ProcessTransportInterface), intent(in) :: this
-      character(len=*), intent(in) :: label
-      integer,  parameter :: dpk = kind(0.0d0)
-      real(fp), parameter :: thr = 1.0e-30_fp
-      integer   :: nxl, nyl, nzl, i, j, k, s, isp, kmax, grc
+      integer, parameter :: dpk = kind(0.0d0)
+      real(dpk), intent(out) :: gmass(:)
+      real(fp),  intent(out) :: gmin(:)
+      integer   :: nxl, nyl, nzl, i, j, k, s, isp, grc
       real(dpk) :: mass, cell_area
-      real(fp)  :: qmin, qmax, qlev
-      real      :: gmass
+      real      :: gm, gmn
       logical   :: have_area
 
+      gmass = 0.0_dpk
+      gmin  = 0.0_fp
       if (.not. associated(this%chem_state) .or. &
           .not. associated(this%met_state)) return
       if (.not. allocated(this%met_state%DELP)) return
       have_area = allocated(this%met_state%AREA_M2)
 
-      write(output_unit,'(A)') '  [transport-debug] '//trim(label)// &
-         '  (local compute-domain totals)'
-      do s = 1, this%chem_state%nSpeciesAdvect
-         isp = this%chem_state%AdvectIndex(s)
-         if (isp < 1 .or. isp > size(this%chem_state%ChemSpecies)) cycle
-         if (.not. associated(this%chem_state%ChemSpecies(isp)%conc)) cycle
-         associate (conc => this%chem_state%ChemSpecies(isp)%conc)
-            nxl = size(conc, 1); nyl = size(conc, 2); nzl = size(conc, 3)
-            qmin = conc(1,1,1); qmax = conc(1,1,1)
-            mass = 0.0_dpk
-            kmax = 0
-            do k = 1, nzl
-               qlev = 0.0_fp
-               do j = 1, nyl
-                  do i = 1, nxl
-                     qmin = min(qmin, conc(i,j,k))
-                     qmax = max(qmax, conc(i,j,k))
-                     qlev = max(qlev, abs(conc(i,j,k)))
-                     if (have_area) then
-                        cell_area = real(this%met_state%AREA_M2(i,j), dpk)
-                     else
-                        cell_area = 1.0_dpk
-                     end if
-                     mass = mass + real(conc(i,j,k), dpk) * &
-                            real(this%met_state%DELP(i,j,k), dpk) * cell_area
-                  end do
-               end do
-               if (qlev > thr) kmax = k
-            end do
-            write(output_unit, &
-               '(A,A,A,ES12.4,A,ES12.4,A,ES18.10,A,I0,A,I0)') &
-               '    ', trim(this%chem_state%ChemSpecies(isp)%short_name), &
-               ': min=', qmin, ' max=', qmax, ' mass=', mass, &
-               ' top_nonzero_level=', kmax, '/', nzl
-         end associate
-      end do
-
-      ! -----------------------------------------------------------------------
-      ! Global (all-PET) tracer mass. The per-species local totals above cannot
-      ! show HORIZONTAL conservation on a decomposed run, because advection
-      ! moves mass ACROSS PET boundaries -- only the sum over every rank is
-      ! conserved. Reduce each species mass over the exchange communicator and
-      ! print it once on the root PET. halo_global_sum / halo_is_root are the
-      ! serial identity (single value, always root) when no MPI backend is
-      ! registered, so this prints exactly once in every configuration. The
-      ! reduction is COLLECTIVE, so it is called for every advected species on
-      ! every PET (mass 0 for any locally skipped slot) to stay balanced.
-      ! -----------------------------------------------------------------------
-      if (halo_is_root()) write(output_unit,'(A)') &
-         '  [transport-debug-global] '//trim(label)//'  (all-PET tracer mass)'
       do s = 1, this%chem_state%nSpeciesAdvect
          isp  = this%chem_state%AdvectIndex(s)
          mass = 0.0_dpk
+         gmn  = -huge(1.0)   ! min carried as -max; -huge => "no local data"
          if (isp >= 1 .and. isp <= size(this%chem_state%ChemSpecies)) then
             if (associated(this%chem_state%ChemSpecies(isp)%conc)) then
                associate (conc => this%chem_state%ChemSpecies(isp)%conc)
@@ -826,21 +851,309 @@ contains
                            end if
                            mass = mass + real(conc(i,j,k), dpk) * &
                                   real(this%met_state%DELP(i,j,k), dpk) * cell_area
+                           gmn  = max(gmn, -real(conc(i,j,k)))
                         end do
                      end do
                   end do
                end associate
             end if
          end if
-         gmass = real(mass)
-         call halo_global_sum(gmass, grc)   ! collective; identity in serial
-         if (halo_is_root() .and. isp >= 1 .and. &
-             isp <= size(this%chem_state%ChemSpecies)) then
-            write(output_unit,'(A,A,A,ES22.14)') &
+         gm = real(mass)
+         call halo_global_sum(gm, grc)    ! collective; identity in serial
+         call halo_global_max(gmn, grc)   ! collective; identity in serial
+         gmass(s) = real(gm, dpk)
+         gmin(s)  = real(-gmn, fp)
+      end do
+   end subroutine transport_collect_global
+
+   !> \brief Print one combined global-mass budget line per advected species.
+   !!
+   !! Reports, on the root PET only, the global tracer mass before transport
+   !! (`pre`), after horizontal advection (`post_h`) and, when the vertical remap
+   !! ran, after it (`post_v`), plus the relative changes `dH=(post_h-pre)/pre`
+   !! and `dV=(post_v-post_h)/post_h` and the global minimum concentration
+   !! (`min`, confirms the non-negativity clip). Interpretation:
+   !!   * horizontal advection conserves tracer mass, so `dH` should be ~0
+   !!     (machine/round-off level, ~1e-6..1e-8 in single precision);
+   !!   * the vertical remap conserves column mass on the fallback path (`dV`~0);
+   !!     on the PS_NEXT path a small `dV` is EXPECTED (pressure reconciliation to
+   !!     the met air mass), not a leak.
+   !! Tracers that are identically zero (no burden) are skipped to cut clutter.
+   subroutine transport_print_budget(this, mass_pre, mass_h, mass_v, gmin, did_vertical)
+      class(ProcessTransportInterface), intent(in) :: this
+      integer, parameter :: dpk = kind(0.0d0)
+      real(dpk), intent(in) :: mass_pre(:), mass_h(:), mass_v(:)
+      real(fp),  intent(in) :: gmin(:)
+      logical,   intent(in) :: did_vertical
+      real(dpk), parameter  :: tiny_m = 1.0e-300_dpk
+      integer   :: s, isp
+      real(dpk) :: dh, dv
+
+      if (.not. halo_is_root()) return
+
+      if (did_vertical) then
+         write(output_unit,'(A)') &
+            '  [transport-budget] global tracer mass  (pre -> post-horizontal -> post-vertical)'
+      else
+         write(output_unit,'(A)') &
+            '  [transport-budget] global tracer mass  (pre -> post-horizontal)'
+      end if
+
+      do s = 1, this%chem_state%nSpeciesAdvect
+         isp = this%chem_state%AdvectIndex(s)
+         if (isp < 1 .or. isp > size(this%chem_state%ChemSpecies)) cycle
+         ! Skip tracers that carry no mass at all (keeps the report short).
+         if (mass_pre(s) <= tiny_m .and. mass_h(s) <= tiny_m) cycle
+         dh = (mass_h(s) - mass_pre(s)) / max(mass_pre(s), tiny_m)
+         if (did_vertical) then
+            dv = (mass_v(s) - mass_h(s)) / max(mass_h(s), tiny_m)
+            write(output_unit, &
+               '(A,A,A,ES20.12,A,ES20.12,A,ES20.12,A,ES9.2,A,ES9.2,A,ES9.2)') &
                '    ', trim(this%chem_state%ChemSpecies(isp)%short_name), &
-               ': global_mass=', gmass
+               ': pre=', mass_pre(s), ' post_h=', mass_h(s), ' post_v=', mass_v(s), &
+               ' dH=', dh, ' dV=', dv, ' min=', gmin(s)
+         else
+            write(output_unit, &
+               '(A,A,A,ES20.12,A,ES20.12,A,ES9.2,A,ES9.2)') &
+               '    ', trim(this%chem_state%ChemSpecies(isp)%short_name), &
+               ': pre=', mass_pre(s), ' post_h=', mass_h(s), &
+               ' dH=', dh, ' min=', gmin(s)
          end if
       end do
-   end subroutine transport_debug_report
+   end subroutine transport_print_budget
+
+   !> \brief Register the per-species, per-level transport budget diagnostics.
+   !!
+   !! Registers one DIAG_REAL_3D field `transport_tend_<species>` for every
+   !! advected species on the shared 'transport' diagnostic registry. Called from
+   !! transport_init (advected-species metadata and the grid shape are populated
+   !! before processes initialize). Every PET registers the identical field set,
+   !! so the collective diagnostic write stays balanced across ranks. Best effort:
+   !! if the diagnostic manager / grid is unavailable this quietly leaves
+   !! diagnostics off rather than failing the model.
+   subroutine transport_register_diagnostics(this, container, rc)
+      class(ProcessTransportInterface), intent(inout) :: this
+      type(StateManagerType), intent(inout) :: container
+      integer, intent(out) :: rc
+
+      type(DiagnosticManagerType),  pointer :: diag_mgr => null()
+      type(DiagnosticRegistryType), pointer :: registry => null()
+      type(GridManagerType),        pointer :: grid_mgr => null()
+      character(len=MAX_LEN_NAME) :: field_name, sp_name
+      integer :: s, isp, nx, ny, nz, dims_3d(3)
+
+      rc = CC_SUCCESS
+      if (.not. this%diagnostics) return
+      if (.not. associated(this%chem_state)) return
+      if (this%chem_state%nSpeciesAdvect <= 0) return
+
+      diag_mgr => container%get_diagnostic_manager()
+      if (.not. associated(diag_mgr)) return
+      grid_mgr => container%get_grid_manager()
+      if (.not. associated(grid_mgr)) return
+
+      call grid_mgr%get_shape(nx, ny, nz)
+      dims_3d = [nx, ny, nz]
+
+      call diag_mgr%register_process('transport', rc)
+      if (rc /= CC_SUCCESS) return
+      call diag_mgr%get_process_registry('transport', registry, rc)
+      if (rc /= CC_SUCCESS) return
+      if (.not. associated(registry)) then
+         rc = CC_FAILURE
+         return
+      end if
+
+      do s = 1, this%chem_state%nSpeciesAdvect
+         isp = this%chem_state%AdvectIndex(s)
+         if (isp < 1 .or. isp > size(this%chem_state%ChemSpecies)) cycle
+         sp_name = this%chem_state%ChemSpecies(isp)%short_name
+         if (.not. transport_species_selected(this, trim(sp_name))) cycle
+
+         ! Net transport tendency of the tracer mixing ratio, per level.
+         write(field_name, '(A,A)') 'transport_tend_', trim(sp_name)
+         call this%register_diagnostic_field(registry, trim(field_name), &
+            'Net transport tendency of '//trim(sp_name)//' per level', &
+            'kg kg-1 s-1', DIAG_REAL_3D, 'transport', dims_3d, rc=rc)
+         if (rc /= CC_SUCCESS) return
+
+         ! Net transport tendency of the tracer MASS in each layer [kg/s].
+         write(field_name, '(A,A)') 'transport_mass_', trim(sp_name)
+         call this%register_diagnostic_field(registry, trim(field_name), &
+            'Net transport mass tendency of '//trim(sp_name)//' per level', &
+            'kg s-1', DIAG_REAL_3D, 'transport', dims_3d, rc=rc)
+         if (rc /= CC_SUCCESS) return
+      end do
+
+      this%diag_registered = .true.
+   end subroutine transport_register_diagnostics
+
+   !> \brief True if `short_name` is selected for diagnostic output.
+   !!
+   !! An empty (or unallocated) `diag_species` list selects *all* advected
+   !! species, matching the convention of the global diagnostic list. A
+   !! non-empty list restricts output to a case-insensitive match.
+   logical function transport_species_selected(this, short_name) result(sel)
+      class(ProcessTransportInterface), intent(in) :: this
+      character(len=*), intent(in) :: short_name
+      integer :: i
+
+      sel = .true.
+      if (.not. allocated(this%diag_species)) return
+      if (size(this%diag_species) == 0) return
+      sel = .false.
+      do i = 1, size(this%diag_species)
+         if (len_trim(this%diag_species(i)) == 0) cycle
+         if (transport_same_name(this%diag_species(i), short_name)) then
+            sel = .true.
+            return
+         end if
+      end do
+   end function transport_species_selected
+
+   !> \brief Case-insensitive, trimmed comparison of two species names.
+   logical function transport_same_name(a, b) result(same)
+      character(len=*), intent(in) :: a, b
+      same = (trim(transport_lower(adjustl(a))) == trim(transport_lower(adjustl(b))))
+   end function transport_same_name
+
+   !> \brief Lowercase an ASCII string.
+   pure function transport_lower(s) result(out)
+      character(len=*), intent(in) :: s
+      character(len=len(s)) :: out
+      integer :: i, ic
+      do i = 1, len(s)
+         ic = iachar(s(i:i))
+         if (ic >= iachar('A') .and. ic <= iachar('Z')) then
+            out(i:i) = achar(ic + 32)
+         else
+            out(i:i) = s(i:i)
+         end if
+      end do
+   end function transport_lower
+
+   !> \brief Snapshot the pre-transport concentrations of every advected species.
+   !!
+   !! Fills `conc_pre(nx,ny,nz,nSpeciesAdvect)` (allocated here) with the current
+   !! tracer fields so the net transport tendency can be formed after the step.
+   !! Purely local; left unallocated if no advected species has a valid field.
+   subroutine transport_snapshot_conc(this, conc_pre)
+      class(ProcessTransportInterface), intent(in) :: this
+      real(fp), allocatable, intent(out) :: conc_pre(:,:,:,:)
+      integer :: s, isp, nx, ny, nz, n_adv
+
+      n_adv = this%chem_state%nSpeciesAdvect
+      nx = 0; ny = 0; nz = 0
+      do s = 1, n_adv
+         isp = this%chem_state%AdvectIndex(s)
+         if (isp < 1 .or. isp > size(this%chem_state%ChemSpecies)) cycle
+         if (.not. associated(this%chem_state%ChemSpecies(isp)%conc)) cycle
+         nx = size(this%chem_state%ChemSpecies(isp)%conc, 1)
+         ny = size(this%chem_state%ChemSpecies(isp)%conc, 2)
+         nz = size(this%chem_state%ChemSpecies(isp)%conc, 3)
+         exit
+      end do
+      if (nx == 0) return
+
+      allocate(conc_pre(nx, ny, nz, n_adv))
+      conc_pre = 0.0_fp
+      do s = 1, n_adv
+         isp = this%chem_state%AdvectIndex(s)
+         if (isp < 1 .or. isp > size(this%chem_state%ChemSpecies)) cycle
+         if (.not. associated(this%chem_state%ChemSpecies(isp)%conc)) cycle
+         conc_pre(:,:,:,s) = this%chem_state%ChemSpecies(isp)%conc
+      end do
+   end subroutine transport_snapshot_conc
+
+   !> \brief Write the transport diagnostics (mixing-ratio + mass tendency) per species.
+   !!
+   !! For every selected advected species stores, per level:
+   !!  * `transport_tend_<species>`     = (conc - conc_pre)/dt            [kg kg-1 s-1]
+   !!  * `transport_mass_<species>`     = (conc - conc_pre)/dt * DELP*AREA/g0  [kg s-1]
+   !!
+   !! Both are genuine transport tendencies (post minus pre over the step), the
+   !! second weighted by the layer air mass so it reads as a tracer-mass budget
+   !! term. Purely local (no reductions); best effort: any field that is missing
+   !! / not ready / shape-mismatched is skipped. The mass tendency is skipped
+   !! when DELP or the cell area are unavailable.
+   subroutine transport_write_diagnostics(this, container, conc_pre, dt)
+      class(ProcessTransportInterface), intent(in) :: this
+      type(StateManagerType), intent(inout) :: container
+      real(fp), intent(in) :: conc_pre(:,:,:,:)
+      real,     intent(in) :: dt
+
+      type(DiagnosticManagerType),  pointer :: diag_mgr   => null()
+      type(DiagnosticRegistryType), pointer :: registry   => null()
+      type(DiagnosticFieldType),    pointer :: diag_field => null()
+      type(DiagnosticDataType),     pointer :: diag_data  => null()
+      real(fp), pointer :: fptr(:,:,:) => null()
+      real(fp), pointer :: conc(:,:,:) => null()
+      character(len=MAX_LEN_NAME) :: field_name, sp_name
+      logical :: have_mass
+      integer :: s, isp, drc, i, j, k, nx, ny, nz
+
+      if (dt <= 0.0) return
+      diag_mgr => container%get_diagnostic_manager()
+      if (.not. associated(diag_mgr)) return
+      call diag_mgr%get_process_registry('transport', registry, drc)
+      if (drc /= CC_SUCCESS .or. .not. associated(registry)) return
+
+      have_mass = associated(this%met_state)
+      if (have_mass) have_mass = allocated(this%met_state%DELP) .and. &
+                                 allocated(this%met_state%AREA_M2)
+
+      do s = 1, this%chem_state%nSpeciesAdvect
+         isp = this%chem_state%AdvectIndex(s)
+         if (isp < 1 .or. isp > size(this%chem_state%ChemSpecies)) cycle
+         if (.not. associated(this%chem_state%ChemSpecies(isp)%conc)) cycle
+         sp_name = this%chem_state%ChemSpecies(isp)%short_name
+         if (.not. transport_species_selected(this, trim(sp_name))) cycle
+         conc => this%chem_state%ChemSpecies(isp)%conc
+
+         ! --- Net transport tendency of the mixing ratio [kg kg-1 s-1] ---
+         write(field_name, '(A,A)') 'transport_tend_', trim(sp_name)
+         diag_field => registry%get_field_ptr(trim(field_name))
+         if (associated(diag_field)) then
+            if (diag_field%is_ready()) then
+               diag_data => diag_field%get_data_ptr()
+               if (associated(diag_data)) then
+                  fptr => diag_data%get_real_3d_ptr()
+                  if (associated(fptr)) then
+                     if (size(fptr,1) == size(conc_pre,1) .and. &
+                         size(fptr,2) == size(conc_pre,2) .and. &
+                         size(fptr,3) == size(conc_pre,3)) then
+                        fptr = (conc - conc_pre(:,:,:,s)) / dt
+                     end if
+                  end if
+               end if
+            end if
+         end if
+
+         ! --- Net transport tendency of the tracer mass [kg s-1] ---
+         if (.not. have_mass) cycle
+         write(field_name, '(A,A)') 'transport_mass_', trim(sp_name)
+         diag_field => registry%get_field_ptr(trim(field_name))
+         if (.not. associated(diag_field)) cycle
+         if (.not. diag_field%is_ready()) cycle
+         diag_data => diag_field%get_data_ptr()
+         if (.not. associated(diag_data)) cycle
+         fptr => diag_data%get_real_3d_ptr()
+         if (.not. associated(fptr)) cycle
+         nx = size(conc, 1); ny = size(conc, 2); nz = size(conc, 3)
+         if (size(fptr,1) /= nx .or. size(fptr,2) /= ny .or. size(fptr,3) /= nz) cycle
+         if (size(conc_pre,1) /= nx .or. size(conc_pre,2) /= ny .or. size(conc_pre,3) /= nz) cycle
+         if (size(this%met_state%DELP,1) /= nx .or. size(this%met_state%DELP,2) /= ny .or. &
+             size(this%met_state%DELP,3) /= nz) cycle
+         do k = 1, nz
+            do j = 1, ny
+               do i = 1, nx
+                  fptr(i,j,k) = (conc(i,j,k) - conc_pre(i,j,k,s)) / dt * &
+                                this%met_state%DELP(i,j,k) * &
+                                this%met_state%AREA_M2(i,j) / g0
+               end do
+            end do
+         end do
+      end do
+   end subroutine transport_write_diagnostics
 
 end module ProcessTransportInterface_Mod

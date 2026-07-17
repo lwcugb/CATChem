@@ -601,6 +601,14 @@ processes:
   transport:
     activate: true        # master on/off switch. false = process never runs,
                           #   even if listed in a run_phases block.
+    diagnostics: true     # write per-species, per-level transport diagnostics
+                          #   to the output file(s): transport_tend_<species>
+                          #   (net transport tendency [kg kg-1 s-1]) and
+                          #   transport_mass_<species> [kg s-1]).
+    diag_species: [so2, so4, seas1, seas3, seas5, bc1, bc2, oc1, oc2, dust1, dust3, dust5]
+                          # which advected species to write. Empty list ([])
+                          #   selects ALL advected species. Names are matched
+                          #   case-insensitively against species short names.
     horizontal: true      # run horizontal (x-y, lon-lat) advection.
     vertical: true        # vertical transport as the FV3/GCHP vertically-
                           #   Lagrangian PPM remap (mappm): the horizontally
