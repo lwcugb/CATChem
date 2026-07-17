@@ -41,7 +41,7 @@ module ProcessTransportInterface_Mod
    use fv3_vremap_mod, only: mappm
    use met_utilities_mod, only: get_hybrid_ab
    use TransportGridMetrics_Mod, only: build_fv3_grid_metrics
-   use TransportHalo_Mod, only: transport_halo_type, halo_update, &
+   use TransportHalo_Mod, only: transport_halo_type, halo_update, halo_global_max, &
                                 HALO_BC_REPLICATE, HALO_BC_PERIODIC
    use TransportMassFlux_Mod, only: fv_mass_flux_type, mass_flux_alloc, mass_flux_free, &
                                     build_level_mass_flux, courant_max, scale_mass_flux
@@ -407,6 +407,13 @@ contains
          if (rc /= CC_SUCCESS) exit level_loop
 
          cmax  = courant_max(mf, this%bd)
+         ! nsplt drives how many times the paired halo exchange is called in the
+         ! sub-cycle below, so it MUST be identical on every PET. courant_max is
+         ! a LOCAL (per-PET) maximum; reduce it to the global maximum first, or a
+         ! PET with faster local winds would sub-cycle (and halo-exchange) more
+         ! times than its neighbours and the off-PET Sendrecv would deadlock.
+         ! (Serial / single-PET: halo_global_max is the identity.)
+         call halo_global_max(cmax, hrc)
          nsplt = int(1.0 + cmax)
          if (nsplt < 1) nsplt = 1
          if (nsplt > 1) call scale_mass_flux(mf, this%gridstruct, this%bd, 1.0 / real(nsplt))

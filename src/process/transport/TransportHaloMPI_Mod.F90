@@ -41,6 +41,7 @@ module TransportHaloMPI_Mod
    use mpi
    use error_mod, only: CC_SUCCESS, CC_FAILURE
    use TransportHalo_Mod, only: set_halo_exchange_hook, clear_halo_exchange_hook, &
+                                set_halo_global_max_hook, clear_halo_global_max_hook, &
                                 HALO_BC_PERIODIC, HALO_BC_REPLICATE
 
    implicit none
@@ -113,12 +114,14 @@ contains
       end if
 
       call set_halo_exchange_hook(halo_mpi_exchange)
+      call set_halo_global_max_hook(halo_mpi_global_max)
       is_initialized = .true.
    end subroutine transport_halo_mpi_init
 
    !> \brief Deregister the backend (restore the serial on-PET closure).
    subroutine transport_halo_mpi_finalize()
       call clear_halo_exchange_hook()
+      call clear_halo_global_max_hook()
       is_initialized = .false.
       comm_c = MPI_COMM_NULL
       nbr_w = MPI_PROC_NULL; nbr_e = MPI_PROC_NULL
@@ -300,5 +303,29 @@ contains
                         rbuf, nbytes, MPI_BYTE, src,  1001, &
                         comm_c, status, ierr)
    end subroutine sendrecv_bytes
+
+   !> \brief Reduce a scalar to its global maximum across the exchange comm.
+   !!
+   !! Registered through the halo seam as the global-max backend. It guarantees
+   !! that the Courant sub-cycling count `nsplt = int(1 + cmax)` is IDENTICAL on
+   !! every PET, so the paired halo `Sendrecv` is called the same number of
+   !! times everywhere (otherwise the exchange deadlocks). The MPI datatype is
+   !! chosen from the storage size of the seam's bare `real` (r4 or r8 depending
+   !! on the transport library build flags).
+   subroutine halo_mpi_global_max(val, rc)
+      real,    intent(inout) :: val
+      integer, intent(out)   :: rc
+      integer :: ierr, dtype
+
+      rc = CC_SUCCESS
+      if (comm_c == MPI_COMM_NULL) return
+      if (storage_size(val) / 8 == 8) then
+         dtype = MPI_REAL8
+      else
+         dtype = MPI_REAL4
+      end if
+      call MPI_Allreduce(MPI_IN_PLACE, val, 1, dtype, MPI_MAX, comm_c, ierr)
+      if (ierr /= 0) rc = CC_FAILURE
+   end subroutine halo_mpi_global_max
 
 end module TransportHaloMPI_Mod

@@ -57,6 +57,9 @@ module TransportHalo_Mod
    public :: halo_update
    public :: halo_exchange_iface
    public :: set_halo_exchange_hook, clear_halo_exchange_hook, halo_exchange_registered
+   public :: halo_global_reduce_iface
+   public :: halo_global_max
+   public :: set_halo_global_max_hook, clear_halo_global_max_hook
 
    !> Zero-gradient edge replication (regional boundary / safe default).
    integer, parameter :: HALO_BC_REPLICATE = 0
@@ -80,6 +83,25 @@ module TransportHalo_Mod
 
    !> Registered off-PET exchange backend (null => serial on-PET closure).
    procedure(halo_exchange_iface), pointer, save :: off_pet_hook => null()
+
+   !> \brief Off-PET scalar global-reduction backend signature.
+   !!
+   !! Reduces the scalar `val` in place across every PET of the decomposition
+   !! (e.g. an MPI `Allreduce`). Needed so that quantities which must be
+   !! globally consistent -- above all the Courant sub-cycling count
+   !! `nsplt = int(1 + cmax)`, which drives how many times the paired halo
+   !! exchange is called -- take the SAME value on every PET. Without it a PET
+   !! with a locally larger Courant number would sub-cycle (and halo-exchange)
+   !! more times than its neighbours and the paired exchange would deadlock.
+   abstract interface
+      subroutine halo_global_reduce_iface(val, rc)
+         real,    intent(inout) :: val
+         integer, intent(out)   :: rc
+      end subroutine halo_global_reduce_iface
+   end interface
+
+   !> Registered global-max backend (null => serial identity, val unchanged).
+   procedure(halo_global_reduce_iface), pointer, save :: global_max_hook => null()
 
    !> \brief Halo policy for the transport data domain.
    type :: transport_halo_type
@@ -139,6 +161,34 @@ contains
    logical function halo_exchange_registered()
       halo_exchange_registered = associated(off_pet_hook)
    end function halo_exchange_registered
+
+   !> \brief Register an off-PET scalar global-max backend (host / driver only).
+   !!
+   !! Registered together with the exchange backend; call
+   !! `clear_halo_global_max_hook` to restore the serial identity.
+   subroutine set_halo_global_max_hook(proc)
+      procedure(halo_global_reduce_iface) :: proc
+      global_max_hook => proc
+   end subroutine set_halo_global_max_hook
+
+   !> \brief Remove any registered global-max backend (restore serial identity).
+   subroutine clear_halo_global_max_hook()
+      global_max_hook => null()
+   end subroutine clear_halo_global_max_hook
+
+   !> \brief Reduce a scalar to its global maximum across all PETs.
+   !!
+   !! Delegates to the registered backend (e.g. MPI `Allreduce(MPI_MAX)`); when
+   !! no backend is registered (serial / single-PET) it is the identity, leaving
+   !! `val` unchanged. This is a COLLECTIVE when a backend is registered, so it
+   !! must be called the same number of times on every PET.
+   subroutine halo_global_max(val, rc)
+      real,    intent(inout) :: val
+      integer, intent(out)   :: rc
+
+      rc = CC_SUCCESS
+      if (associated(global_max_hook)) call global_max_hook(val, rc)
+   end subroutine halo_global_max
 
    !> \brief Fill the halo ring of a data-domain field (explicit bounds).
    !!
