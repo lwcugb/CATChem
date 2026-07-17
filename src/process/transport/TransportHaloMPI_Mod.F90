@@ -42,6 +42,8 @@ module TransportHaloMPI_Mod
    use error_mod, only: CC_SUCCESS, CC_FAILURE
    use TransportHalo_Mod, only: set_halo_exchange_hook, clear_halo_exchange_hook, &
                                 set_halo_global_max_hook, clear_halo_global_max_hook, &
+                                set_halo_global_sum_hook, clear_halo_global_sum_hook, &
+                                set_halo_is_root_hook, clear_halo_is_root_hook, &
                                 HALO_BC_PERIODIC, HALO_BC_REPLICATE
 
    implicit none
@@ -54,6 +56,7 @@ module TransportHaloMPI_Mod
    ! --- Cartesian exchange state (set by init) ------------------------------
    logical, save :: is_initialized = .false.
    integer, save :: comm_c = MPI_COMM_NULL   !< communicator for the exchange
+   integer, save :: myrank_c = 0             !< this PET's rank in comm_c (root == 0)
    integer, save :: nbr_w  = MPI_PROC_NULL   !< west  neighbour rank (or none)
    integer, save :: nbr_e  = MPI_PROC_NULL   !< east  neighbour rank (or none)
    integer, save :: nbr_s  = MPI_PROC_NULL   !< south neighbour rank (or none)
@@ -113,8 +116,14 @@ contains
          if (py < npy - 1) then; nbr_n = (py + 1) * npx + px; else; nbr_n = MPI_PROC_NULL; end if
       end if
 
+      call MPI_Comm_rank(comm_c, myrank_c, rc)
+      if (rc /= 0) then; rc = CC_FAILURE; return; end if
+      rc = CC_SUCCESS
+
       call set_halo_exchange_hook(halo_mpi_exchange)
       call set_halo_global_max_hook(halo_mpi_global_max)
+      call set_halo_global_sum_hook(halo_mpi_global_sum)
+      call set_halo_is_root_hook(halo_mpi_is_root)
       is_initialized = .true.
    end subroutine transport_halo_mpi_init
 
@@ -122,6 +131,9 @@ contains
    subroutine transport_halo_mpi_finalize()
       call clear_halo_exchange_hook()
       call clear_halo_global_max_hook()
+      call clear_halo_global_sum_hook()
+      call clear_halo_is_root_hook()
+      myrank_c = 0
       is_initialized = .false.
       comm_c = MPI_COMM_NULL
       nbr_w = MPI_PROC_NULL; nbr_e = MPI_PROC_NULL
@@ -327,5 +339,31 @@ contains
       call MPI_Allreduce(MPI_IN_PLACE, val, 1, dtype, MPI_MAX, comm_c, ierr)
       if (ierr /= 0) rc = CC_FAILURE
    end subroutine halo_mpi_global_max
+
+   !> \brief Reduce a scalar to its global SUM across the exchange comm.
+   !!
+   !! Registered as the global-sum backend; used for reporting (the global
+   !! tracer-mass conservation check in the transport debug output). Datatype is
+   !! chosen from the storage size of the seam's bare `real` (r4 or r8).
+   subroutine halo_mpi_global_sum(val, rc)
+      real,    intent(inout) :: val
+      integer, intent(out)   :: rc
+      integer :: ierr, dtype
+
+      rc = CC_SUCCESS
+      if (comm_c == MPI_COMM_NULL) return
+      if (storage_size(val) / 8 == 8) then
+         dtype = MPI_REAL8
+      else
+         dtype = MPI_REAL4
+      end if
+      call MPI_Allreduce(MPI_IN_PLACE, val, 1, dtype, MPI_SUM, comm_c, ierr)
+      if (ierr /= 0) rc = CC_FAILURE
+   end subroutine halo_mpi_global_sum
+
+   !> \brief Whether this PET is rank 0 of the exchange comm (report root).
+   logical function halo_mpi_is_root()
+      halo_mpi_is_root = (myrank_c == 0)
+   end function halo_mpi_is_root
 
 end module TransportHaloMPI_Mod

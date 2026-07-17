@@ -60,6 +60,11 @@ module TransportHalo_Mod
    public :: halo_global_reduce_iface
    public :: halo_global_max
    public :: set_halo_global_max_hook, clear_halo_global_max_hook
+   public :: halo_global_sum
+   public :: set_halo_global_sum_hook, clear_halo_global_sum_hook
+   public :: halo_is_root_iface
+   public :: halo_is_root
+   public :: set_halo_is_root_hook, clear_halo_is_root_hook
 
    !> Zero-gradient edge replication (regional boundary / safe default).
    integer, parameter :: HALO_BC_REPLICATE = 0
@@ -102,6 +107,21 @@ module TransportHalo_Mod
 
    !> Registered global-max backend (null => serial identity, val unchanged).
    procedure(halo_global_reduce_iface), pointer, save :: global_max_hook => null()
+
+   !> Registered global-sum backend (null => serial identity, val unchanged).
+   !! Uses the same signature as the global-max hook; a registered backend does
+   !! an MPI `Allreduce(MPI_SUM)`. Used only for reporting (e.g. the global
+   !! tracer-mass conservation check in the transport debug output).
+   procedure(halo_global_reduce_iface), pointer, save :: global_sum_hook => null()
+
+   !> \brief Root-PET query signature (for report-once-on-root output).
+   abstract interface
+      logical function halo_is_root_iface()
+      end function halo_is_root_iface
+   end interface
+
+   !> Registered root-query backend (null => serial, always root == .true.).
+   procedure(halo_is_root_iface), pointer, save :: is_root_hook => null()
 
    !> \brief Halo policy for the transport data domain.
    type :: transport_halo_type
@@ -189,6 +209,50 @@ contains
       rc = CC_SUCCESS
       if (associated(global_max_hook)) call global_max_hook(val, rc)
    end subroutine halo_global_max
+
+   !> \brief Register an off-PET scalar global-sum backend (host / driver only).
+   subroutine set_halo_global_sum_hook(proc)
+      procedure(halo_global_reduce_iface) :: proc
+      global_sum_hook => proc
+   end subroutine set_halo_global_sum_hook
+
+   !> \brief Remove any registered global-sum backend (restore serial identity).
+   subroutine clear_halo_global_sum_hook()
+      global_sum_hook => null()
+   end subroutine clear_halo_global_sum_hook
+
+   !> \brief Reduce a scalar to its global sum across all PETs.
+   !!
+   !! Delegates to the registered backend (MPI `Allreduce(MPI_SUM)`); the serial
+   !! identity leaves `val` unchanged. COLLECTIVE when a backend is registered,
+   !! so it must be called the same number of times on every PET.
+   subroutine halo_global_sum(val, rc)
+      real,    intent(inout) :: val
+      integer, intent(out)   :: rc
+
+      rc = CC_SUCCESS
+      if (associated(global_sum_hook)) call global_sum_hook(val, rc)
+   end subroutine halo_global_sum
+
+   !> \brief Register a root-PET query backend (host / driver only).
+   subroutine set_halo_is_root_hook(proc)
+      procedure(halo_is_root_iface) :: proc
+      is_root_hook => proc
+   end subroutine set_halo_is_root_hook
+
+   !> \brief Remove any registered root-query backend (serial => always root).
+   subroutine clear_halo_is_root_hook()
+      is_root_hook => null()
+   end subroutine clear_halo_is_root_hook
+
+   !> \brief Whether this PET is the reduction root (for report-once output).
+   !!
+   !! Returns `.true.` in a serial / single-PET run (no backend registered), so
+   !! report-once-on-root code prints exactly once in every configuration.
+   logical function halo_is_root()
+      halo_is_root = .true.
+      if (associated(is_root_hook)) halo_is_root = is_root_hook()
+   end function halo_is_root
 
    !> \brief Fill the halo ring of a data-domain field (explicit bounds).
    !!

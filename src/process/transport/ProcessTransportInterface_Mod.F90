@@ -42,6 +42,7 @@ module ProcessTransportInterface_Mod
    use met_utilities_mod, only: get_hybrid_ab
    use TransportGridMetrics_Mod, only: build_fv3_grid_metrics
    use TransportHalo_Mod, only: transport_halo_type, halo_update, halo_global_max, &
+                                halo_global_sum, halo_is_root, &
                                 HALO_BC_REPLICATE, HALO_BC_PERIODIC
    use TransportMassFlux_Mod, only: fv_mass_flux_type, mass_flux_alloc, mass_flux_free, &
                                     build_level_mass_flux, courant_max, scale_mass_flux
@@ -747,9 +748,10 @@ contains
       character(len=*), intent(in) :: label
       integer,  parameter :: dpk = kind(0.0d0)
       real(fp), parameter :: thr = 1.0e-30_fp
-      integer   :: nxl, nyl, nzl, i, j, k, s, isp, kmax
+      integer   :: nxl, nyl, nzl, i, j, k, s, isp, kmax, grc
       real(dpk) :: mass, cell_area
       real(fp)  :: qmin, qmax, qlev
+      real      :: gmass
       logical   :: have_area
 
       if (.not. associated(this%chem_state) .or. &
@@ -792,6 +794,52 @@ contains
                ': min=', qmin, ' max=', qmax, ' mass=', mass, &
                ' top_nonzero_level=', kmax, '/', nzl
          end associate
+      end do
+
+      ! -----------------------------------------------------------------------
+      ! Global (all-PET) tracer mass. The per-species local totals above cannot
+      ! show HORIZONTAL conservation on a decomposed run, because advection
+      ! moves mass ACROSS PET boundaries -- only the sum over every rank is
+      ! conserved. Reduce each species mass over the exchange communicator and
+      ! print it once on the root PET. halo_global_sum / halo_is_root are the
+      ! serial identity (single value, always root) when no MPI backend is
+      ! registered, so this prints exactly once in every configuration. The
+      ! reduction is COLLECTIVE, so it is called for every advected species on
+      ! every PET (mass 0 for any locally skipped slot) to stay balanced.
+      ! -----------------------------------------------------------------------
+      if (halo_is_root()) write(output_unit,'(A)') &
+         '  [transport-debug-global] '//trim(label)//'  (all-PET tracer mass)'
+      do s = 1, this%chem_state%nSpeciesAdvect
+         isp  = this%chem_state%AdvectIndex(s)
+         mass = 0.0_dpk
+         if (isp >= 1 .and. isp <= size(this%chem_state%ChemSpecies)) then
+            if (associated(this%chem_state%ChemSpecies(isp)%conc)) then
+               associate (conc => this%chem_state%ChemSpecies(isp)%conc)
+                  nxl = size(conc, 1); nyl = size(conc, 2); nzl = size(conc, 3)
+                  do k = 1, nzl
+                     do j = 1, nyl
+                        do i = 1, nxl
+                           if (have_area) then
+                              cell_area = real(this%met_state%AREA_M2(i,j), dpk)
+                           else
+                              cell_area = 1.0_dpk
+                           end if
+                           mass = mass + real(conc(i,j,k), dpk) * &
+                                  real(this%met_state%DELP(i,j,k), dpk) * cell_area
+                        end do
+                     end do
+                  end do
+               end associate
+            end if
+         end if
+         gmass = real(mass)
+         call halo_global_sum(gmass, grc)   ! collective; identity in serial
+         if (halo_is_root() .and. isp >= 1 .and. &
+             isp <= size(this%chem_state%ChemSpecies)) then
+            write(output_unit,'(A,A,A,ES22.14)') &
+               '    ', trim(this%chem_state%ChemSpecies(isp)%short_name), &
+               ': global_mass=', gmass
+         end if
       end do
    end subroutine transport_debug_report
 
