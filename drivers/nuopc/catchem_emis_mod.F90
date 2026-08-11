@@ -146,6 +146,9 @@ contains
 
             call catchem_emis_setup_timing(ext_emis_data%categories(icat), clock, localrc)
 
+            ! Cache the (static) meteorology-provider classification once here.
+            ext_emis_data%categories(icat)%is_met = emis_category_is_met(config_manager, icat)
+
          end if
       end do
 
@@ -277,7 +280,7 @@ contains
          ! met_state primary they supply (PS, T, QV, ...) is populated before we
          ! ensure the pressure-derived fields below.  Non-met (emission)
          ! categories are deferred to pass 2.
-         if (emis_category_is_met(config_manager, i)) then
+         if (ext_emis_data%categories(i)%is_met) then
             call catchem_emis_apply(ext_emis_data%categories(i), i, ext_emis_data%global_scale, config_manager, error_manager, chem_state, met_state, dt, current_time, localrc)
             if (localrc /= CC_SUCCESS) then
                write(msg, '(A,A,A)') trim(pName), ': Failed to apply emissions for category: ', &
@@ -306,7 +309,9 @@ contains
          if (localrc /= CC_SUCCESS) then
             call ESMF_LogWrite(trim(pName)//': could not derive DELP (surface pressure '// &
                'PS may be unavailable); kg/m2/s emission unit conversion may be invalid', &
-               ESMF_LOGMSG_WARNING, rc=localrc)
+               ESMF_LOGMSG_ERROR, rc=localrc)
+            rc = CC_FAILURE
+            return
          end if
       end if
       if (.not. met_state%is_field_set('AIRDEN')) then
@@ -314,7 +319,9 @@ contains
          if (localrc /= CC_SUCCESS) then
             call ESMF_LogWrite(trim(pName)//': could not derive AIRDEN (PMID/T may be '// &
                'unavailable); #/cm3 emission unit conversion may be invalid', &
-               ESMF_LOGMSG_WARNING, rc=localrc)
+               ESMF_LOGMSG_ERROR, rc=localrc)
+            rc = CC_FAILURE
+            return
          end if
       end if
 
@@ -322,7 +329,7 @@ contains
       ! state.  DELP/AIRDEN are now valid for the mass-flux unit conversions.
       do i = 1, ext_emis_data%n_categories
          if (.not. ext_emis_data%categories(i)%is_active) cycle
-         if (emis_category_is_met(config_manager, i)) cycle
+         if (ext_emis_data%categories(i)%is_met) cycle
 
          call catchem_emis_apply(ext_emis_data%categories(i), i, ext_emis_data%global_scale, config_manager, error_manager, chem_state, met_state, dt, current_time, localrc)
          if (localrc /= CC_SUCCESS) then
@@ -514,10 +521,9 @@ contains
             dimName = ''
             ncStatus = nf90_inquire_dimension(ncid, dimids(ndims), name=dimName)
             if (ncStatus == NF90_NOERR) then
-               if (index(dimName, 'time')   > 0 .or. index(dimName, 'Time')   > 0 .or. &
-                  index(dimName, 'TIME')   > 0 .or. index(dimName, 'month')  > 0 .or. &
-                  index(dimName, 'Month')  > 0 .or. index(dimName, 'record') > 0 .or. &
-                  index(dimName, 'Record') > 0) is_time = .true.
+               call to_lower_str(dimName)
+               if (index(dimName, 'time') > 0 .or. index(dimName, 'month') > 0 .or. &
+                  index(dimName, 'record') > 0) is_time = .true.
             end if
          end if
          if (is_time) spatial_ndims = ndims - 1
@@ -845,8 +851,9 @@ contains
             timeSlice=category % irec, iofmt=AQMIO_FMT_NETCDF, rc=localrc)
          if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
             line=__LINE__,  file=__FILE__,  rcToReturn=rc)) then
-            ! Clean up field before returning
-            call ESMF_FieldDestroy(esmf_field, rc=localrc)
+            ! Clean up field and close file before returning
+            call ESMF_FieldDestroy(esmf_field, noGarbage=.true., rc=localrc)
+            call AQMIO_Close(IO, rc=localrc)
             return  ! bail out
          end if
 
@@ -855,8 +862,9 @@ contains
             call ESMF_FieldGet(esmf_field, farrayPtr=field_data_2d, rc=localrc)
             if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
                line=__LINE__,  file=__FILE__,  rcToReturn=rc)) then
-               ! Clean up field before returning
-               call ESMF_FieldDestroy(esmf_field, rc=localrc)
+               ! Clean up field and close file before returning
+               call ESMF_FieldDestroy(esmf_field, noGarbage=.true., rc=localrc)
+               call AQMIO_Close(IO, rc=localrc)
                return  ! bail out
             end if
             !!TODO: We should check unit conversion in the future. Here we make sure the gridded emission is in kg/m2/s already
@@ -866,8 +874,9 @@ contains
             call ESMF_FieldGet(esmf_field, farrayPtr=field_data_3d, rc=localrc)
             if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
                line=__LINE__,  file=__FILE__,  rcToReturn=rc)) then
-               ! Clean up field before returning
-               call ESMF_FieldDestroy(esmf_field, rc=localrc)
+               ! Clean up field and close file before returning
+               call ESMF_FieldDestroy(esmf_field, noGarbage=.true., rc=localrc)
+               call AQMIO_Close(IO, rc=localrc)
                return  ! bail out
             end if
             !!TODO: We should check unit conversion in the future. Here we make sure the gridded emission is in kg/m2/s already
@@ -880,8 +889,9 @@ contains
 
          category%fields(ifield)%is_loaded = .true.   !set to true; otherwise diagnostics will not be saved.
 
-         ! Clean up ESMF field after data transfer
-         call ESMF_FieldDestroy(esmf_field, rc=localrc)
+         ! Clean up ESMF field after data transfer. noGarbage=.true. forces ESMF
+         ! to release the field memory now instead of deferring to ESMF_Finalize.
+         call ESMF_FieldDestroy(esmf_field, noGarbage=.true., rc=localrc)
          if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
             line=__LINE__,  file=__FILE__,  rcToReturn=rc)) return  ! bail out
 
@@ -907,6 +917,13 @@ contains
             rc = CC_SUCCESS
          end if
       end if
+      ! Close the NetCDF file opened by AQMIO_Open above. Without this the
+      ! nf90_open handle (and its HDF5 buffers) leaks on every emission-period
+      ! read, growing RSS for the life of the run. AQMIO is CATChem-specific,
+      ! which is why the GOCART configuration does not exhibit this leak.
+      call AQMIO_Close(IO, rc=localrc)
+      if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
+         line=__LINE__,  file=__FILE__,  rcToReturn=rc)) return  ! bail out
 
       !!not sure why this write will crash the model
       write(msg, '(A,A,A)') trim(pName), ': Successfully read emission data for category ', &
@@ -1195,14 +1212,14 @@ contains
                rc        = localrc)
             if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
                line=__LINE__, file=__FILE__, rcToReturn=rc)) then
-               call ESMF_FieldDestroy(esmf_field, rc=localrc)
+               call ESMF_FieldDestroy(esmf_field, noGarbage=.true., rc=localrc)
                return
             end if
 
             call ESMF_FieldGet(esmf_field, farrayPtr=field_data_2d, rc=localrc)
             if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
                line=__LINE__, file=__FILE__, rcToReturn=rc)) then
-               call ESMF_FieldDestroy(esmf_field, rc=localrc)
+               call ESMF_FieldDestroy(esmf_field, noGarbage=.true., rc=localrc)
                return
             end if
 
@@ -1243,7 +1260,7 @@ contains
                end if
                if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
                   line=__LINE__, file=__FILE__, rcToReturn=rc)) then
-                  call ESMF_FieldDestroy(esmf_field, rc=localrc)
+                  call ESMF_FieldDestroy(esmf_field, noGarbage=.true., rc=localrc)
                   return
                end if
 
@@ -1282,14 +1299,14 @@ contains
                   rc        = localrc)
                if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
                   line=__LINE__, file=__FILE__, rcToReturn=rc)) then
-                  call ESMF_FieldDestroy(esmf_field, rc=localrc)
+                  call ESMF_FieldDestroy(esmf_field, noGarbage=.true., rc=localrc)
                   return
                end if
 
                call ESMF_FieldGet(esmf_field, farrayPtr=field_data_2d, rc=localrc)
                if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
                   line=__LINE__, file=__FILE__, rcToReturn=rc)) then
-                  call ESMF_FieldDestroy(esmf_field, rc=localrc)
+                  call ESMF_FieldDestroy(esmf_field, noGarbage=.true., rc=localrc)
                   return
                end if
 
@@ -1330,7 +1347,7 @@ contains
                   end if
                   if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
                      line=__LINE__, file=__FILE__, rcToReturn=rc)) then
-                     call ESMF_FieldDestroy(esmf_field, rc=localrc)
+                     call ESMF_FieldDestroy(esmf_field, noGarbage=.true., rc=localrc)
                      return
                   end if
 
@@ -1362,7 +1379,7 @@ contains
 
          category%fields(ifield)%is_loaded = .true.
 
-         call ESMF_FieldDestroy(esmf_field, rc=localrc)
+         call ESMF_FieldDestroy(esmf_field, noGarbage=.true., rc=localrc)
          if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
             line=__LINE__, file=__FILE__, rcToReturn=rc)) return
 
@@ -2970,7 +2987,7 @@ contains
       ! Get field data pointer and copy emission data
       call ESMF_FieldGet(esmf_field, farrayPtr=field_data_2d, rc=rc)
       if (rc /= ESMF_SUCCESS) then
-         call ESMF_FieldDestroy(esmf_field, rc=rc)
+         call ESMF_FieldDestroy(esmf_field, noGarbage=.true., rc=rc)
          return
       end if
 
@@ -2984,8 +3001,8 @@ contains
       call AQMIO_Write(IO, (/esmf_field/), timeSlice=time_slice, fileName=trim(filename), &
          iofmt=AQMIO_FMT_NETCDF, rc=rc)
 
-      ! Clean up
-      call ESMF_FieldDestroy(esmf_field, rc=rc)
+      ! Clean up. noGarbage=.true. releases memory now instead of at ESMF_Finalize.
+      call ESMF_FieldDestroy(esmf_field, noGarbage=.true., rc=rc)
 
    end subroutine write_emission_field_2d
 
@@ -3043,7 +3060,7 @@ contains
       ! Get field data pointer and copy emission data
       call ESMF_FieldGet(esmf_field, farrayPtr=field_data_3d, rc=rc)
       if (rc /= ESMF_SUCCESS) then
-         call ESMF_FieldDestroy(esmf_field, rc=rc)
+         call ESMF_FieldDestroy(esmf_field, noGarbage=.true., rc=rc)
          return
       end if
 
@@ -3056,8 +3073,8 @@ contains
       call AQMIO_Write(IO, (/esmf_field/), timeSlice=time_slice, fileName=trim(filename), &
          iofmt=AQMIO_FMT_NETCDF, rc=rc)
 
-      ! Clean up
-      call ESMF_FieldDestroy(esmf_field, rc=rc)
+      ! Clean up. noGarbage=.true. releases memory now instead of at ESMF_Finalize.
+      call ESMF_FieldDestroy(esmf_field, noGarbage=.true., rc=rc)
 
    end subroutine write_emission_field_3d
 
