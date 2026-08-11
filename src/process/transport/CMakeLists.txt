@@ -23,7 +23,11 @@ set(
   TransportProcessCreator_Mod.F90
 )
 
-set(TRANSPORT_ALL_SOURCES ${TRANSPORT_KERNEL_SOURCES} ${TRANSPORT_PROCESS_SOURCES})
+set(
+  TRANSPORT_ALL_SOURCES
+  ${TRANSPORT_KERNEL_SOURCES}
+  ${TRANSPORT_PROCESS_SOURCES}
+)
 
 # Create the transport process library
 set(_lib CATChem_process_transport)

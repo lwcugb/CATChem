@@ -41,10 +41,10 @@ module TransportHaloMPI_Mod
    use mpi
    use error_mod, only: CC_SUCCESS, CC_FAILURE
    use TransportHalo_Mod, only: set_halo_exchange_hook, clear_halo_exchange_hook, &
-                                set_halo_global_max_hook, clear_halo_global_max_hook, &
-                                set_halo_global_sum_hook, clear_halo_global_sum_hook, &
-                                set_halo_is_root_hook, clear_halo_is_root_hook, &
-                                HALO_BC_PERIODIC, HALO_BC_REPLICATE
+      set_halo_global_max_hook, clear_halo_global_max_hook, &
+      set_halo_global_sum_hook, clear_halo_global_sum_hook, &
+      set_halo_is_root_hook, clear_halo_is_root_hook, &
+      HALO_BC_PERIODIC, HALO_BC_REPLICATE
 
    implicit none
    private
@@ -86,7 +86,7 @@ contains
 
       rc = CC_SUCCESS
       if (npx < 1 .or. npy < 1 .or. px < 0 .or. py < 0 .or. &
-          px >= npx .or. py >= npy) then
+         px >= npx .or. py >= npy) then
          rc = CC_FAILURE
          return
       end if
@@ -312,8 +312,8 @@ contains
       if (cnt < 1) return
       nbytes = cnt * (storage_size(sbuf(1)) / 8)
       call MPI_Sendrecv(sbuf, nbytes, MPI_BYTE, dest, 1001, &
-                        rbuf, nbytes, MPI_BYTE, src,  1001, &
-                        comm_c, status, ierr)
+         rbuf, nbytes, MPI_BYTE, src,  1001, &
+         comm_c, status, ierr)
    end subroutine sendrecv_bytes
 
    !> \brief Reduce a scalar to its global maximum across the exchange comm.

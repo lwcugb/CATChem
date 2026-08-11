@@ -151,12 +151,12 @@ contains
       ! run the serial on-PET periodic / replicate closure.
       if (associated(off_pet_hook)) then
          call off_pet_hook(arr, bd%isd, bd%ied, bd%jsd, bd%jed, &
-                           bd%is, bd%ie, bd%js, bd%je, halo%x_bc, halo%y_bc, rc)
+            bd%is, bd%ie, bd%js, bd%je, halo%x_bc, halo%y_bc, rc)
          return
       end if
 
       call halo_fill_scalar(arr, bd%is, bd%ie, bd%js, bd%je, &
-                            bd%isd, bd%ied, bd%jsd, bd%jed, halo%x_bc, halo%y_bc)
+         bd%isd, bd%ied, bd%jsd, bd%jed, halo%x_bc, halo%y_bc)
 
    end subroutine halo_update
 

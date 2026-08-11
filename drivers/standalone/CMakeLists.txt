@@ -40,7 +40,12 @@ endif()
 
 target_link_libraries(
   catchem_standalone_driver
-  PUBLIC cc_nuopc yaml_interface ${CATCHEM_ESMF_TARGET} NetCDF::NetCDF_Fortran MPI::MPI_Fortran
+  PUBLIC
+    cc_nuopc
+    yaml_interface
+    ${CATCHEM_ESMF_TARGET}
+    NetCDF::NetCDF_Fortran
+    MPI::MPI_Fortran
 )
 
 # cc_nuopc writes its Fortran modules to <repo>/mod; CATChem core modules go

@@ -25,9 +25,9 @@ module test_transport_unit_mod
    use fv3_tp_core_mod, only: fv_tp_2d
    use TransportGridMetrics_Mod, only: build_fv3_grid_metrics, FV3_GRID_REGULAR
    use TransportMassFlux_Mod, only: fv_mass_flux_type, mass_flux_alloc, mass_flux_free, &
-                                    build_level_mass_flux, courant_max, scale_mass_flux
+      build_level_mass_flux, courant_max, scale_mass_flux
    use TransportHalo_Mod, only: transport_halo_type, halo_update, &
-                                HALO_BC_PERIODIC, HALO_BC_REPLICATE
+      HALO_BC_PERIODIC, HALO_BC_REPLICATE
 
    implicit none
    private
@@ -68,7 +68,7 @@ contains
    !! so on return `total_mass` = sum(q*delp*area) is the exactly conserved
    !! tracer mass (net boundary flux vanishes on a periodic/closed channel).
    subroutine advect_field(nx, ny, ng, lat_deg, lon_deg, uval, vval, dt, &
-                           nstep, hord, x_periodic, q, total_mass, rc)
+      nstep, hord, x_periodic, q, total_mass, rc)
       integer,  intent(in)    :: nx, ny, ng
       real(fp), intent(in)    :: lat_deg(nx, ny), lon_deg(nx, ny)
       real(r8), intent(in)    :: uval, vval, dt
@@ -101,7 +101,7 @@ contains
       ! bit-for-bit, the flux divergence telescopes to zero, and total tracer
       ! mass is conserved to machine precision.
       call build_fv3_grid_metrics(lat_deg, lon_deg, ng, gridstruct, bd, rc, &
-                                  grid_type=FV3_GRID_REGULAR, x_periodic=x_periodic)
+         grid_type=FV3_GRID_REGULAR, x_periodic=x_periodic)
       if (rc /= CC_SUCCESS) return
 
       is = bd%is; ie = bd%ie; js = bd%js; je = bd%je
@@ -113,7 +113,7 @@ contains
 
       ! --- Data-domain fields (uniform wind => halo == interior value) ------
       allocate(qd(isd:ied, jsd:jed), ua(isd:ied, jsd:jed), &
-               va(isd:ied, jsd:jed), delp(isd:ied, jsd:jed))
+         va(isd:ied, jsd:jed), delp(isd:ied, jsd:jed))
       allocate(fx(is:ie+1, js:je), fy(is:ie, js:je+1))
       ua   = uval
       va   = vval
@@ -138,18 +138,18 @@ contains
             if (rc /= CC_SUCCESS) return
 
             call fv_tp_2d(qd, mf%crx, mf%cry, npx, npy, hord, fx, fy, &
-                          mf%xfx, mf%yfx, gridstruct, bd, mf%ra_x, mf%ra_y, &
-                          lim_fac, mfx=mf%mfx, mfy=mf%mfy)
+               mf%xfx, mf%yfx, gridstruct, bd, mf%ra_x, mf%ra_y, &
+               lim_fac, mfx=mf%mfx, mfy=mf%mfy)
 
             do j = js, je
                do i = is, ie
                   rarea = gridstruct%rarea(i, j)
                   dp1 = delp(i, j)
                   dp2 = dp1 + (mf%mfx(i, j) - mf%mfx(i+1, j) &
-                            +  mf%mfy(i, j) - mf%mfy(i, j+1)) * rarea
+                     +  mf%mfy(i, j) - mf%mfy(i, j+1)) * rarea
                   qd(i, j) = (qd(i, j) * dp1 &
-                             + (fx(i, j) - fx(i+1, j) &
-                             +  fy(i, j) - fy(i, j+1)) * rarea) / dp2
+                     + (fx(i, j) - fx(i+1, j) &
+                     +  fy(i, j) - fy(i, j+1)) * rarea) / dp2
                   ! Advance the Lagrangian thickness so sum(q*delp*area) stays
                   ! conserved to machine precision (telescoping flux divergence).
                   delp(i, j) = dp2
@@ -261,7 +261,7 @@ program test_transport_unit
    write(*,*) 'Test 1: Constancy (uniform tracer preserved)'
    q = 2.0_r8
    call advect_field(nx, ny, ng, lat_deg, lon_deg, 10.0_r8, 5.0_r8, dt, &
-                     20, hord, .true., q, mass1, rc)
+      20, hord, .true., q, mass1, rc)
    call assert(rc == CC_SUCCESS, "advect_field (constancy) should succeed")
 
    max_dev = 0.0_r8
@@ -288,13 +288,13 @@ program test_transport_unit
    ! Initial mass (nstep = 0 builds metrics/flux but does not advance).
    q = q0
    call advect_field(nx, ny, ng, lat_deg, lon_deg, 10.0_r8, 0.0_r8, dt, &
-                     0, hord, .true., q, mass0, rc)
+      0, hord, .true., q, mass0, rc)
    call assert(rc == CC_SUCCESS, "advect_field (mass, init) should succeed")
 
    ! Advance 20 steps of pure zonal advection (v = 0 => closed in latitude).
    q = q0
    call advect_field(nx, ny, ng, lat_deg, lon_deg, 10.0_r8, 0.0_r8, dt, &
-                     20, hord, .true., q, mass1, rc)
+      20, hord, .true., q, mass1, rc)
    call assert(rc == CC_SUCCESS, "advect_field (mass, run) should succeed")
 
    rel_mass_err = abs(mass1 - mass0) / mass0

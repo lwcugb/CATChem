@@ -435,8 +435,8 @@ contains
 
       ! Preferred: exact spacing from the cached time coordinates (same file).
       if (category%n_times >= 2 .and. category%irec >= 1 .and. &
-          category%irec + 1 <= category%n_times .and. &
-          allocated(category%tc_dates) .and. allocated(category%tc_secs)) then
+         category%irec + 1 <= category%n_times .and. &
+         allocated(category%tc_dates) .and. allocated(category%tc_secs)) then
          d1 = category%tc_dates(category%irec);     s1 = category%tc_secs(category%irec)
          d2 = category%tc_dates(category%irec + 1); s2 = category%tc_secs(category%irec + 1)
          call ESMF_TimeSet(t1, yy=d1/10000, mm=mod(d1/100,100), dd=mod(d1,100), s=s1, rc=localrc)
@@ -973,7 +973,7 @@ contains
          ! Same multi-record file (already open on IO): next record.
          inext = category%irec + 1
       else if (index(trim(category%source_file), '%') > 0 .and. &
-               trim(category%frequency) /= 'static') then
+         trim(category%frequency) /= 'static') then
          ! Filename-template category: first record of the next-period file.
          inext = 1
          use_temp_file = .true.
@@ -1057,7 +1057,7 @@ contains
 
       if (allocated(category%fields(ips)%next_slice_data)) then
          if (size(category%fields(ips)%next_slice_data,1) /= size(pdata,1) .or. &
-             size(category%fields(ips)%next_slice_data,2) /= size(pdata,2)) &
+            size(category%fields(ips)%next_slice_data,2) /= size(pdata,2)) &
             deallocate(category%fields(ips)%next_slice_data)
       end if
       if (.not. allocated(category%fields(ips)%next_slice_data)) &
@@ -1445,7 +1445,7 @@ contains
          inext = category%irec + 1
          filename_next = trim(filename)
       else if (index(trim(category%source_file), '%') > 0 .and. &
-               trim(category%frequency) /= 'static') then
+         trim(category%frequency) /= 'static') then
          ! Filename-template category: first record of the next-period file.
          inext = 1
          select case (trim(category%frequency))
@@ -1506,7 +1506,7 @@ contains
 
       if (allocated(category%fields(ips)%next_slice_data)) then
          if (size(category%fields(ips)%next_slice_data,1) /= size(pdata,1) .or. &
-             size(category%fields(ips)%next_slice_data,2) /= size(pdata,2)) &
+            size(category%fields(ips)%next_slice_data,2) /= size(pdata,2)) &
             deallocate(category%fields(ips)%next_slice_data)
       end if
       if (.not. allocated(category%fields(ips)%next_slice_data)) &
@@ -1546,7 +1546,7 @@ contains
       sy = size(category%fields(ips)%emission_data, 2)
       if (allocated(category%fields(ips)%curr_slice_data)) then
          if (size(category%fields(ips)%curr_slice_data,1) /= sx .or. &
-             size(category%fields(ips)%curr_slice_data,2) /= sy) &
+            size(category%fields(ips)%curr_slice_data,2) /= sy) &
             deallocate(category%fields(ips)%curr_slice_data)
       end if
       if (.not. allocated(category%fields(ips)%curr_slice_data)) &
@@ -2259,17 +2259,17 @@ contains
                   ! the increment.  If no next slice / interval exists, PS_NEXT is
                   ! left unset and the fixer stays off.
                   if ((trim(mapped_species_name(5:)) == 'PS' .or. &
-                       trim(mapped_species_name(5:)) == 'ps') .and. &
-                      category%fields(ifield)%has_next_slice .and. &
-                      allocated(category%fields(ifield)%next_slice_data) .and. &
-                      allocated(category%fields(ifield)%curr_slice_data) .and. &
-                      category%ps_interval_sec > 0.0_fp) then
+                     trim(mapped_species_name(5:)) == 'ps') .and. &
+                     category%fields(ifield)%has_next_slice .and. &
+                     allocated(category%fields(ifield)%next_slice_data) .and. &
+                     allocated(category%fields(ifield)%curr_slice_data) .and. &
+                     category%ps_interval_sec > 0.0_fp) then
                      call met_state%set_field('PS_NEXT', &
                         ( emission_flux(:,:,1) + &
-                          min(dt / category%ps_interval_sec, 1.0_fp) * &
-                          category%global_scale * global_scale * &
-                          ( category%fields(ifield)%next_slice_data(:,:) - &
-                            category%fields(ifield)%curr_slice_data(:,:) ) &
+                        min(dt / category%ps_interval_sec, 1.0_fp) * &
+                        category%global_scale * global_scale * &
+                        ( category%fields(ifield)%next_slice_data(:,:) - &
+                        category%fields(ifield)%curr_slice_data(:,:) ) &
                         ) * scale_factor, &
                         error_manager, localrc)
                      if (localrc /= CC_SUCCESS) then

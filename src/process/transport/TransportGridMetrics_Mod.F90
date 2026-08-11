@@ -104,9 +104,9 @@ contains
    !!                         flags (default .false.); only meaningful when
    !!                         bounded_domain is .false. (cubed sphere).
    subroutine build_fv3_grid_metrics(lat_deg, lon_deg, ng, gridstruct, bd, rc, &
-                                     area_m2, lat_cor_deg, lon_cor_deg, &
-                                     grid_type, bounded_domain, x_periodic, &
-                                     sw_corner, se_corner, nw_corner, ne_corner)
+      area_m2, lat_cor_deg, lon_cor_deg, &
+      grid_type, bounded_domain, x_periodic, &
+      sw_corner, se_corner, nw_corner, ne_corner)
       real(fp),                  intent(in)    :: lat_deg(:,:)
       real(fp),                  intent(in)    :: lon_deg(:,:)
       integer,                   intent(in)    :: ng
@@ -160,7 +160,7 @@ contains
       have_corners = present(lat_cor_deg) .and. present(lon_cor_deg)
       if (have_corners) then
          if (size(lat_cor_deg,1) /= nx+1 .or. size(lat_cor_deg,2) /= ny+1 .or. &
-             size(lon_cor_deg,1) /= nx+1 .or. size(lon_cor_deg,2) /= ny+1) then
+            size(lon_cor_deg,1) /= nx+1 .or. size(lon_cor_deg,2) /= ny+1) then
             rc = CC_FAILURE
             return
          end if
@@ -199,21 +199,21 @@ contains
          do i = is, ie
             ! Edge lengths (south edge, west edge).
             gridstruct%dx(i,j) = gc_len(px(i,j),   py(i,j),   pz(i,j), &
-                                        px(i+1,j),  py(i+1,j),  pz(i+1,j))
+               px(i+1,j),  py(i+1,j),  pz(i+1,j))
             gridstruct%dy(i,j) = gc_len(px(i,j),   py(i,j),   pz(i,j), &
-                                        px(i,j+1),  py(i,j+1),  pz(i,j+1))
+               px(i,j+1),  py(i,j+1),  pz(i,j+1))
 
             ! A-grid widths from edge midpoints.
             call midpoint(px(i,j),   py(i,j),   pz(i,j), &
-                          px(i,j+1), py(i,j+1), pz(i,j+1), wmx, wmy, wmz)
+               px(i,j+1), py(i,j+1), pz(i,j+1), wmx, wmy, wmz)
             call midpoint(px(i+1,j),   py(i+1,j),   pz(i+1,j), &
-                          px(i+1,j+1), py(i+1,j+1), pz(i+1,j+1), emx, emy, emz)
+               px(i+1,j+1), py(i+1,j+1), pz(i+1,j+1), emx, emy, emz)
             gridstruct%dxa(i,j) = gc_len(wmx, wmy, wmz, emx, emy, emz)
 
             call midpoint(px(i,j),   py(i,j),   pz(i,j), &
-                          px(i+1,j), py(i+1,j), pz(i+1,j), smx, smy, smz)
+               px(i+1,j), py(i+1,j), pz(i+1,j), smx, smy, smz)
             call midpoint(px(i,j+1),   py(i,j+1),   pz(i,j+1), &
-                          px(i+1,j+1), py(i+1,j+1), pz(i+1,j+1), nmx, nmy, nmz)
+               px(i+1,j+1), py(i+1,j+1), pz(i+1,j+1), nmx, nmy, nmz)
             gridstruct%dya(i,j) = gc_len(smx, smy, smz, nmx, nmy, nmz)
 
             ! Cell area: prefer the host's true area, else spherical excess.
@@ -332,26 +332,26 @@ contains
       ! Extrapolate the west/east ghost columns (interior rows).
       do j = 1, ny
          call extrap(cx(1,j), cy(1,j), cz(1,j), cx(2,j), cy(2,j), cz(2,j), &
-                     cx(0,j), cy(0,j), cz(0,j))
+            cx(0,j), cy(0,j), cz(0,j))
          call extrap(cx(nx,j), cy(nx,j), cz(nx,j), cx(nx-1,j), cy(nx-1,j), cz(nx-1,j), &
-                     cx(nx+1,j), cy(nx+1,j), cz(nx+1,j))
+            cx(nx+1,j), cy(nx+1,j), cz(nx+1,j))
       end do
 
       ! Extrapolate the south/north ghost rows (all columns, incl. i-ghosts).
       do i = 0, nx+1
          call extrap(cx(i,1), cy(i,1), cz(i,1), cx(i,2), cy(i,2), cz(i,2), &
-                     cx(i,0), cy(i,0), cz(i,0))
+            cx(i,0), cy(i,0), cz(i,0))
          call extrap(cx(i,ny), cy(i,ny), cz(i,ny), cx(i,ny-1), cy(i,ny-1), cz(i,ny-1), &
-                     cx(i,ny+1), cy(i,ny+1), cz(i,ny+1))
+            cx(i,ny+1), cy(i,ny+1), cz(i,ny+1))
       end do
 
       ! Corner = normalised average of the four surrounding (extended) centres.
       do j = 1, ny+1
          do i = 1, nx+1
             call normalize(cx(i-1,j-1) + cx(i,j-1) + cx(i-1,j) + cx(i,j), &
-                           cy(i-1,j-1) + cy(i,j-1) + cy(i-1,j) + cy(i,j), &
-                           cz(i-1,j-1) + cz(i,j-1) + cz(i-1,j) + cz(i,j), &
-                           px(i,j), py(i,j), pz(i,j))
+               cy(i-1,j-1) + cy(i,j-1) + cy(i-1,j) + cy(i,j), &
+               cz(i-1,j-1) + cz(i,j-1) + cz(i-1,j) + cz(i,j), &
+               px(i,j), py(i,j), pz(i,j))
          end do
       end do
 
@@ -441,7 +441,7 @@ contains
       real :: a
 
       a = tri_area(ax, ay, az, bx, by, bz, cx, cy, cz) &
-        + tri_area(ax, ay, az, cx, cy, cz, dx, dy, dz)
+         + tri_area(ax, ay, az, cx, cy, cz, dx, dy, dz)
    end function quad_area
 
    ! =====================================================================
@@ -485,7 +485,7 @@ contains
       integer, intent(in) :: x_bc
 
       call halo_fill_scalar(arr, is, ie, js, je, isd, ied, jsd, jed, &
-                            x_bc, HALO_BC_REPLICATE)
+         x_bc, HALO_BC_REPLICATE)
    end subroutine fill_halo
 
 end module TransportGridMetrics_Mod

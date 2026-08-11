@@ -49,200 +49,200 @@
 
 module fv3_vremap_mod
 
- implicit none
+   implicit none
 
- private
- public :: mappm
+   private
+   public :: mappm
 
- real, parameter:: r3  = 1./3.
- real, parameter:: r23 = 2./3.
- real, parameter:: r12 = 1./12.
+   real, parameter:: r3  = 1./3.
+   real, parameter:: r23 = 2./3.
+   real, parameter:: r12 = 1./12.
 
 contains
 
- subroutine cs_profile(qs, a4, delp, km, i1, i2, iv, kord)
+   subroutine cs_profile(qs, a4, delp, km, i1, i2, iv, kord)
 ! Optimized vertical profile reconstruction:
 ! Latest: Apr 2008 S.-J. Lin, NOAA/GFDL
- integer, intent(in):: i1, i2
- integer, intent(in):: km      ! vertical dimension
- integer, intent(in):: iv      ! iv =-2: vertical velocity
-                               ! iv =-1: winds
-                               ! iv = 0: positive definite scalars
-                               ! iv = 1: others
- integer, intent(in):: kord
- real, intent(in)   ::   qs(i1:i2)
- real, intent(in)   :: delp(i1:i2,km)     ! layer pressure thickness
- real, intent(inout):: a4(4,i1:i2,km)     ! Interpolated values
+      integer, intent(in):: i1, i2
+      integer, intent(in):: km      ! vertical dimension
+      integer, intent(in):: iv      ! iv =-2: vertical velocity
+      ! iv =-1: winds
+      ! iv = 0: positive definite scalars
+      ! iv = 1: others
+      integer, intent(in):: kord
+      real, intent(in)   ::   qs(i1:i2)
+      real, intent(in)   :: delp(i1:i2,km)     ! layer pressure thickness
+      real, intent(inout):: a4(4,i1:i2,km)     ! Interpolated values
 !-----------------------------------------------------------------------
- logical, dimension(i1:i2,km):: extm, ext5, ext6
- real  gam(i1:i2,km)
- real    q(i1:i2,km+1) ! interface values
- real   d4(i1:i2)
- real   bet, a_bot, grat
- real   pmp_1, lac_1, pmp_2, lac_2, x0, x1
- integer i, k, im
+      logical, dimension(i1:i2,km):: extm, ext5, ext6
+      real  gam(i1:i2,km)
+      real    q(i1:i2,km+1) ! interface values
+      real   d4(i1:i2)
+      real   bet, a_bot, grat
+      real   pmp_1, lac_1, pmp_2, lac_2, x0, x1
+      integer i, k, im
 
- if ( iv .eq. -2 ) then
-      do i=i1,i2
-         gam(i,2) = 0.5
-           q(i,1) = 1.5*a4(1,i,1)
-      enddo
-      do k=2,km-1
-         do i=i1, i2
-                  grat = delp(i,k-1) / delp(i,k)
-                   bet =  2. + grat + grat - gam(i,k)
-                q(i,k) = (3.*(a4(1,i,k-1)+a4(1,i,k)) - q(i,k-1))/bet
-            gam(i,k+1) = grat / bet
+      if ( iv .eq. -2 ) then
+         do i=i1,i2
+            gam(i,2) = 0.5
+            q(i,1) = 1.5*a4(1,i,1)
          enddo
-      enddo
-      do i=i1,i2
+         do k=2,km-1
+            do i=i1, i2
+               grat = delp(i,k-1) / delp(i,k)
+               bet =  2. + grat + grat - gam(i,k)
+               q(i,k) = (3.*(a4(1,i,k-1)+a4(1,i,k)) - q(i,k-1))/bet
+               gam(i,k+1) = grat / bet
+            enddo
+         enddo
+         do i=i1,i2
             grat = delp(i,km-1) / delp(i,km)
-         q(i,km) = (3.*(a4(1,i,km-1)+a4(1,i,km)) - grat*qs(i) - q(i,km-1)) /  &
-                   (2. + grat + grat - gam(i,km))
-         q(i,km+1) = qs(i)
-      enddo
-      do k=km-1,1,-1
-        do i=i1,i2
-           q(i,k) = q(i,k) - gam(i,k+1)*q(i,k+1)
-        enddo
-      enddo
+            q(i,km) = (3.*(a4(1,i,km-1)+a4(1,i,km)) - grat*qs(i) - q(i,km-1)) /  &
+               (2. + grat + grat - gam(i,km))
+            q(i,km+1) = qs(i)
+         enddo
+         do k=km-1,1,-1
+            do i=i1,i2
+               q(i,k) = q(i,k) - gam(i,k+1)*q(i,k+1)
+            enddo
+         enddo
 
-else ! all others
-  do i=i1,i2
-         grat = delp(i,2) / delp(i,1)   ! grid ratio
-          bet = grat*(grat+0.5)
-       q(i,1) = ( (grat+grat)*(grat+1.)*a4(1,i,1) + a4(1,i,2) ) / bet
-     gam(i,1) = ( 1. + grat*(grat+1.5) ) / bet
-  enddo
+      else ! all others
+         do i=i1,i2
+            grat = delp(i,2) / delp(i,1)   ! grid ratio
+            bet = grat*(grat+0.5)
+            q(i,1) = ( (grat+grat)*(grat+1.)*a4(1,i,1) + a4(1,i,2) ) / bet
+            gam(i,1) = ( 1. + grat*(grat+1.5) ) / bet
+         enddo
 
-  if (iv.eq.-3) then !LBC for vertical velocities
-    do k=2,km-1
-       do i=i1,i2
-             d4(i) = delp(i,k-1) / delp(i,k)
-               bet =  2. + d4(i) + d4(i) - gam(i,k-1)
-            q(i,k) = ( 3.*(a4(1,i,k-1)+d4(i)*a4(1,i,k)) - q(i,k-1) )/bet
-          gam(i,k) = d4(i) / bet
-       enddo
-    enddo
+         if (iv.eq.-3) then !LBC for vertical velocities
+            do k=2,km-1
+               do i=i1,i2
+                  d4(i) = delp(i,k-1) / delp(i,k)
+                  bet =  2. + d4(i) + d4(i) - gam(i,k-1)
+                  q(i,k) = ( 3.*(a4(1,i,k-1)+d4(i)*a4(1,i,k)) - q(i,k-1) )/bet
+                  gam(i,k) = d4(i) / bet
+               enddo
+            enddo
 
-    do i=i1,i2
-       !    a_bot = 1. + d4(i)*(d4(i)+1.5)
-       !q(i,km+1) = (2.*d4(i)*(d4(i)+1.)*a4(1,i,km)+a4(1,i,km-1)-a_bot*q(i,km))  &
-       !          / ( d4(i)*(d4(i)+0.5) - a_bot*gam(i,km) )
-       d4(i) = delp(i,km-1) / delp(i,km)
-       bet =  2. + d4(i) + d4(i) - gam(i,km-1)
-       grat = delp(i,km-1) / delp(i,km)
-       q(i,km) = ( 3.*(a4(1,i,k-1)+d4(i)*a4(1,i,k)) - grat*qs(i) - q(i,k-1) )/bet
-       q(i,km+1) = qs(i)
-    enddo
+            do i=i1,i2
+               !    a_bot = 1. + d4(i)*(d4(i)+1.5)
+               !q(i,km+1) = (2.*d4(i)*(d4(i)+1.)*a4(1,i,km)+a4(1,i,km-1)-a_bot*q(i,km))  &
+               !          / ( d4(i)*(d4(i)+0.5) - a_bot*gam(i,km) )
+               d4(i) = delp(i,km-1) / delp(i,km)
+               bet =  2. + d4(i) + d4(i) - gam(i,km-1)
+               grat = delp(i,km-1) / delp(i,km)
+               q(i,km) = ( 3.*(a4(1,i,k-1)+d4(i)*a4(1,i,k)) - grat*qs(i) - q(i,k-1) )/bet
+               q(i,km+1) = qs(i)
+            enddo
 
-  else ! all others
-    do k=2,km
-       do i=i1,i2
-             d4(i) = delp(i,k-1) / delp(i,k)
-               bet =  2. + d4(i) + d4(i) - gam(i,k-1)
-            q(i,k) = ( 3.*(a4(1,i,k-1)+d4(i)*a4(1,i,k)) - q(i,k-1) )/bet
-          gam(i,k) = d4(i) / bet
-       enddo
-    enddo
+         else ! all others
+            do k=2,km
+               do i=i1,i2
+                  d4(i) = delp(i,k-1) / delp(i,k)
+                  bet =  2. + d4(i) + d4(i) - gam(i,k-1)
+                  q(i,k) = ( 3.*(a4(1,i,k-1)+d4(i)*a4(1,i,k)) - q(i,k-1) )/bet
+                  gam(i,k) = d4(i) / bet
+               enddo
+            enddo
 
-    do i=i1,i2
-           a_bot = 1. + d4(i)*(d4(i)+1.5)
-       q(i,km+1) = (2.*d4(i)*(d4(i)+1.)*a4(1,i,km)+a4(1,i,km-1)-a_bot*q(i,km))  &
-                 / ( d4(i)*(d4(i)+0.5) - a_bot*gam(i,km) )
-    enddo
-  endif
+            do i=i1,i2
+               a_bot = 1. + d4(i)*(d4(i)+1.5)
+               q(i,km+1) = (2.*d4(i)*(d4(i)+1.)*a4(1,i,km)+a4(1,i,km-1)-a_bot*q(i,km))  &
+                  / ( d4(i)*(d4(i)+0.5) - a_bot*gam(i,km) )
+            enddo
+         endif
 
-  do k=km,1,-1
-     do i=i1,i2
-        q(i,k) = q(i,k) - gam(i,k)*q(i,k+1)
-     enddo
-  enddo
- endif
+         do k=km,1,-1
+            do i=i1,i2
+               q(i,k) = q(i,k) - gam(i,k)*q(i,k+1)
+            enddo
+         enddo
+      endif
 !----- Perfectly linear scheme --------------------------------
- if ( abs(kord) == 17 ) then
-  do k=1,km
-     do i=i1,i2
-        a4(2,i,k) = q(i,k  )
-        a4(3,i,k) = q(i,k+1)
-        a4(4,i,k) = 3.*(2.*a4(1,i,k) - (a4(2,i,k)+a4(3,i,k)))
-     enddo
-  enddo
-  return
- endif
+      if ( abs(kord) == 17 ) then
+         do k=1,km
+            do i=i1,i2
+               a4(2,i,k) = q(i,k  )
+               a4(3,i,k) = q(i,k+1)
+               a4(4,i,k) = 3.*(2.*a4(1,i,k) - (a4(2,i,k)+a4(3,i,k)))
+            enddo
+         enddo
+         return
+      endif
 !----- Perfectly linear scheme --------------------------------
 
 !------------------
 ! Apply constraints
 !------------------
-  im = i2 - i1 + 1
+      im = i2 - i1 + 1
 
 ! Apply *large-scale* constraints
-  do i=i1,i2
-     q(i,2) = min( q(i,2), max(a4(1,i,1), a4(1,i,2)) )
-     q(i,2) = max( q(i,2), min(a4(1,i,1), a4(1,i,2)) )
-  enddo
+      do i=i1,i2
+         q(i,2) = min( q(i,2), max(a4(1,i,1), a4(1,i,2)) )
+         q(i,2) = max( q(i,2), min(a4(1,i,1), a4(1,i,2)) )
+      enddo
 
-  do k=2,km
-     do i=i1,i2
-        gam(i,k) = a4(1,i,k) - a4(1,i,k-1) ! now dq
-     enddo
-  enddo
+      do k=2,km
+         do i=i1,i2
+            gam(i,k) = a4(1,i,k) - a4(1,i,k-1) ! now dq
+         enddo
+      enddo
 
 ! Interior:
-  do k=3,km-1
-     do i=i1,i2
-        if ( abs(kord) >= 14 .or. gam(i,k-1)*gam(i,k+1)>0. ) then
+      do k=3,km-1
+         do i=i1,i2
+            if ( abs(kord) >= 14 .or. gam(i,k-1)*gam(i,k+1)>0. ) then
 ! Apply large-scale constraint to ALL fields if not local max/min
 ! OR for the strictly monotone schemes
-             q(i,k) = min( q(i,k), max(a4(1,i,k-1),a4(1,i,k)) )
-             q(i,k) = max( q(i,k), min(a4(1,i,k-1),a4(1,i,k)) )
-        else
-          if ( gam(i,k-1) > 0. ) then
+               q(i,k) = min( q(i,k), max(a4(1,i,k-1),a4(1,i,k)) )
+               q(i,k) = max( q(i,k), min(a4(1,i,k-1),a4(1,i,k)) )
+            else
+               if ( gam(i,k-1) > 0. ) then
 ! There exists a local max
-               q(i,k) = max(q(i,k), min(a4(1,i,k-1),a4(1,i,k)))
-          else
+                  q(i,k) = max(q(i,k), min(a4(1,i,k-1),a4(1,i,k)))
+               else
 ! There exists a local min
-                 q(i,k) = min(q(i,k), max(a4(1,i,k-1),a4(1,i,k)))
-               if ( iv==0 ) q(i,k) = max(0., q(i,k)) ! positive-definite
-          endif
-        endif
-     enddo
-  enddo
+                  q(i,k) = min(q(i,k), max(a4(1,i,k-1),a4(1,i,k)))
+                  if ( iv==0 ) q(i,k) = max(0., q(i,k)) ! positive-definite
+               endif
+            endif
+         enddo
+      enddo
 
 ! Bottom:
-  do i=i1,i2
-     q(i,km) = min( q(i,km), max(a4(1,i,km-1), a4(1,i,km)) )
-     q(i,km) = max( q(i,km), min(a4(1,i,km-1), a4(1,i,km)) )
-  enddo
+      do i=i1,i2
+         q(i,km) = min( q(i,km), max(a4(1,i,km-1), a4(1,i,km)) )
+         q(i,km) = max( q(i,km), min(a4(1,i,km-1), a4(1,i,km)) )
+      enddo
 
-  do k=1,km
-     do i=i1,i2
-        a4(2,i,k) = q(i,k  )
-        a4(3,i,k) = q(i,k+1)
-     enddo
-  enddo
+      do k=1,km
+         do i=i1,i2
+            a4(2,i,k) = q(i,k  )
+            a4(3,i,k) = q(i,k+1)
+         enddo
+      enddo
 
-  do k=1,km
-     if ( k==1 .or. k==km ) then
-       do i=i1,i2
-          extm(i,k) = (a4(2,i,k)-a4(1,i,k)) * (a4(3,i,k)-a4(1,i,k)) > 0.
-       enddo
-     else
-       do i=i1,i2
-          extm(i,k) = gam(i,k)*gam(i,k+1) < 0.
-       enddo
-     endif
-     if ( abs(kord) > 9 ) then
-       do i=i1,i2
-          x0 = 2.*a4(1,i,k) - (a4(2,i,k)+a4(3,i,k))
-          x1 = abs(a4(2,i,k)-a4(3,i,k))
-          a4(4,i,k) = 3.*x0
-          ext5(i,k) = abs(x0) > x1
-          ext6(i,k) = abs(a4(4,i,k)) > x1
-       enddo
-     endif
-  enddo
+      do k=1,km
+         if ( k==1 .or. k==km ) then
+            do i=i1,i2
+               extm(i,k) = (a4(2,i,k)-a4(1,i,k)) * (a4(3,i,k)-a4(1,i,k)) > 0.
+            enddo
+         else
+            do i=i1,i2
+               extm(i,k) = gam(i,k)*gam(i,k+1) < 0.
+            enddo
+         endif
+         if ( abs(kord) > 9 ) then
+            do i=i1,i2
+               x0 = 2.*a4(1,i,k) - (a4(2,i,k)+a4(3,i,k))
+               x1 = abs(a4(2,i,k)-a4(3,i,k))
+               a4(4,i,k) = 3.*x0
+               ext5(i,k) = abs(x0) > x1
+               ext6(i,k) = abs(a4(4,i,k)) > x1
+            enddo
+         endif
+      enddo
 
 !---------------------------
 ! Apply subgrid constraints:
@@ -250,290 +250,290 @@ else ! all others
 ! f(s) = AL + s*[(AR-AL) + A6*(1-s)]         ( 0 <= s  <= 1 )
 ! Top 2 and bottom 2 layers always use monotonic mapping
 
-  select case (iv)
-  case (0)
-     do i=i1,i2
-        a4(2,i,1) = max(0., a4(2,i,1))
-     enddo
-  case(-1)
-      do i=i1,i2
-         if ( a4(2,i,1)*a4(1,i,1) <= 0. ) a4(2,i,1) = 0.
-      enddo
-   case(2)
-     do i=i1,i2
-        a4(2,i,1) = a4(1,i,1)
-        a4(3,i,1) = a4(1,i,1)
-        a4(4,i,1) = 0.
-     enddo
-  end select !iv
+      select case (iv)
+       case (0)
+         do i=i1,i2
+            a4(2,i,1) = max(0., a4(2,i,1))
+         enddo
+       case(-1)
+         do i=i1,i2
+            if ( a4(2,i,1)*a4(1,i,1) <= 0. ) a4(2,i,1) = 0.
+         enddo
+       case(2)
+         do i=i1,i2
+            a4(2,i,1) = a4(1,i,1)
+            a4(3,i,1) = a4(1,i,1)
+            a4(4,i,1) = 0.
+         enddo
+      end select !iv
 
-  if ( iv/=2 ) then
-     do i=i1,i2
-        a4(4,i,1) = 3.*(2.*a4(1,i,1) - (a4(2,i,1)+a4(3,i,1)))
-     enddo
-     call cs_limiters(im, extm(i1,1), a4(1,i1,1), 1)
-  endif
+      if ( iv/=2 ) then
+         do i=i1,i2
+            a4(4,i,1) = 3.*(2.*a4(1,i,1) - (a4(2,i,1)+a4(3,i,1)))
+         enddo
+         call cs_limiters(im, extm(i1,1), a4(1,i1,1), 1)
+      endif
 
 ! k=2
-   do i=i1,i2
-      a4(4,i,2) = 3.*(2.*a4(1,i,2) - (a4(2,i,2)+a4(3,i,2)))
-   enddo
-   call cs_limiters(im, extm(i1,2), a4(1,i1,2), 2)
+      do i=i1,i2
+         a4(4,i,2) = 3.*(2.*a4(1,i,2) - (a4(2,i,2)+a4(3,i,2)))
+      enddo
+      call cs_limiters(im, extm(i1,2), a4(1,i1,2), 2)
 
 !-------------------------------------
 ! Huynh's 2nd constraint for interior:
 !-------------------------------------
-  do k=3,km-2
-     select case (abs(kord))
-     case (0:8)
-       do i=i1,i2
+      do k=3,km-2
+         select case (abs(kord))
+          case (0:8)
+            do i=i1,i2
 ! Left  edges
-          pmp_1 = a4(1,i,k) - 2.*gam(i,k+1)
-          lac_1 = pmp_1 + 1.5*gam(i,k+2)
-          a4(2,i,k) = min(max(a4(2,i,k), min(a4(1,i,k), pmp_1, lac_1)),   &
-                                         max(a4(1,i,k), pmp_1, lac_1) )
+               pmp_1 = a4(1,i,k) - 2.*gam(i,k+1)
+               lac_1 = pmp_1 + 1.5*gam(i,k+2)
+               a4(2,i,k) = min(max(a4(2,i,k), min(a4(1,i,k), pmp_1, lac_1)),   &
+                  max(a4(1,i,k), pmp_1, lac_1) )
 ! Right edges
-          pmp_2 = a4(1,i,k) + 2.*gam(i,k)
-          lac_2 = pmp_2 - 1.5*gam(i,k-1)
-          a4(3,i,k) = min(max(a4(3,i,k), min(a4(1,i,k), pmp_2, lac_2)),    &
-                                         max(a4(1,i,k), pmp_2, lac_2) )
+               pmp_2 = a4(1,i,k) + 2.*gam(i,k)
+               lac_2 = pmp_2 - 1.5*gam(i,k-1)
+               a4(3,i,k) = min(max(a4(3,i,k), min(a4(1,i,k), pmp_2, lac_2)),    &
+                  max(a4(1,i,k), pmp_2, lac_2) )
 
-          a4(4,i,k) = 3.*(2.*a4(1,i,k) - (a4(2,i,k)+a4(3,i,k)))
-       enddo
+               a4(4,i,k) = 3.*(2.*a4(1,i,k) - (a4(2,i,k)+a4(3,i,k)))
+            enddo
 
-    case (9)
-       do i=i1,i2
-          if ( extm(i,k) .and. extm(i,k-1) ) then  ! c90_mp122
+          case (9)
+            do i=i1,i2
+               if ( extm(i,k) .and. extm(i,k-1) ) then  ! c90_mp122
 ! grid-scale 2-delta-z wave detected
-               a4(2,i,k) = a4(1,i,k)
-               a4(3,i,k) = a4(1,i,k)
-               a4(4,i,k) = 0.
-          else if ( extm(i,k) .and. extm(i,k+1) ) then  ! c90_mp122
+                  a4(2,i,k) = a4(1,i,k)
+                  a4(3,i,k) = a4(1,i,k)
+                  a4(4,i,k) = 0.
+               else if ( extm(i,k) .and. extm(i,k+1) ) then  ! c90_mp122
 ! grid-scale 2-delta-z wave detected
-               a4(2,i,k) = a4(1,i,k)
-               a4(3,i,k) = a4(1,i,k)
-               a4(4,i,k) = 0.
-          else
-            a4(4,i,k) = 6.*a4(1,i,k) - 3.*(a4(2,i,k)+a4(3,i,k))
+                  a4(2,i,k) = a4(1,i,k)
+                  a4(3,i,k) = a4(1,i,k)
+                  a4(4,i,k) = 0.
+               else
+                  a4(4,i,k) = 6.*a4(1,i,k) - 3.*(a4(2,i,k)+a4(3,i,k))
 ! Check within the smooth region if subgrid profile is non-monotonic
-            if( abs(a4(4,i,k)) > abs(a4(2,i,k)-a4(3,i,k)) ) then
-                  pmp_1 = a4(1,i,k) - 2.*gam(i,k+1)
-                  lac_1 = pmp_1 + 1.5*gam(i,k+2)
-              a4(2,i,k) = min(max(a4(2,i,k), min(a4(1,i,k), pmp_1, lac_1)),  &
-                                             max(a4(1,i,k), pmp_1, lac_1) )
-                  pmp_2 = a4(1,i,k) + 2.*gam(i,k)
-                  lac_2 = pmp_2 - 1.5*gam(i,k-1)
-              a4(3,i,k) = min(max(a4(3,i,k), min(a4(1,i,k), pmp_2, lac_2)),  &
-                                             max(a4(1,i,k), pmp_2, lac_2) )
-              a4(4,i,k) = 6.*a4(1,i,k) - 3.*(a4(2,i,k)+a4(3,i,k))
-            endif
-          endif
-       enddo
-     case(10) !restored AM4 case 10
-       do i=i1,i2
-          if( extm(i,k) ) then
-              if( extm(i,k-1) .or. extm(i,k+1) ) then
+                  if( abs(a4(4,i,k)) > abs(a4(2,i,k)-a4(3,i,k)) ) then
+                     pmp_1 = a4(1,i,k) - 2.*gam(i,k+1)
+                     lac_1 = pmp_1 + 1.5*gam(i,k+2)
+                     a4(2,i,k) = min(max(a4(2,i,k), min(a4(1,i,k), pmp_1, lac_1)),  &
+                        max(a4(1,i,k), pmp_1, lac_1) )
+                     pmp_2 = a4(1,i,k) + 2.*gam(i,k)
+                     lac_2 = pmp_2 - 1.5*gam(i,k-1)
+                     a4(3,i,k) = min(max(a4(3,i,k), min(a4(1,i,k), pmp_2, lac_2)),  &
+                        max(a4(1,i,k), pmp_2, lac_2) )
+                     a4(4,i,k) = 6.*a4(1,i,k) - 3.*(a4(2,i,k)+a4(3,i,k))
+                  endif
+               endif
+            enddo
+          case(10) !restored AM4 case 10
+            do i=i1,i2
+               if( extm(i,k) ) then
+                  if( extm(i,k-1) .or. extm(i,k+1) ) then
 ! grid-scale 2-delta-z wave detected
-                   a4(2,i,k) = a4(1,i,k)
-                   a4(3,i,k) = a4(1,i,k)
-                   a4(4,i,k) = 0.
-              else
+                     a4(2,i,k) = a4(1,i,k)
+                     a4(3,i,k) = a4(1,i,k)
+                     a4(4,i,k) = 0.
+                  else
 ! True local extremum
-                a4(4,i,k) = 6.*a4(1,i,k) - 3.*(a4(2,i,k)+a4(3,i,k))
-              endif
-          else        ! not a local extremum
-            a4(4,i,k) = 6.*a4(1,i,k) - 3.*(a4(2,i,k)+a4(3,i,k))
+                     a4(4,i,k) = 6.*a4(1,i,k) - 3.*(a4(2,i,k)+a4(3,i,k))
+                  endif
+               else        ! not a local extremum
+                  a4(4,i,k) = 6.*a4(1,i,k) - 3.*(a4(2,i,k)+a4(3,i,k))
 ! Check within the smooth region if subgrid profile is non-monotonic
-            if( abs(a4(4,i,k)) > abs(a4(2,i,k)-a4(3,i,k)) ) then
-                  pmp_1 = a4(1,i,k) - 2.*gam(i,k+1)
-                  lac_1 = pmp_1 + 1.5*gam(i,k+2)
-              a4(2,i,k) = min(max(a4(2,i,k), min(a4(1,i,k), pmp_1, lac_1)),  &
-                                             max(a4(1,i,k), pmp_1, lac_1) )
-                  pmp_2 = a4(1,i,k) + 2.*gam(i,k)
-                  lac_2 = pmp_2 - 1.5*gam(i,k-1)
-              a4(3,i,k) = min(max(a4(3,i,k), min(a4(1,i,k), pmp_2, lac_2)),  &
-                                             max(a4(1,i,k), pmp_2, lac_2) )
-              a4(4,i,k) = 6.*a4(1,i,k) - 3.*(a4(2,i,k)+a4(3,i,k))
-            endif
-          endif
-       enddo
-    case (11)
-       do i=i1,i2
-         if ( ext5(i,k) .and. (ext5(i,k-1) .or. ext5(i,k+1)) ) then
+                  if( abs(a4(4,i,k)) > abs(a4(2,i,k)-a4(3,i,k)) ) then
+                     pmp_1 = a4(1,i,k) - 2.*gam(i,k+1)
+                     lac_1 = pmp_1 + 1.5*gam(i,k+2)
+                     a4(2,i,k) = min(max(a4(2,i,k), min(a4(1,i,k), pmp_1, lac_1)),  &
+                        max(a4(1,i,k), pmp_1, lac_1) )
+                     pmp_2 = a4(1,i,k) + 2.*gam(i,k)
+                     lac_2 = pmp_2 - 1.5*gam(i,k-1)
+                     a4(3,i,k) = min(max(a4(3,i,k), min(a4(1,i,k), pmp_2, lac_2)),  &
+                        max(a4(1,i,k), pmp_2, lac_2) )
+                     a4(4,i,k) = 6.*a4(1,i,k) - 3.*(a4(2,i,k)+a4(3,i,k))
+                  endif
+               endif
+            enddo
+          case (11)
+            do i=i1,i2
+               if ( ext5(i,k) .and. (ext5(i,k-1) .or. ext5(i,k+1)) ) then
 ! Noisy region:
-              a4(2,i,k) = a4(1,i,k)
-              a4(3,i,k) = a4(1,i,k)
-              a4(4,i,k) = 0.
-         else
-              a4(4,i,k) = 3.*(2.*a4(1,i,k) - (a4(2,i,k)+a4(3,i,k)))
-         endif
-       enddo
-    case (12) !post-AM4 case 10
-       do i=i1,i2
-          if( ext5(i,k) ) then
-              if( ext5(i,k-1) .or. ext5(i,k+1) ) then
-                   a4(2,i,k) = a4(1,i,k)
-                   a4(3,i,k) = a4(1,i,k)
-              elseif ( ext6(i,k-1) .or. ext6(i,k+1) ) then
-                   pmp_1 = a4(1,i,k) - 2.*gam(i,k+1)
-                   lac_1 = pmp_1 + 1.5*gam(i,k+2)
-                   a4(2,i,k) = min(max(a4(2,i,k), min(a4(1,i,k), pmp_1, lac_1)),  &
-                                                  max(a4(1,i,k), pmp_1, lac_1) )
-                   pmp_2 = a4(1,i,k) + 2.*gam(i,k)
-                   lac_2 = pmp_2 - 1.5*gam(i,k-1)
-                   a4(3,i,k) = min(max(a4(3,i,k), min(a4(1,i,k), pmp_2, lac_2)),  &
-                                                  max(a4(1,i,k), pmp_2, lac_2) )
-              endif
-          elseif( ext6(i,k) ) then
-              if( ext5(i,k-1) .or. ext5(i,k+1) ) then
-                  pmp_1 = a4(1,i,k) - 2.*gam(i,k+1)
-                  lac_1 = pmp_1 + 1.5*gam(i,k+2)
-                  a4(2,i,k) = min(max(a4(2,i,k), min(a4(1,i,k), pmp_1, lac_1)),  &
-                                                 max(a4(1,i,k), pmp_1, lac_1) )
-                  pmp_2 = a4(1,i,k) + 2.*gam(i,k)
-                  lac_2 = pmp_2 - 1.5*gam(i,k-1)
-                  a4(3,i,k) = min(max(a4(3,i,k), min(a4(1,i,k), pmp_2, lac_2)),  &
-                                                 max(a4(1,i,k), pmp_2, lac_2) )
-              endif
-          endif
-       enddo
-       do i=i1,i2
-          a4(4,i,k) = 3.*(2.*a4(1,i,k) - (a4(2,i,k)+a4(3,i,k)))
-       enddo
-    case (13)  !former 14: no subgrid limiter
+                  a4(2,i,k) = a4(1,i,k)
+                  a4(3,i,k) = a4(1,i,k)
+                  a4(4,i,k) = 0.
+               else
+                  a4(4,i,k) = 3.*(2.*a4(1,i,k) - (a4(2,i,k)+a4(3,i,k)))
+               endif
+            enddo
+          case (12) !post-AM4 case 10
+            do i=i1,i2
+               if( ext5(i,k) ) then
+                  if( ext5(i,k-1) .or. ext5(i,k+1) ) then
+                     a4(2,i,k) = a4(1,i,k)
+                     a4(3,i,k) = a4(1,i,k)
+                  elseif ( ext6(i,k-1) .or. ext6(i,k+1) ) then
+                     pmp_1 = a4(1,i,k) - 2.*gam(i,k+1)
+                     lac_1 = pmp_1 + 1.5*gam(i,k+2)
+                     a4(2,i,k) = min(max(a4(2,i,k), min(a4(1,i,k), pmp_1, lac_1)),  &
+                        max(a4(1,i,k), pmp_1, lac_1) )
+                     pmp_2 = a4(1,i,k) + 2.*gam(i,k)
+                     lac_2 = pmp_2 - 1.5*gam(i,k-1)
+                     a4(3,i,k) = min(max(a4(3,i,k), min(a4(1,i,k), pmp_2, lac_2)),  &
+                        max(a4(1,i,k), pmp_2, lac_2) )
+                  endif
+               elseif( ext6(i,k) ) then
+                  if( ext5(i,k-1) .or. ext5(i,k+1) ) then
+                     pmp_1 = a4(1,i,k) - 2.*gam(i,k+1)
+                     lac_1 = pmp_1 + 1.5*gam(i,k+2)
+                     a4(2,i,k) = min(max(a4(2,i,k), min(a4(1,i,k), pmp_1, lac_1)),  &
+                        max(a4(1,i,k), pmp_1, lac_1) )
+                     pmp_2 = a4(1,i,k) + 2.*gam(i,k)
+                     lac_2 = pmp_2 - 1.5*gam(i,k-1)
+                     a4(3,i,k) = min(max(a4(3,i,k), min(a4(1,i,k), pmp_2, lac_2)),  &
+                        max(a4(1,i,k), pmp_2, lac_2) )
+                  endif
+               endif
+            enddo
+            do i=i1,i2
+               a4(4,i,k) = 3.*(2.*a4(1,i,k) - (a4(2,i,k)+a4(3,i,k)))
+            enddo
+          case (13)  !former 14: no subgrid limiter
 
-       do i=i1,i2
-          a4(4,i,k) = 3.*(2.*a4(1,i,k) - (a4(2,i,k)+a4(3,i,k)))
-       enddo
+            do i=i1,i2
+               a4(4,i,k) = 3.*(2.*a4(1,i,k) - (a4(2,i,k)+a4(3,i,k)))
+            enddo
 
-    case (14) !strict monotonicity constraint
-       call cs_limiters(im, extm(i1,k), a4(1,i1,k), 2)
-    case (15)
-       call cs_limiters(im, extm(i1,k), a4(1,i1,k), 1)
-    case default
-       error stop 'fv3_vremap_mod: kord not implemented'
-    end select
+          case (14) !strict monotonicity constraint
+            call cs_limiters(im, extm(i1,k), a4(1,i1,k), 2)
+          case (15)
+            call cs_limiters(im, extm(i1,k), a4(1,i1,k), 1)
+          case default
+            error stop 'fv3_vremap_mod: kord not implemented'
+         end select
 
 ! Additional constraint to ensure positivity
-     if ( iv==0 .and. abs(kord) <= 13 ) call cs_limiters(im, extm(i1,k), a4(1,i1,k), 0)
+         if ( iv==0 .and. abs(kord) <= 13 ) call cs_limiters(im, extm(i1,k), a4(1,i1,k), 0)
 
-  enddo      ! k-loop
+      enddo      ! k-loop
 
 !----------------------------------
 ! Bottom layer subgrid constraints:
 !----------------------------------
-  select case (iv)
-  case (0)
-     do i=i1,i2
-        a4(3,i,km) = max(0., a4(3,i,km))
-     enddo
-  case (-1)
-      do i=i1,i2
-         if ( a4(3,i,km)*a4(1,i,km) <= 0. )  a4(3,i,km) = 0.
+      select case (iv)
+       case (0)
+         do i=i1,i2
+            a4(3,i,km) = max(0., a4(3,i,km))
+         enddo
+       case (-1)
+         do i=i1,i2
+            if ( a4(3,i,km)*a4(1,i,km) <= 0. )  a4(3,i,km) = 0.
+         enddo
+      end select
+
+      do k=km-1,km
+         do i=i1,i2
+            a4(4,i,k) = 3.*(2.*a4(1,i,k) - (a4(2,i,k)+a4(3,i,k)))
+         enddo
+         if(k==(km-1)) call cs_limiters(im, extm(i1,k), a4(1,i1,k), 2)
+         if(k== km   ) call cs_limiters(im, extm(i1,k), a4(1,i1,k), 1)
       enddo
-   end select
 
-  do k=km-1,km
-     do i=i1,i2
-        a4(4,i,k) = 3.*(2.*a4(1,i,k) - (a4(2,i,k)+a4(3,i,k)))
-     enddo
-     if(k==(km-1)) call cs_limiters(im, extm(i1,k), a4(1,i1,k), 2)
-     if(k== km   ) call cs_limiters(im, extm(i1,k), a4(1,i1,k), 1)
-  enddo
-
- end subroutine cs_profile
- subroutine cs_limiters(im, extm, a4, iv)
- integer, intent(in) :: im
- integer, intent(in) :: iv
- logical, intent(in) :: extm(im)
- real , intent(inout) :: a4(4,im)   ! PPM array
+   end subroutine cs_profile
+   subroutine cs_limiters(im, extm, a4, iv)
+      integer, intent(in) :: im
+      integer, intent(in) :: iv
+      logical, intent(in) :: extm(im)
+      real , intent(inout) :: a4(4,im)   ! PPM array
 ! !LOCAL VARIABLES:
- real  da1, da2, a6da
- integer i
+      real  da1, da2, a6da
+      integer i
 
- if ( iv==0 ) then
+      if ( iv==0 ) then
 ! Positive definite constraint
-    do i=1,im
-    if( a4(1,i)<=0.) then
-        a4(2,i) = a4(1,i)
-        a4(3,i) = a4(1,i)
-        a4(4,i) = 0.
-    else
-      if( abs(a4(3,i)-a4(2,i)) < -a4(4,i) ) then
-         if( (a4(1,i)+0.25*(a4(3,i)-a4(2,i))**2/a4(4,i)+a4(4,i)*r12) < 0. ) then
+         do i=1,im
+            if( a4(1,i)<=0.) then
+               a4(2,i) = a4(1,i)
+               a4(3,i) = a4(1,i)
+               a4(4,i) = 0.
+            else
+               if( abs(a4(3,i)-a4(2,i)) < -a4(4,i) ) then
+                  if( (a4(1,i)+0.25*(a4(3,i)-a4(2,i))**2/a4(4,i)+a4(4,i)*r12) < 0. ) then
 ! local minimum is negative
-             if( a4(1,i)<a4(3,i) .and. a4(1,i)<a4(2,i) ) then
-                 a4(3,i) = a4(1,i)
-                 a4(2,i) = a4(1,i)
-                 a4(4,i) = 0.
-             elseif( a4(3,i) > a4(2,i) ) then
-                 a4(4,i) = 3.*(a4(2,i)-a4(1,i))
-                 a4(3,i) = a4(2,i) - a4(4,i)
-             else
-                 a4(4,i) = 3.*(a4(3,i)-a4(1,i))
-                 a4(2,i) = a4(3,i) - a4(4,i)
-             endif
-         endif
-      endif
-    endif
-    enddo
- elseif ( iv==1 ) then
-    do i=1,im
-      if( (a4(1,i)-a4(2,i))*(a4(1,i)-a4(3,i))>=0. ) then
-         a4(2,i) = a4(1,i)
-         a4(3,i) = a4(1,i)
-         a4(4,i) = 0.
+                     if( a4(1,i)<a4(3,i) .and. a4(1,i)<a4(2,i) ) then
+                        a4(3,i) = a4(1,i)
+                        a4(2,i) = a4(1,i)
+                        a4(4,i) = 0.
+                     elseif( a4(3,i) > a4(2,i) ) then
+                        a4(4,i) = 3.*(a4(2,i)-a4(1,i))
+                        a4(3,i) = a4(2,i) - a4(4,i)
+                     else
+                        a4(4,i) = 3.*(a4(3,i)-a4(1,i))
+                        a4(2,i) = a4(3,i) - a4(4,i)
+                     endif
+                  endif
+               endif
+            endif
+         enddo
+      elseif ( iv==1 ) then
+         do i=1,im
+            if( (a4(1,i)-a4(2,i))*(a4(1,i)-a4(3,i))>=0. ) then
+               a4(2,i) = a4(1,i)
+               a4(3,i) = a4(1,i)
+               a4(4,i) = 0.
+            else
+               da1  = a4(3,i) - a4(2,i)
+               da2  = da1**2
+               a6da = a4(4,i)*da1
+               if(a6da < -da2) then
+                  a4(4,i) = 3.*(a4(2,i)-a4(1,i))
+                  a4(3,i) = a4(2,i) - a4(4,i)
+               elseif(a6da > da2) then
+                  a4(4,i) = 3.*(a4(3,i)-a4(1,i))
+                  a4(2,i) = a4(3,i) - a4(4,i)
+               endif
+            endif
+         enddo
       else
-         da1  = a4(3,i) - a4(2,i)
-         da2  = da1**2
-         a6da = a4(4,i)*da1
-         if(a6da < -da2) then
-            a4(4,i) = 3.*(a4(2,i)-a4(1,i))
-            a4(3,i) = a4(2,i) - a4(4,i)
-         elseif(a6da > da2) then
-            a4(4,i) = 3.*(a4(3,i)-a4(1,i))
-            a4(2,i) = a4(3,i) - a4(4,i)
-         endif
-      endif
-    enddo
- else
 ! Standard PPM constraint
-    do i=1,im
-      if( extm(i) ) then
-         a4(2,i) = a4(1,i)
-         a4(3,i) = a4(1,i)
-         a4(4,i) = 0.
-      else
-         da1  = a4(3,i) - a4(2,i)
-         da2  = da1**2
-         a6da = a4(4,i)*da1
-         if(a6da < -da2) then
-            a4(4,i) = 3.*(a4(2,i)-a4(1,i))
-            a4(3,i) = a4(2,i) - a4(4,i)
-         elseif(a6da > da2) then
-            a4(4,i) = 3.*(a4(3,i)-a4(1,i))
-            a4(2,i) = a4(3,i) - a4(4,i)
-         endif
+         do i=1,im
+            if( extm(i) ) then
+               a4(2,i) = a4(1,i)
+               a4(3,i) = a4(1,i)
+               a4(4,i) = 0.
+            else
+               da1  = a4(3,i) - a4(2,i)
+               da2  = da1**2
+               a6da = a4(4,i)*da1
+               if(a6da < -da2) then
+                  a4(4,i) = 3.*(a4(2,i)-a4(1,i))
+                  a4(3,i) = a4(2,i) - a4(4,i)
+               elseif(a6da > da2) then
+                  a4(4,i) = 3.*(a4(3,i)-a4(1,i))
+                  a4(2,i) = a4(3,i) - a4(4,i)
+               endif
+            endif
+         enddo
       endif
-    enddo
- endif
- end subroutine cs_limiters
- subroutine ppm_profile(a4, delp, km, i1, i2, iv, kord)
+   end subroutine cs_limiters
+   subroutine ppm_profile(a4, delp, km, i1, i2, iv, kord)
 
 ! !INPUT PARAMETERS:
- integer, intent(in):: iv      ! iv =-1: winds
-                               ! iv = 0: positive definite scalars
-                               ! iv = 1: others
-                               ! iv = 2: temp (if remap_t) and w (iv=-2)
- integer, intent(in):: i1      ! Starting longitude
- integer, intent(in):: i2      ! Finishing longitude
- integer, intent(in):: km      ! vertical dimension
- integer, intent(in):: kord    ! Order (or more accurately method no.):
-                               !
- real , intent(in):: delp(i1:i2,km)     ! layer pressure thickness
+      integer, intent(in):: iv      ! iv =-1: winds
+      ! iv = 0: positive definite scalars
+      ! iv = 1: others
+      ! iv = 2: temp (if remap_t) and w (iv=-2)
+      integer, intent(in):: i1      ! Starting longitude
+      integer, intent(in):: i2      ! Finishing longitude
+      integer, intent(in):: km      ! vertical dimension
+      integer, intent(in):: kord    ! Order (or more accurately method no.):
+      !
+      real , intent(in):: delp(i1:i2,km)     ! layer pressure thickness
 
 ! !INPUT/OUTPUT PARAMETERS:
- real , intent(inout):: a4(4,i1:i2,km)  ! Interpolated values
+      real , intent(inout):: a4(4,i1:i2,km)  ! Interpolated values
 
 ! DESCRIPTION:
 !
@@ -556,24 +556,24 @@ else ! all others
       real  qm, dq, lac, qmp, pmp
 
       km1 = km - 1
-       it = i2 - i1 + 1
+      it = i2 - i1 + 1
 
       do k=2,km
          do i=i1,i2
             delq(i,k-1) =   a4(1,i,k) - a4(1,i,k-1)
-              d4(i,k  ) = delp(i,k-1) + delp(i,k)
+            d4(i,k  ) = delp(i,k-1) + delp(i,k)
          enddo
       enddo
 
       do k=2,km1
          do i=i1,i2
-                 c1  = (delp(i,k-1)+0.5*delp(i,k))/d4(i,k+1)
-                 c2  = (delp(i,k+1)+0.5*delp(i,k))/d4(i,k)
+            c1  = (delp(i,k-1)+0.5*delp(i,k))/d4(i,k+1)
+            c2  = (delp(i,k+1)+0.5*delp(i,k))/d4(i,k)
             df2(i,k) = delp(i,k)*(c1*delq(i,k) + c2*delq(i,k-1)) /      &
-                                    (d4(i,k)+delp(i,k+1))
+               (d4(i,k)+delp(i,k+1))
             dc(i,k) = sign( min(abs(df2(i,k)),              &
-                            max(a4(1,i,k-1),a4(1,i,k),a4(1,i,k+1))-a4(1,i,k),  &
-                  a4(1,i,k)-min(a4(1,i,k-1),a4(1,i,k),a4(1,i,k+1))), df2(i,k) )
+               max(a4(1,i,k-1),a4(1,i,k),a4(1,i,k+1))-a4(1,i,k),  &
+               a4(1,i,k)-min(a4(1,i,k-1),a4(1,i,k),a4(1,i,k+1))), df2(i,k) )
          enddo
       enddo
 
@@ -587,8 +587,8 @@ else ! all others
             a1 = d4(i,k-1) / (d4(i,k) + delp(i,k-1))
             a2 = d4(i,k+1) / (d4(i,k) + delp(i,k))
             a4(2,i,k) = a4(1,i,k-1) + c1 + 2./(d4(i,k-1)+d4(i,k+1)) *    &
-                      ( delp(i,k)*(c1*(a1 - a2)+a2*dc(i,k-1)) -          &
-                        delp(i,k-1)*a1*dc(i,k  ) )
+               ( delp(i,k)*(c1*(a1 - a2)+a2*dc(i,k-1)) -          &
+               delp(i,k-1)*a1*dc(i,k  ) )
          enddo
       enddo
 
@@ -666,32 +666,32 @@ else ! all others
          d1 = a4(1,i,km) - a4(2,i,km)
          d2 = a4(3,i,km) - a4(1,i,km)
          if ( d1*d2 < 0. ) then
-              a4(2,i,km) = a4(1,i,km)
-              a4(3,i,km) = a4(1,i,km)
+            a4(2,i,km) = a4(1,i,km)
+            a4(3,i,km) = a4(1,i,km)
          else
-              dq = sign(min(abs(d1),abs(d2),0.5*abs(delq(i,km-1))), d1)
-              a4(2,i,km) = a4(1,i,km) - dq
-              a4(3,i,km) = a4(1,i,km) + dq
+            dq = sign(min(abs(d1),abs(d2),0.5*abs(delq(i,km-1))), d1)
+            a4(2,i,km) = a4(1,i,km) - dq
+            a4(3,i,km) = a4(1,i,km) + dq
          endif
       enddo
 #else
       if( iv==0 ) then
-          do i=i1,i2
-             a4(2,i,km) = max(0.,a4(2,i,km))
-             a4(3,i,km) = max(0.,a4(3,i,km))
-          enddo
+         do i=i1,i2
+            a4(2,i,km) = max(0.,a4(2,i,km))
+            a4(3,i,km) = max(0.,a4(3,i,km))
+         enddo
       elseif( iv<0 ) then
-          do i=i1,i2
-             if( a4(1,i,km)*a4(3,i,km) <= 0. )  a4(3,i,km) = 0.
-          enddo
+         do i=i1,i2
+            if( a4(1,i,km)*a4(3,i,km) <= 0. )  a4(3,i,km) = 0.
+         enddo
       endif
 #endif
 
-   do k=1,km1
-      do i=i1,i2
-         a4(3,i,k) = a4(2,i,k+1)
+      do k=1,km1
+         do i=i1,i2
+            a4(3,i,k) = a4(2,i,k+1)
+         enddo
       enddo
-   enddo
 
 !-----------------------------------------------------------
 ! f(s) = AL + s*[(AR-AL) + A6*(1-s)]         ( 0 <= s  <= 1 )
@@ -708,49 +708,49 @@ else ! all others
 !-----------------------
 ! Huynh's 2nd constraint
 !-----------------------
-      do k=2,km1
-         do i=i1,i2
+         do k=2,km1
+            do i=i1,i2
 ! Method#1
 !           h2(i,k) = delq(i,k) - delq(i,k-1)
 ! Method#2 - better
-            h2(i,k) = 2.*(dc(i,k+1)/delp(i,k+1) - dc(i,k-1)/delp(i,k-1))  &
-                     / ( delp(i,k)+0.5*(delp(i,k-1)+delp(i,k+1)) )        &
-                     * delp(i,k)**2
+               h2(i,k) = 2.*(dc(i,k+1)/delp(i,k+1) - dc(i,k-1)/delp(i,k-1))  &
+                  / ( delp(i,k)+0.5*(delp(i,k-1)+delp(i,k+1)) )        &
+                  * delp(i,k)**2
 ! Method#3
 !!!            h2(i,k) = dc(i,k+1) - dc(i,k-1)
+            enddo
          enddo
-      enddo
 
-      fac = 1.5           ! original quasi-monotone
+         fac = 1.5           ! original quasi-monotone
 
-      do k=3,km-2
-        do i=i1,i2
+         do k=3,km-2
+            do i=i1,i2
 ! Right edges
 !        qmp   = a4(1,i,k) + 2.0*delq(i,k-1)
 !        lac   = a4(1,i,k) + fac*h2(i,k-1) + 0.5*delq(i,k-1)
 !
-         pmp   = 2.*dc(i,k)
-         qmp   = a4(1,i,k) + pmp
-         lac   = a4(1,i,k) + fac*h2(i,k-1) + dc(i,k)
-         a4(3,i,k) = min(max(a4(3,i,k), min(a4(1,i,k), qmp, lac)),    &
-                                        max(a4(1,i,k), qmp, lac) )
+               pmp   = 2.*dc(i,k)
+               qmp   = a4(1,i,k) + pmp
+               lac   = a4(1,i,k) + fac*h2(i,k-1) + dc(i,k)
+               a4(3,i,k) = min(max(a4(3,i,k), min(a4(1,i,k), qmp, lac)),    &
+                  max(a4(1,i,k), qmp, lac) )
 ! Left  edges
 !        qmp   = a4(1,i,k) - 2.0*delq(i,k)
 !        lac   = a4(1,i,k) + fac*h2(i,k+1) - 0.5*delq(i,k)
 !
-         qmp   = a4(1,i,k) - pmp
-         lac   = a4(1,i,k) + fac*h2(i,k+1) - dc(i,k)
-         a4(2,i,k) = min(max(a4(2,i,k),  min(a4(1,i,k), qmp, lac)),   &
-                     max(a4(1,i,k), qmp, lac))
+               qmp   = a4(1,i,k) - pmp
+               lac   = a4(1,i,k) + fac*h2(i,k+1) - dc(i,k)
+               a4(2,i,k) = min(max(a4(2,i,k),  min(a4(1,i,k), qmp, lac)),   &
+                  max(a4(1,i,k), qmp, lac))
 !-------------
 ! Recompute A6
 !-------------
-         a4(4,i,k) = 3.*(2.*a4(1,i,k) - (a4(2,i,k)+a4(3,i,k)))
-        enddo
+               a4(4,i,k) = 3.*(2.*a4(1,i,k) - (a4(2,i,k)+a4(3,i,k)))
+            enddo
 ! Additional constraint to ensure positivity when kord=7
-         if (iv == 0 .and. kord >= 6 )                      &
-             call ppm_limiters(dc(i1,k), a4(1,i1,k), it, 2)
-      enddo
+            if (iv == 0 .and. kord >= 6 )                      &
+               call ppm_limiters(dc(i1,k), a4(1,i1,k), it, 2)
+         enddo
 
       else
 
@@ -760,9 +760,9 @@ else ! all others
 
          do k=3,km-2
             if( kord /= 4) then
-              do i=i1,i2
-                 a4(4,i,k) = 3.*(2.*a4(1,i,k) - (a4(2,i,k)+a4(3,i,k)))
-              enddo
+               do i=i1,i2
+                  a4(4,i,k) = 3.*(2.*a4(1,i,k) - (a4(2,i,k)+a4(3,i,k)))
+               enddo
             endif
             if(kord/=6) call ppm_limiters(dc(i1,k), a4(1,i1,k), it, lmt)
          enddo
@@ -775,22 +775,22 @@ else ! all others
          call ppm_limiters(dc(i1,k), a4(1,i1,k), it, 0)
       enddo
 
- end subroutine ppm_profile
- subroutine ppm_limiters(dm, a4, itot, lmt)
+   end subroutine ppm_profile
+   subroutine ppm_limiters(dm, a4, itot, lmt)
 
 ! !INPUT PARAMETERS:
       real , intent(in):: dm(*)     ! the linear slope
       integer, intent(in) :: itot      ! Total Longitudes
       integer, intent(in) :: lmt       ! 0: Standard PPM constraint
-                                       ! 1: Improved full monotonicity constraint (Lin)
-                                       ! 2: Positive definite constraint
-                                       ! 3: do nothing (return immediately)
+      ! 1: Improved full monotonicity constraint (Lin)
+      ! 2: Positive definite constraint
+      ! 3: do nothing (return immediately)
 ! !INPUT/OUTPUT PARAMETERS:
       real , intent(inout) :: a4(4,*)   ! PPM array
-                                           ! AA <-- a4(1,i)
-                                           ! AL <-- a4(2,i)
-                                           ! AR <-- a4(3,i)
-                                           ! A6 <-- a4(4,i)
+      ! AA <-- a4(1,i)
+      ! AL <-- a4(2,i)
+      ! AR <-- a4(3,i)
+      ! A6 <-- a4(4,i)
 ! !LOCAL VARIABLES:
       real  qmp
       real  da1, da2, a6da
@@ -803,62 +803,62 @@ else ! all others
 
       if(lmt == 0) then
 ! Standard PPM constraint
-      do i=1,itot
-      if(dm(i) == 0.) then
-         a4(2,i) = a4(1,i)
-         a4(3,i) = a4(1,i)
-         a4(4,i) = 0.
-      else
-         da1  = a4(3,i) - a4(2,i)
-         da2  = da1**2
-         a6da = a4(4,i)*da1
-         if(a6da < -da2) then
-            a4(4,i) = 3.*(a4(2,i)-a4(1,i))
-            a4(3,i) = a4(2,i) - a4(4,i)
-         elseif(a6da > da2) then
-            a4(4,i) = 3.*(a4(3,i)-a4(1,i))
-            a4(2,i) = a4(3,i) - a4(4,i)
-         endif
-      endif
-      enddo
+         do i=1,itot
+            if(dm(i) == 0.) then
+               a4(2,i) = a4(1,i)
+               a4(3,i) = a4(1,i)
+               a4(4,i) = 0.
+            else
+               da1  = a4(3,i) - a4(2,i)
+               da2  = da1**2
+               a6da = a4(4,i)*da1
+               if(a6da < -da2) then
+                  a4(4,i) = 3.*(a4(2,i)-a4(1,i))
+                  a4(3,i) = a4(2,i) - a4(4,i)
+               elseif(a6da > da2) then
+                  a4(4,i) = 3.*(a4(3,i)-a4(1,i))
+                  a4(2,i) = a4(3,i) - a4(4,i)
+               endif
+            endif
+         enddo
 
       elseif (lmt == 1) then
 
 ! Improved full monotonicity constraint (Lin 2004)
 ! Note: no need to provide first guess of A6 <-- a4(4,i)
-      do i=1, itot
-           qmp = 2.*dm(i)
-         a4(2,i) = a4(1,i)-sign(min(abs(qmp),abs(a4(2,i)-a4(1,i))), qmp)
-         a4(3,i) = a4(1,i)+sign(min(abs(qmp),abs(a4(3,i)-a4(1,i))), qmp)
-         a4(4,i) = 3.*( 2.*a4(1,i) - (a4(2,i)+a4(3,i)) )
-      enddo
+         do i=1, itot
+            qmp = 2.*dm(i)
+            a4(2,i) = a4(1,i)-sign(min(abs(qmp),abs(a4(2,i)-a4(1,i))), qmp)
+            a4(3,i) = a4(1,i)+sign(min(abs(qmp),abs(a4(3,i)-a4(1,i))), qmp)
+            a4(4,i) = 3.*( 2.*a4(1,i) - (a4(2,i)+a4(3,i)) )
+         enddo
 
       elseif (lmt == 2) then
 
 ! Positive definite constraint
-      do i=1,itot
-      if( abs(a4(3,i)-a4(2,i)) < -a4(4,i) ) then
-      fmin = a4(1,i)+0.25*(a4(3,i)-a4(2,i))**2/a4(4,i)+a4(4,i)*r12
-         if( fmin < 0. ) then
-         if(a4(1,i)<a4(3,i) .and. a4(1,i)<a4(2,i)) then
-            a4(3,i) = a4(1,i)
-            a4(2,i) = a4(1,i)
-            a4(4,i) = 0.
-         elseif(a4(3,i) > a4(2,i)) then
-            a4(4,i) = 3.*(a4(2,i)-a4(1,i))
-            a4(3,i) = a4(2,i) - a4(4,i)
-         else
-            a4(4,i) = 3.*(a4(3,i)-a4(1,i))
-            a4(2,i) = a4(3,i) - a4(4,i)
-         endif
-         endif
-      endif
-      enddo
+         do i=1,itot
+            if( abs(a4(3,i)-a4(2,i)) < -a4(4,i) ) then
+               fmin = a4(1,i)+0.25*(a4(3,i)-a4(2,i))**2/a4(4,i)+a4(4,i)*r12
+               if( fmin < 0. ) then
+                  if(a4(1,i)<a4(3,i) .and. a4(1,i)<a4(2,i)) then
+                     a4(3,i) = a4(1,i)
+                     a4(2,i) = a4(1,i)
+                     a4(4,i) = 0.
+                  elseif(a4(3,i) > a4(2,i)) then
+                     a4(4,i) = 3.*(a4(2,i)-a4(1,i))
+                     a4(3,i) = a4(2,i) - a4(4,i)
+                  else
+                     a4(4,i) = 3.*(a4(3,i)-a4(1,i))
+                     a4(2,i) = a4(3,i) - a4(4,i)
+                  endif
+               endif
+            endif
+         enddo
 
       endif
 
- end subroutine ppm_limiters
- subroutine mappm(km, pe1, q1, kn, pe2, q2, i1, i2, iv, kord)
+   end subroutine ppm_limiters
+   subroutine mappm(km, pe1, q1, kn, pe2, q2, i1, i2, iv, kord)
 
 ! IV = 0: constituents
 ! IV = 1: potential temp
@@ -872,10 +872,10 @@ else ! all others
 ! pe2: pressure at layer edges (from model top to bottom surface)
 !      in the new vertical coordinate
 
- integer, intent(in):: i1, i2, km, kn, kord, iv
- real, intent(in ):: pe1(i1:i2,km+1), pe2(i1:i2,kn+1)
- real, intent(in )::  q1(i1:i2,km) ! input field
- real, intent(out)::  q2(i1:i2,kn) ! output field
+      integer, intent(in):: i1, i2, km, kn, kord, iv
+      real, intent(in ):: pe1(i1:i2,km+1), pe2(i1:i2,kn+1)
+      real, intent(in )::  q1(i1:i2,km) ! input field
+      real, intent(out)::  q2(i1:i2,kn) ! output field
 
 ! local
       real  qs(i1:i2)
@@ -887,7 +887,7 @@ else ! all others
 
       do k=1,km
          do i=i1,i2
-             dp1(i,k) = pe1(i,k+1) - pe1(i,k)
+            dp1(i,k) = pe1(i,k+1) - pe1(i,k)
             a4(1,i,k) = q1(i,k)
          enddo
       enddo
@@ -895,77 +895,77 @@ else ! all others
       if ( kord >7 ) then
          call  cs_profile( qs, a4, dp1, km, i1, i2, iv, kord )
       else
-           call ppm_profile( a4, dp1, km, i1, i2, iv, kord )
+         call ppm_profile( a4, dp1, km, i1, i2, iv, kord )
       endif
 
       do 5555 i=i1,i2
          k0 = 1
-      do 555 k=1,kn
+         do 555 k=1,kn
 
-         if(pe2(i,k) .le. pe1(i,1)) then
+            if(pe2(i,k) .le. pe1(i,1)) then
 ! above old ptop
-            q2(i,k) = q1(i,1)
-         elseif(pe2(i,k) .ge. pe1(i,km+1)) then
+               q2(i,k) = q1(i,1)
+            elseif(pe2(i,k) .ge. pe1(i,km+1)) then
 ! Entire grid below old ps
-            q2(i,k) = q1(i,km)
-         else
+               q2(i,k) = q1(i,km)
+            else
 
-         do 45 L=k0,km
+               do 45 L=k0,km
 ! locate the top edge at pe2(i,k)
-         if( pe2(i,k) .ge. pe1(i,L) .and.        &
-             pe2(i,k) .le. pe1(i,L+1)    ) then
-             k0 = L
-             PL = (pe2(i,k)-pe1(i,L)) / dp1(i,L)
-             if(pe2(i,k+1) .le. pe1(i,L+1)) then
+                  if( pe2(i,k) .ge. pe1(i,L) .and.        &
+                     pe2(i,k) .le. pe1(i,L+1)    ) then
+                     k0 = L
+                     PL = (pe2(i,k)-pe1(i,L)) / dp1(i,L)
+                     if(pe2(i,k+1) .le. pe1(i,L+1)) then
 
 ! entire new grid is within the original grid
-               PR = (pe2(i,k+1)-pe1(i,L)) / dp1(i,L)
-               TT = r3*(PR*(PR+PL)+PL**2)
-               q2(i,k) = a4(2,i,L) + 0.5*(a4(4,i,L)+a4(3,i,L)  &
-                       - a4(2,i,L))*(PR+PL) - a4(4,i,L)*TT
-              goto 555
-             else
+                        PR = (pe2(i,k+1)-pe1(i,L)) / dp1(i,L)
+                        TT = r3*(PR*(PR+PL)+PL**2)
+                        q2(i,k) = a4(2,i,L) + 0.5*(a4(4,i,L)+a4(3,i,L)  &
+                           - a4(2,i,L))*(PR+PL) - a4(4,i,L)*TT
+                        goto 555
+                     else
 ! Fractional area...
-              delp = pe1(i,L+1) - pe2(i,k)
-              TT   = r3*(1.+PL*(1.+PL))
-              qsum = delp*(a4(2,i,L)+0.5*(a4(4,i,L)+            &
-                     a4(3,i,L)-a4(2,i,L))*(1.+PL)-a4(4,i,L)*TT)
-              dpsum = delp
-              k1 = L + 1
-             goto 111
-             endif
-         endif
-45       continue
+                        delp = pe1(i,L+1) - pe2(i,k)
+                        TT   = r3*(1.+PL*(1.+PL))
+                        qsum = delp*(a4(2,i,L)+0.5*(a4(4,i,L)+            &
+                           a4(3,i,L)-a4(2,i,L))*(1.+PL)-a4(4,i,L)*TT)
+                        dpsum = delp
+                        k1 = L + 1
+                        goto 111
+                     endif
+                  endif
+45             continue
 
-111      continue
-         do 55 L=k1,km
-         if( pe2(i,k+1) .gt. pe1(i,L+1) ) then
+111            continue
+               do 55 L=k1,km
+                  if( pe2(i,k+1) .gt. pe1(i,L+1) ) then
 
 ! Whole layer..
 
-            qsum  =  qsum + dp1(i,L)*q1(i,L)
-            dpsum = dpsum + dp1(i,L)
-         else
-           delp = pe2(i,k+1)-pe1(i,L)
-           esl  = delp / dp1(i,L)
-           qsum = qsum + delp * (a4(2,i,L)+0.5*esl*            &
-                 (a4(3,i,L)-a4(2,i,L)+a4(4,i,L)*(1.-r23*esl)) )
-          dpsum = dpsum + delp
-           k0 = L
-           goto 123
-         endif
-55       continue
-        delp = pe2(i,k+1) - pe1(i,km+1)
-        if(delp > 0.) then
+                     qsum  =  qsum + dp1(i,L)*q1(i,L)
+                     dpsum = dpsum + dp1(i,L)
+                  else
+                     delp = pe2(i,k+1)-pe1(i,L)
+                     esl  = delp / dp1(i,L)
+                     qsum = qsum + delp * (a4(2,i,L)+0.5*esl*            &
+                        (a4(3,i,L)-a4(2,i,L)+a4(4,i,L)*(1.-r23*esl)) )
+                     dpsum = dpsum + delp
+                     k0 = L
+                     goto 123
+                  endif
+55             continue
+               delp = pe2(i,k+1) - pe1(i,km+1)
+               if(delp > 0.) then
 ! Extended below old ps
-           qsum = qsum + delp * q1(i,km)
-          dpsum = dpsum + delp
-        endif
-123     q2(i,k) = qsum / dpsum
-      endif
-555   continue
+                  qsum = qsum + delp * q1(i,km)
+                  dpsum = dpsum + delp
+               endif
+123            q2(i,k) = qsum / dpsum
+            endif
+555      continue
 5555  continue
 
- end subroutine mappm
+   end subroutine mappm
 
 end module fv3_vremap_mod

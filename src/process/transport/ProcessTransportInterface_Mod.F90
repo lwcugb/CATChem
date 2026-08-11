@@ -38,7 +38,7 @@ module ProcessTransportInterface_Mod
    ! Diagnostic system (transport budget fields written to the output files)
    use DiagnosticManager_Mod,   only: DiagnosticManagerType
    use DiagnosticInterface_Mod, only: DiagnosticRegistryType, DiagnosticFieldType, &
-                                      DiagnosticDataType, DIAG_REAL_3D
+      DiagnosticDataType, DIAG_REAL_3D
 
    ! Vendored FV3 transport kernels + trimmed grid metric types
    use fv3_grid_types_mod, only: fv_grid_type, fv_grid_bounds_type
@@ -47,10 +47,10 @@ module ProcessTransportInterface_Mod
    use met_utilities_mod, only: get_hybrid_ab
    use TransportGridMetrics_Mod, only: build_fv3_grid_metrics
    use TransportHalo_Mod, only: transport_halo_type, halo_update, halo_global_max, &
-                                halo_global_sum, halo_is_root, &
-                                HALO_BC_REPLICATE, HALO_BC_PERIODIC
+      halo_global_sum, halo_is_root, &
+      HALO_BC_REPLICATE, HALO_BC_PERIODIC
    use TransportMassFlux_Mod, only: fv_mass_flux_type, mass_flux_alloc, mass_flux_free, &
-                                    build_level_mass_flux, courant_max, scale_mass_flux
+      build_level_mass_flux, courant_max, scale_mass_flux
    use TimeState_Mod, only: TimeStateType
 
    implicit none
@@ -257,12 +257,12 @@ contains
 
       if (allocated(this%met_state%AREA_M2)) then
          call build_fv3_grid_metrics(this%met_state%LAT, this%met_state%LON, this%ng, &
-                                     this%gridstruct, this%bd, metrics_rc, &
-                                     area_m2=this%met_state%AREA_M2, x_periodic=x_periodic)
+            this%gridstruct, this%bd, metrics_rc, &
+            area_m2=this%met_state%AREA_M2, x_periodic=x_periodic)
       else
          call build_fv3_grid_metrics(this%met_state%LAT, this%met_state%LON, this%ng, &
-                                     this%gridstruct, this%bd, metrics_rc, &
-                                     x_periodic=x_periodic)
+            this%gridstruct, this%bd, metrics_rc, &
+            x_periodic=x_periodic)
       end if
 
       if (metrics_rc == CC_SUCCESS) then
@@ -426,8 +426,8 @@ contains
       npx = nx + 1; npy = ny + 1
 
       if (.not. (allocated(this%met_state%U)    .and. &
-                 allocated(this%met_state%V)    .and. &
-                 allocated(this%met_state%DELP))) then
+         allocated(this%met_state%V)    .and. &
+         allocated(this%met_state%DELP))) then
          rc = CC_FAILURE
          return
       end if
@@ -514,8 +514,8 @@ contains
 
             subcycle: do it = 1, nsplt
                call fv_tp_2d(q, mf%crx, mf%cry, npx, npy, this%hord, fx, fy, &
-                             mf%xfx, mf%yfx, this%gridstruct, this%bd, &
-                             mf%ra_x, mf%ra_y, LIM_FAC, mfx=mf%mfx, mfy=mf%mfy)
+                  mf%xfx, mf%yfx, this%gridstruct, this%bd, &
+                  mf%ra_x, mf%ra_y, LIM_FAC, mfx=mf%mfx, mfy=mf%mfy)
 
                do j = js, je
                   do i = is, ie
@@ -628,10 +628,10 @@ contains
       ! populated it this step (tracked by the per-timestep populated-field
       ! registry); otherwise fall back to the self-consistent Lagrangian PS.
       use_psn = this%met_state%is_field_set('PS_NEXT') .and. &
-                allocated(this%met_state%PS_NEXT)
+         allocated(this%met_state%PS_NEXT)
       if (use_psn) then
          if (size(this%met_state%PS_NEXT,1) /= size(dp_lag,1) .or. &
-             size(this%met_state%PS_NEXT,2) /= size(dp_lag,2)) use_psn = .false.
+            size(this%met_state%PS_NEXT,2) /= size(dp_lag,2)) use_psn = .false.
       end if
 
       ! --- Column edge pressures (top -> bottom), species-independent ---------
@@ -789,7 +789,7 @@ contains
          enabled = (status == 0 .and. length > 0)
          if (enabled) then
             select case (trim(adjustl(val)))
-            case ('0', 'false', 'FALSE', 'no', 'NO', 'off', 'OFF')
+             case ('0', 'false', 'FALSE', 'no', 'NO', 'off', 'OFF')
                enabled = .false.
             end select
          end if
@@ -829,7 +829,7 @@ contains
       gmass = 0.0_dpk
       gmin  = 0.0_fp
       if (.not. associated(this%chem_state) .or. &
-          .not. associated(this%met_state)) return
+         .not. associated(this%met_state)) return
       if (.not. allocated(this%met_state%DELP)) return
       have_area = allocated(this%met_state%AREA_M2)
 
@@ -850,7 +850,7 @@ contains
                               cell_area = 1.0_dpk
                            end if
                            mass = mass + real(conc(i,j,k), dpk) * &
-                                  real(this%met_state%DELP(i,j,k), dpk) * cell_area
+                              real(this%met_state%DELP(i,j,k), dpk) * cell_area
                            gmn  = max(gmn, -real(conc(i,j,k)))
                         end do
                      end do
@@ -1100,7 +1100,7 @@ contains
 
       have_mass = associated(this%met_state)
       if (have_mass) have_mass = allocated(this%met_state%DELP) .and. &
-                                 allocated(this%met_state%AREA_M2)
+         allocated(this%met_state%AREA_M2)
 
       do s = 1, this%chem_state%nSpeciesAdvect
          isp = this%chem_state%AdvectIndex(s)
@@ -1120,8 +1120,8 @@ contains
                   fptr => diag_data%get_real_3d_ptr()
                   if (associated(fptr)) then
                      if (size(fptr,1) == size(conc_pre,1) .and. &
-                         size(fptr,2) == size(conc_pre,2) .and. &
-                         size(fptr,3) == size(conc_pre,3)) then
+                        size(fptr,2) == size(conc_pre,2) .and. &
+                        size(fptr,3) == size(conc_pre,3)) then
                         fptr = (conc - conc_pre(:,:,:,s)) / dt
                      end if
                   end if
@@ -1143,13 +1143,13 @@ contains
          if (size(fptr,1) /= nx .or. size(fptr,2) /= ny .or. size(fptr,3) /= nz) cycle
          if (size(conc_pre,1) /= nx .or. size(conc_pre,2) /= ny .or. size(conc_pre,3) /= nz) cycle
          if (size(this%met_state%DELP,1) /= nx .or. size(this%met_state%DELP,2) /= ny .or. &
-             size(this%met_state%DELP,3) /= nz) cycle
+            size(this%met_state%DELP,3) /= nz) cycle
          do k = 1, nz
             do j = 1, ny
                do i = 1, nx
                   fptr(i,j,k) = (conc(i,j,k) - conc_pre(i,j,k,s)) / dt * &
-                                this%met_state%DELP(i,j,k) * &
-                                this%met_state%AREA_M2(i,j) / g0
+                     this%met_state%DELP(i,j,k) * &
+                     this%met_state%AREA_M2(i,j) / g0
                end do
             end do
          end do

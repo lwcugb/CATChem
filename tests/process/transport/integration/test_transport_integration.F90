@@ -125,7 +125,7 @@ program test_transport_integration
    chem       => state_mgr%get_chem_state_ptr()
    time_state => state_mgr%get_time_state_ptr()
    if (.not. (associated(state_mgr) .and. associated(met) .and. &
-              associated(chem) .and. associated(time_state))) then
+      associated(chem) .and. associated(time_state))) then
       write(error_unit,'(A)') 'ERROR: could not resolve state handles'
       all_ok = .false.
       go to 999
@@ -265,7 +265,7 @@ contains
             lat_s = (latc(i, j) - 0.5_fp * dlat) * PI / 180.0_fp
             lat_n = (latc(i, j) + 0.5_fp * dlat) * PI / 180.0_fp
             area(i, j) = REARTH * REARTH * (dlon * PI / 180.0_fp) * &
-                         (sin(lat_n) - sin(lat_s))
+               (sin(lat_n) - sin(lat_s))
          end do
       end do
       met%LON(:, :)     = lonc(:, :)
@@ -408,7 +408,7 @@ contains
             do j = 1, ny
                do i = 1, nx
                   m = m + real(chem%ChemSpecies(isp)%conc(i, j, k), dp) * &
-                          real(met%DELP(i, j, k), dp) * real(area(i, j), dp)
+                     real(met%DELP(i, j, k), dp) * real(area(i, j), dp)
                end do
             end do
          end do
@@ -429,7 +429,7 @@ contains
             do j = 1, ny
                do i = 1, nx
                   m = m + real(chem%ChemSpecies(isp)%conc(i, j, k), dp) * &
-                          real(met%DELP(i, j, k), dp) * real(area(i, j), dp)
+                     real(met%DELP(i, j, k), dp) * real(area(i, j), dp)
                end do
             end do
          end do
@@ -478,9 +478,9 @@ contains
       ok = .true.
       call report('Phase A: mass conservation', rel <= real(TOL, dp), ok)
       call report('Phase A: lower bound preserved', &
-                  qmin >= 0.5_fp * Q0 * (1.0_fp - TOL), ok)
+         qmin >= 0.5_fp * Q0 * (1.0_fp - TOL), ok)
       call report('Phase A: upper bound preserved', &
-                  qmax <= 1.5_fp * Q0 * (1.0_fp + TOL), ok)
+         qmax <= 1.5_fp * Q0 * (1.0_fp + TOL), ok)
       call report('Phase A: solution finite', tracer_is_finite(), ok)
       if (.not. ok) all_ok = .false.
    end subroutine check_phase_a
@@ -569,9 +569,9 @@ contains
 
       ok = .true.
       call report('Phase C: total mass conserved (horizontal + vertical)', &
-                  rel <= real(TOL, dp), ok)
+         rel <= real(TOL, dp), ok)
       call report('Phase C: vertical remap lifted mass off the surface', &
-                  m_above > 1.0e-6_dp * m1, ok)
+         m_above > 1.0e-6_dp * m1, ok)
       call report('Phase C: positivity preserved', qmin >= -TOL * Q0, ok)
       call report('Phase C: solution finite', tracer_is_finite(), ok)
       if (.not. ok) all_ok = .false.
