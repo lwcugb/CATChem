@@ -23,6 +23,7 @@
 - **API Documentation** - Auto-generated API docs with MkDoxy integration
 - **User Guides** - Comprehensive process documentation and tutorials
 - **Developer Resources** - Architecture guides and contribution guidelines
+- **Consolidated Process Docs** - Process documentation reorganized to one page per implemented process, with verified DOI citations
 
 #### 🛠️ Technical Improvements
 - **CMake Modernization** - Updated build system for modular components
