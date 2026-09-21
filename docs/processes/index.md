@@ -94,7 +94,7 @@ end type
 
 ## Creating New Processes
 
-See the [Process Generator](../developer-guide/processes/process-generator.md) for detailed instructions on creating new processes.
+See the [Process Generator Tutorial](../developer-guide/processes/process-generator.md) for detailed instructions on creating new processes.
 
 ## Process Development
 
