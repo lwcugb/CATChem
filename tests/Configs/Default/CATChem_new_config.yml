@@ -435,7 +435,7 @@ processes:
     activate: true
     diagnostics: true
     diag_species: [so2, so4, seas1, seas3, seas5, oc1,oc2,bc1,bc2]
-    scheme: 'jacob'
+    scheme: 'gocart'
     jacob:
       scale_factor: 1.0
       radius_threshold: 0.05
