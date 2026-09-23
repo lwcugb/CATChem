@@ -117,8 +117,8 @@ module WetDepCommon_Mod
 
       ! Scheme parameters
       real(fp) :: scale_factor = 1.0  ! Overall washout tuning factor
-      real(fp) :: washout_tuning = 1.0  ! WetRemovalUFS below-cloud washout tuning factor (wtune)
-      real(fp) :: radius_threshold = 1.0  ! Radius threshold for aerosol washout (um) (WetRemovalUFS radius_thr)
+      real(fp) :: washout_tuning = 1.0  ! WetRemovalUFS below-cloud washout tuning factor (wtune); GOCART default 1.0
+      real(fp) :: radius_threshold = 0.05  ! Radius threshold for aerosol washout (um) (WetRemovalUFS radius_thr); GOCART default 0.05
 
       ! Required meteorological fields
       integer :: n_required_met_fields = 8
@@ -538,8 +538,8 @@ contains
          this%gocart_config%washout_tuning, rc, 1.0_fp)
       if (rc /= CC_SUCCESS) this%gocart_config%washout_tuning = 1.0_fp
       call config_manager%get_real("processes/wetdep/gocart/radius_threshold", &
-         this%gocart_config%radius_threshold, rc, 1.0_fp)
-      if (rc /= CC_SUCCESS) this%gocart_config%radius_threshold = 1.0_fp
+         this%gocart_config%radius_threshold, rc, 0.05_fp)
+      if (rc /= CC_SUCCESS) this%gocart_config%radius_threshold = 0.05_fp
 
 
    end subroutine load_gocart_config

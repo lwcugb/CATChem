@@ -443,8 +443,8 @@ processes:
       so4_washout_eff: 0.3 #wash out factor for SO4 only
     gocart:
       scale_factor: 1.0 #overall washout tuning factor
-      washout_tuning: 1.0 #WetRemovalUFS below-cloud washout tuning factor (wtune)
-      radius_threshold: 1.0 #radius threshold for aerosol washout (um) (WetRemovalUFS radius_thr)
+      washout_tuning: 1.0 #WetRemovalUFS below-cloud washout tuning factor (wtune); GOCART default 1.0
+      radius_threshold: 0.05 #radius threshold for aerosol washout (um) (WetRemovalUFS radius_thr); GOCART default 0.05
   settling:
     activate: true
     diagnostics: true
