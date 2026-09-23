@@ -184,7 +184,9 @@ contains
       type(TimeStateType), pointer :: time_state
       integer :: localrc, i, period_key
       integer :: blo_year, blo_month
+      integer :: lo_yy, lo_mm, lo_dd
       real(fp) :: bfrac
+      type(ESMF_TimeInterval) :: half_day
       character(len=EMIS_MAXSTR) :: msg, timeString
       character(len=*), parameter :: pName = 'catchem_emis_update'
 
@@ -231,6 +233,20 @@ contains
             if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
                line=__LINE__,  file=__FILE__,  rcToReturn=rc)) return
             period_key = blo_year*100 + blo_month
+         end if
+
+         ! Daily-mean files interpolated linearly are valid at 12Z, so the bracket of two
+         ! consecutive-day 12Z knots changes at noon.  Key on the lower knot's day
+         ! (= date of curr_time - 12h) so the re-read fires at 12Z, not midnight.
+         if (trim(ext_emis_data%categories(i)%frequency) == 'daily' .and. &
+            trim(ext_emis_data%categories(i)%time_interpolation) == 'linear') then
+            call ESMF_TimeIntervalSet(half_day, h=12, rc=localrc)
+            if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
+               line=__LINE__,  file=__FILE__,  rcToReturn=rc)) return
+            call ESMF_TimeGet(current_time - half_day, yy=lo_yy, mm=lo_mm, dd=lo_dd, rc=localrc)
+            if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
+               line=__LINE__,  file=__FILE__,  rcToReturn=rc)) return
+            period_key = lo_yy*10000 + lo_mm*100 + lo_dd
          end if
 
          if (period_key /= ext_emis_data%categories(i)%last_period_key) then
@@ -889,12 +905,14 @@ contains
       integer :: nx, ny
       integer :: n_hours
       character(len=EMIS_MAXSTR) :: filename_next
+      character(len=EMIS_MAXSTR) :: filename_cur     ! t1 file (12Z-shifted for daily)
       type(ESMF_Time) :: next_time
-      type(ESMF_TimeInterval) :: period_step
-      logical :: next_file_exists
+      type(ESMF_TimeInterval) :: period_step, half_day
+      logical :: next_file_exists, cur_file_exists
 
       rc = CC_SUCCESS
       category_name = trim(category%category_name)
+      filename_cur = trim(filename)   ! current-slice file; overridden below for daily 12Z bracket
 
       ! Determine if temporal interpolation is needed.
       ! Two modes:
@@ -938,7 +956,22 @@ contains
             if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
                line=__LINE__, file=__FILE__, rcToReturn=rc)) return
 
-            next_time = curr_time + period_step
+            ! Daily-mean files are valid at 12Z (GEOS/ExtData): bracket the two 12Z knots
+            ! straddling curr_time so the morning blends [yesterday, today] and the afternoon
+            ! [today, tomorrow], matching MAPL ExtData rather than a 00Z ramp.
+            if (trim(category%frequency) == 'daily') then
+               call ESMF_TimeIntervalSet(half_day, h=12, rc=localrc)
+               if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
+                  line=__LINE__, file=__FILE__, rcToReturn=rc)) return
+               call resolve_filename_template(category%source_file, curr_time - half_day, filename_cur, localrc)
+               if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
+                  line=__LINE__, file=__FILE__, rcToReturn=rc)) return
+               inquire(file=trim(filename_cur), exist=cur_file_exists)
+               if (.not. cur_file_exists) filename_cur = trim(filename)  ! fall back to curr-day file
+               next_time = curr_time + half_day
+            else
+               next_time = curr_time + period_step
+            end if
             call resolve_filename_template(category%source_file, next_time, filename_next, localrc)
             if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
                line=__LINE__, file=__FILE__, rcToReturn=rc)) return
@@ -984,7 +1017,7 @@ contains
             ! --- 2D field ---
             call catchem_regrid_field( &
                cache     = emis_regrid_cache, &
-               filename  = trim(filename), &
+               filename  = trim(filename_cur), &
                varname   = trim(category%fields(ifield)%field_name), &
                dstField  = esmf_field, &
                latname   = trim(category%latname), &
@@ -1082,7 +1115,7 @@ contains
             do klev = 1, nlev_f
                call catchem_regrid_field( &
                   cache     = emis_regrid_cache, &
-                  filename  = trim(filename), &
+                  filename  = trim(filename_cur), &
                   varname   = trim(category%fields(ifield)%field_name), &
                   dstField  = esmf_field, &
                   latname   = trim(category%latname), &
@@ -1561,13 +1594,14 @@ contains
    !! \param[in]    current_time ESMF_Time for current model time
    !! \param[in]    nx, ny       Grid dimensions
    !! \param[out]   rc           Return code
-   subroutine apply_biomass_diurnal(emission_2d, lons, lats, current_time, nx, ny, rc)
+   subroutine apply_biomass_diurnal(emission_2d, lons, lats, current_time, dt, nx, ny, rc)
       implicit none
 
       real(fp), intent(inout) :: emission_2d(:,:)
       real(fp), intent(in)    :: lons(:,:)
       real(fp), intent(in)    :: lats(:,:)
       type(ESMF_Time), intent(in) :: current_time
+      real(fp), intent(in)    :: dt
       integer, intent(in)     :: nx, ny
       integer, intent(out)    :: rc
 
@@ -1637,9 +1671,9 @@ contains
 
       nhms = hh * 10000 + mm * 100 + ss
 
-      ! Compute normalization factors (depend on model timestep via ndt=1 for 360s bins)
-      ! Use ndt=1 since we sample one bin per call (consistent with GOCART default)
-      ndt = 1
+      ! Normalization stride follows GOCART Chem_BiomassDiurnal (ndt = max(1,nint(cdt/DT)),
+      ! DT=360 s) so the applied factor averages to 1 over the timesteps sampled in a day.
+      ndt = max(1, nint(dt / DT_DIURNAL))
       fBoreal = 0.0_fp
       fNonBoreal = 0.0_fp
       NN = 0
@@ -1801,7 +1835,7 @@ contains
          ! Apply diurnal biomass burning cycle if enabled (before vertical distribution)
          if (category%diurnal_bb) then
             call apply_biomass_diurnal(emission_flux(:,:,1), met_state%LON, met_state%LAT, &
-               current_time, nx, ny, localrc)
+               current_time, dt, nx, ny, localrc)
          end if
 
          ! Apply vertical distribution if configured (redistributes 2D surface emission to 3D)
@@ -3385,8 +3419,11 @@ contains
                real(dim_days, fp)
          end if
        case ('daily')
+         ! Daily-mean valid at 12Z (GEOS/ExtData): knots are consecutive-day 12Z means,
+         ! so shift fraction-of-day by half a day and wrap into [0,1).
          w_next = (real(curr_hh, fp) + real(curr_mn, fp)/60.0_fp + &
-            real(curr_ss, fp)/3600.0_fp) / 24.0_fp
+            real(curr_ss, fp)/3600.0_fp) / 24.0_fp - 0.5_fp
+         if (w_next < 0.0_fp) w_next = w_next + 1.0_fp
        case ('hourly')
          w_next = (real(curr_mn, fp) + real(curr_ss, fp)/60.0_fp) / 60.0_fp
        case default

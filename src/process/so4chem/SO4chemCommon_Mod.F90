@@ -77,6 +77,7 @@ module SO4chemCommon_Mod
 
       ! Scheme parameters
       logical :: update_so2 = .true.  ! whether to update SO2 concentration based on chemical production/loss
+      logical :: do_drydep = .false.  ! whether to compute SO2/SO4/MSA dry deposition inside SulfateChemDriver (GOCART behavior)
 
       ! Required meteorological fields
       integer :: n_required_met_fields = 16
@@ -403,6 +404,9 @@ contains
       call config_manager%get_logical("processes/so4chem/gocart/update_so2", &
          this%gocart_config%update_so2, rc, .true.)
       if (rc /= CC_SUCCESS) this%gocart_config%update_so2 = .true.
+      call config_manager%get_logical("processes/so4chem/gocart/do_drydep", &
+         this%gocart_config%do_drydep, rc, .false.)
+      if (rc /= CC_SUCCESS) this%gocart_config%do_drydep = .false.
 
 
    end subroutine load_gocart_config

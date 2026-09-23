@@ -425,10 +425,12 @@ processes:
     aero_scheme: 'gocart'
     wesely:
       scale_factor: 1.0
+      skip_so2: true  #skip SO2 in wesely so so4chem handles it. GOCART-faithful sulfate drydep = set this + gocart/skip_sulfate_aero + so4chem/do_drydep all true
     gocart:
       scale_factor: 1.0
       resuspension: false
       dust_resuspension_only: true   # default
+      skip_sulfate_aero: true  #skip SO4/MSA in gocart aero drydep so so4chem handles them (GOCART-faithful: set true)
     zhang:
       scale_factor: 1.0
   wetdep:
@@ -463,6 +465,7 @@ processes:
     scheme: 'gocart'
     gocart:
       update_so2: true #whether to update SO2 concentration based on chemical production/loss
+      do_drydep: true #compute SO2/SO4/MSA drydep inside SulfateChemDriver (GOCART-faithful: set true together with drydep wesely/skip_so2 + gocart/skip_sulfate_aero)
   carbchem:
     activate: true
     diagnostics: true

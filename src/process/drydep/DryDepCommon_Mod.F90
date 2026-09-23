@@ -95,6 +95,7 @@ module DryDepCommon_Mod
       logical :: co2_effect = .true.  ! Apply CO2 effect on stomatal conductance
       real(fp) :: co2_level = 600.0  ! Ambient CO2 level for stomatal conductance adjustment
       real(fp) :: co2_reference = 380.0  ! Reference CO2 level for stomatal conductance adjustment
+      logical :: skip_so2 = .false.  ! Skip SO2 so its dry deposition is handled by so4chem (GOCART SulfateChemDriver)
 
       ! Required meteorological fields
       integer :: n_required_met_fields = 21
@@ -123,6 +124,7 @@ module DryDepCommon_Mod
       real(fp) :: scale_factor = 1.0  ! Dry deposition velocity scale factor
       logical :: resuspension = .false.  ! Apply resuspension for dry deposition
       logical :: dust_resuspension_only = .true.  ! If true, resuspension only applies to dust species
+      logical :: skip_sulfate_aero = .false.  ! Skip SO4/MSA so their dry deposition is handled by so4chem (GOCART SulfateChemDriver)
 
       ! Required meteorological fields
       integer :: n_required_met_fields = 13
@@ -607,6 +609,9 @@ contains
       call config_manager%get_real("processes/drydep/wesely/co2_reference", &
          this%wesely_config%co2_reference, rc, 380.0_fp)
       if (rc /= CC_SUCCESS) this%wesely_config%co2_reference = 380.0_fp
+      call config_manager%get_logical("processes/drydep/wesely/skip_so2", &
+         this%wesely_config%skip_so2, rc, .false.)
+      if (rc /= CC_SUCCESS) this%wesely_config%skip_so2 = .false.
 
 
    end subroutine load_wesely_config
@@ -629,6 +634,9 @@ contains
       call config_manager%get_logical("processes/drydep/gocart/dust_resuspension_only", &
          this%gocart_config%dust_resuspension_only, rc, .true.)
       if (rc /= CC_SUCCESS) this%gocart_config%dust_resuspension_only = .true.
+      call config_manager%get_logical("processes/drydep/gocart/skip_sulfate_aero", &
+         this%gocart_config%skip_sulfate_aero, rc, .false.)
+      if (rc /= CC_SUCCESS) this%gocart_config%skip_sulfate_aero = .false.
 
 
    end subroutine load_gocart_config

@@ -92,7 +92,7 @@ contains
       wetdep_mass_per_species_per_level, &
       wetdep_flux_per_species_per_level, &
       diagnostic_species_id &
-   )
+      )
 
       ! Arguments
       integer, intent(in) :: num_layers
@@ -169,15 +169,15 @@ contains
       nDMS = -1; nSO2 = -1; nSO4 = -1; nMSA = -1; nH2O2 = -1
       do species_idx = 1, num_species
          select case (trim(species_short_name(species_idx)))
-         case ('SO2', 'so2')
+          case ('SO2', 'so2')
             nSO2 = species_idx
-         case ('SO4', 'so4')
+          case ('SO4', 'so4')
             nSO4 = species_idx
-         case ('DMS', 'dms')
+          case ('DMS', 'dms')
             nDMS = species_idx
-         case ('MSA', 'msa')
+          case ('MSA', 'msa')
             nMSA = species_idx
-         case ('H2O2', 'h2o2')
+          case ('H2O2', 'h2o2')
             nH2O2 = species_idx
          end select
       end do
@@ -234,11 +234,11 @@ contains
          end if
 
          call SU_Wet_Removal(num_layers, nbins_su, klid, tstep, .true., g0, AIRMW, &
-                             GOCART_delp, fMassSO4, fMassSO2, &
-                             h2o2_int, GOCART_ple, GOCART_rhoa, GOCART_precc, GOCART_precl, &
-                             GOCART_pfllsan, GOCART_pfilsan, GOCART_tmpu, &
-                             iDMS, iSO2, iSO4, iMSA, dms, so2, so4, msa, &
-                             su_flux, su_pso4col, su_pso4wetcol, su_pso4, su_pso4wet, rc)
+            GOCART_delp, fMassSO4, fMassSO2, &
+            h2o2_int, GOCART_ple, GOCART_rhoa, GOCART_precc, GOCART_precl, &
+            GOCART_pfllsan, GOCART_pfilsan, GOCART_tmpu, &
+            iDMS, iSO2, iSO4, iMSA, dms, so2, so4, msa, &
+            su_flux, su_pso4col, su_pso4wetcol, su_pso4, su_pso4wet, rc)
 
          ! Convert back to CATChem units (replacement mode); record kg/kg removed for diagnostics.
          species_tendencies(:, nSO2) = so2(1,1,num_layers:1:-1) * 1.0e6_fp * AIRMW / fMassSO2  ! kg/kg -> ppm
@@ -259,16 +259,16 @@ contains
       ! --------------------------------------------------------------------------------------------------
       do species_idx = 1, num_species
          if (species_idx == nSO2 .or. species_idx == nSO4 .or. species_idx == nDMS .or. &
-             species_idx == nMSA .or. species_idx == nH2O2) cycle
+            species_idx == nMSA .or. species_idx == nH2O2) cycle
          if (.not. species_is_aerosol(species_idx)) cycle  ! WetRemovalUFS supports aerosols (and NH3) only
 
          aerosol(1,1,:) = species_conc(num_layers:1:-1, species_idx) * 1.0e-9_fp  ! ug/kg -> kg/kg
          aerosol0 = aerosol
 
          call WetRemovalUFS(num_layers, klid, 1, tstep, trim(species_short_name(species_idx)), .true., g0, &
-                            species_radius(species_idx), species_wd_rainouteff(species_idx, :), &
-                            params%washout_tuning, params%radius_threshold, aerosol, &
-                            GOCART_ple, GOCART_tmpu, GOCART_rhoa, GOCART_pfllsan, GOCART_pfilsan, ufs_flux, rc)
+            species_radius(species_idx), species_wd_rainouteff(species_idx, :), &
+            params%washout_tuning, params%radius_threshold, aerosol, &
+            GOCART_ple, GOCART_tmpu, GOCART_rhoa, GOCART_pfllsan, GOCART_pfilsan, ufs_flux, rc)
 
          species_tendencies(:, species_idx) = aerosol(1,1,num_layers:1:-1) * 1.0e9_fp  ! kg/kg -> ug/kg
          removed_g(:, species_idx) = aerosol0(1,1,:) - aerosol(1,1,:)
@@ -279,7 +279,7 @@ contains
       ! Results are written back in CATChem (surface-first) order.
       ! --------------------------------------------------------------------------------------------------
       if (present(diagnostic_species_id) .and. &
-          (present(wetdep_mass_per_species_per_level) .or. present(wetdep_flux_per_species_per_level))) then
+         (present(wetdep_mass_per_species_per_level) .or. present(wetdep_flux_per_species_per_level))) then
          do diag_idx = 1, size(diagnostic_species_id)
             species_idx = diagnostic_species_id(diag_idx)
             if (species_idx < 1 .or. species_idx > num_species) cycle
