@@ -161,6 +161,7 @@ processes:
       gridded: true
       regrid_method: conserve
       time_interpolation: linear
+      monthly_anchor: file   # match MAPL ExtData: interpolate by file record timestamps, not mid-month
       lat_name: "lat"
       lon_name: "lon"
       vertical_dist: "aviation_lto" #options: none, P100, P500, Ppbl, aviation, aviation_lto, aviation_cds, aviation_crs
@@ -175,6 +176,7 @@ processes:
       gridded: true
       regrid_method: conserve
       time_interpolation: linear
+      monthly_anchor: file   # match MAPL ExtData: interpolate by file record timestamps, not mid-month
       lat_name: "lat"
       lon_name: "lon"
       vertical_dist: "aviation_cds" #options: none, P100, P500, Ppbl, aviation, aviation_lto, aviation_cds, aviation_crs
@@ -189,6 +191,7 @@ processes:
       gridded: true
       regrid_method: conserve
       time_interpolation: linear
+      monthly_anchor: file   # match MAPL ExtData: interpolate by file record timestamps, not mid-month
       lat_name: "lat"
       lon_name: "lon"
       vertical_dist: "aviation_crs" #options: none, P100, P500, Ppbl, aviation, aviation_lto, aviation_cds, aviation_crs
@@ -203,6 +206,7 @@ processes:
       gridded: true
       regrid_method: conserve
       time_interpolation: linear
+      monthly_anchor: file   # match MAPL ExtData: interpolate by file record timestamps, not mid-month
       lat_name: "lat"
       lon_name: "lon"
       vertical_dist: "aviation_lto" #options: none, P100, P500, Ppbl, aviation, aviation_lto, aviation_cds, aviation_crs
@@ -217,6 +221,7 @@ processes:
       gridded: true
       regrid_method: conserve
       time_interpolation: linear
+      monthly_anchor: file   # match MAPL ExtData: interpolate by file record timestamps, not mid-month
       lat_name: "lat"
       lon_name: "lon"
       vertical_dist: "aviation_cds" #options: none, P100, P500, Ppbl, aviation, aviation_lto, aviation_cds, aviation_crs
@@ -231,6 +236,7 @@ processes:
       gridded: true
       regrid_method: conserve
       time_interpolation: linear
+      monthly_anchor: file   # match MAPL ExtData: interpolate by file record timestamps, not mid-month
       lat_name: "lat"
       lon_name: "lon"
       vertical_dist: "aviation_crs" #options: none, P100, P500, Ppbl, aviation, aviation_lto, aviation_cds, aviation_crs
@@ -245,6 +251,7 @@ processes:
       gridded: true
       regrid_method: conserve
       time_interpolation: linear
+      monthly_anchor: file   # match MAPL ExtData: interpolate by file record timestamps, not mid-month
       lat_name: "lat"
       lon_name: "lon"
       vertical_dist: "aviation_lto" #options: none, P100, P500, Ppbl, aviation, aviation_lto, aviation_cds, aviation_crs
@@ -259,6 +266,7 @@ processes:
       gridded: true
       regrid_method: conserve
       time_interpolation: linear
+      monthly_anchor: file   # match MAPL ExtData: interpolate by file record timestamps, not mid-month
       lat_name: "lat"
       lon_name: "lon"
       vertical_dist: "aviation_cds" #options: none, P100, P500, Ppbl, aviation, aviation_lto, aviation_cds, aviation_crs
@@ -273,6 +281,7 @@ processes:
       gridded: true
       regrid_method: conserve
       time_interpolation: linear
+      monthly_anchor: file   # match MAPL ExtData: interpolate by file record timestamps, not mid-month
       lat_name: "lat"
       lon_name: "lon"
       vertical_dist: "aviation_crs" #options: none, P100, P500, Ppbl, aviation, aviation_lto, aviation_cds, aviation_crs
@@ -322,6 +331,7 @@ processes:
       apply_method: "replace" # "add" to accumulate concentration (default); "replace" to overwrite existing concentration
       regrid_method: conserve
       time_interpolation: linear
+      monthly_anchor: file   # match MAPL ExtData: interpolate by file record timestamps, not mid-month
       lat_name: "latitude"
       lon_name: "longitude"
       vertical_dist: "none"
@@ -347,6 +357,7 @@ processes:
       is_2d: true
       regrid_method: conserve
       time_interpolation: linear
+      daily_hold: true   # match MAPL ExtData: hold daily value piecewise-constant per day (recompute at 00Z)
       diurnal_bb: true
       use_oc_fbb: true
       lat_name: "lat"
@@ -379,6 +390,7 @@ processes:
       gridded: true
       regrid_method: neareststod
       time_interpolation: linear
+      monthly_anchor: file   # match MAPL ExtData: interpolate by file record timestamps (month-start), not mid-month
       lat_name: "lat"
       lon_name: "lon"
       is_2d: true

@@ -211,14 +211,24 @@ contains
 
       ! --------------------------------------------------------------------------------------------------
       ! (1) Sulfate group -> SU_Wet_Removal (single call for DMS/SO2/SO4/MSA); requires H2O2.
+      ! DMS/MSA are optional: SU_Wet_Removal never removes DMS (DC(nDMS)=0), so DMS need not be carried in
+      ! the wetdep list. Requiring it would force is_wetdep on DMS and alter the Jacob scheme's behavior.
       ! --------------------------------------------------------------------------------------------------
-      if (nSO2 > 0 .and. nSO4 > 0 .and. nDMS > 0 .and. nH2O2 > 0) then
+      if (nSO2 > 0 .and. nSO4 > 0 .and. nH2O2 > 0) then
          fMassSO2 = species_mw_g(nSO2)
          fMassSO4 = species_mw_g(nSO4)
-         fMassDMS = species_mw_g(nDMS)
+         if (nDMS > 0) then
+            fMassDMS = species_mw_g(nDMS)
+         else
+            fMassDMS = 62.0_fp  ! GOCART DMS molar mass [g/mol]; DMS array stays zero (never removed)
+         end if
 
          ! Convert to GOCART units (kg/kg mass mixing ratio), top-first.
-         dms(1,1,:) = species_conc(num_layers:1:-1, nDMS) * 1.0e-6_fp * fMassDMS / AIRMW  ! ppm -> kg/kg
+         if (nDMS > 0) then
+            dms(1,1,:) = species_conc(num_layers:1:-1, nDMS) * 1.0e-6_fp * fMassDMS / AIRMW  ! ppm -> kg/kg
+         else
+            dms(1,1,:) = 0.0_fp
+         end if
          so2(1,1,:) = species_conc(num_layers:1:-1, nSO2) * 1.0e-6_fp * fMassSO2 / AIRMW  ! ppm -> kg/kg
          so4(1,1,:) = species_conc(num_layers:1:-1, nSO4) * 1.0e-9_fp                     ! ug/kg -> kg/kg
          ! H2O2 read fresh from the shared array each step (so4chem runs before wetdep and writes the
@@ -243,10 +253,12 @@ contains
          ! Convert back to CATChem units (replacement mode); record kg/kg removed for diagnostics.
          species_tendencies(:, nSO2) = so2(1,1,num_layers:1:-1) * 1.0e6_fp * AIRMW / fMassSO2  ! kg/kg -> ppm
          species_tendencies(:, nSO4) = so4(1,1,num_layers:1:-1) * 1.0e9_fp                     ! kg/kg -> ug/kg
-         species_tendencies(:, nDMS) = dms(1,1,num_layers:1:-1) * 1.0e6_fp * AIRMW / fMassDMS  ! kg/kg -> ppm
          removed_g(:, nSO2) = so20(1,1,:) - so2(1,1,:)
          removed_g(:, nSO4) = so40(1,1,:) - so4(1,1,:)
-         removed_g(:, nDMS) = dms0(1,1,:) - dms(1,1,:)
+         if (nDMS > 0) then
+            species_tendencies(:, nDMS) = dms(1,1,num_layers:1:-1) * 1.0e6_fp * AIRMW / fMassDMS  ! kg/kg -> ppm
+            removed_g(:, nDMS) = dms0(1,1,:) - dms(1,1,:)
+         end if
          if (nMSA > 0) then
             species_tendencies(:, nMSA) = msa(1,1,num_layers:1:-1) * 1.0e9_fp  ! kg/kg -> ug/kg
             removed_g(:, nMSA) = msa0(1,1,:) - msa(1,1,:)
